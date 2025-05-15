@@ -1,4 +1,5 @@
 #include <cstring>
+#include <iomanip>
 
 #include "Model.h"
 
@@ -66,3 +67,32 @@ bool Model::loadPDB(const string& filename) {
 
     return true;
 }
+
+bool Model::writePDB(const string& filename) const {
+    ofstream file(filename);
+    if (!file) {
+        cerr << "Error: cannot open file " << filename << endl;
+        return false;
+    }
+    cout << "Size:" << size() << endl;
+
+    for (size_t i = 0; i < size(); ++i) {
+        file << "ATOM  "
+             << setw(5) << num_[i] << " "
+             << setw(4) << name_[i].data()
+             << setw(1) << alterloc_[i].data()
+             << setw(3) << resname_[i].data()
+             << setw(1) << chain_[i].data()
+             << setw(4) << resid_[i]
+             << setw(1) << insertres_[i].data() << "   "
+             << setw(8) << fixed << setprecision(3) << x_[i]
+             << setw(8) << fixed << setprecision(3) << y_[i]
+             << setw(8) << fixed << setprecision(3) << z_[i]
+             << setw(6) << fixed << setprecision(2) << occ_[i]
+             << setw(6) << fixed << setprecision(2) << beta_[i] << "          "
+             << elem_[i].data() // Uncomment if you want to write the element
+             << "\n";
+    }
+
+    return true;
+}   

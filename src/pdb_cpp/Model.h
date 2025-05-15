@@ -14,6 +14,7 @@ class Model {
 public:
     // === Public interface ===
     bool loadPDB(const string& filename);
+    bool writePDB(const string& filename) const;
     void clear();
     size_t size() const;
 

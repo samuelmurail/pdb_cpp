@@ -29,7 +29,15 @@ int main() {
     << structure.getY()[0] << " "
     << structure.getZ()[0] << endl;
 
-    structure.clear();
-    
+    //structure.clear();
+
+
+    start = chrono::high_resolution_clock::now();
+    structure.writePDB("tmp.pdb");
+    end = chrono::high_resolution_clock::now();
+    elapsed = end - start;
+    cout << "writePDB Time: " << elapsed.count() << " seconds\n";
+
+
     return 0;
 }
