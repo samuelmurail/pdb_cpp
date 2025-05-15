@@ -24,16 +24,13 @@ public:
     const vector<array<char, 5>>& getAtomNames() const { return name_; }
     const vector<array<char, 5>>& getResNames() const { return resname_; }
     const vector<int>& getResIDs() const { return resid_; }
-    const vector<char>& getChainIDs() const { return chain_id_; }
+    const vector<array<char, 2>>& getChainIDs() const { return chain_; }
 
 private:
     // === Storage (Structure of Arrays) ===
     vector<float> x_, y_, z_, occ_, beta_;
     vector<array<char, 5>> name_, resname_, elem_;
+    vector<array<char, 2>> chain_, alterloc_, insertres_;
     vector<int> num_, resid_, uniqresid_;
     vector<bool> field_;
-    vector<char> chain_id_;
-
-    // Helper
-    static void trimSpaces(string& s);
 };

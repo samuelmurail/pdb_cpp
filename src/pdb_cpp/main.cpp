@@ -7,7 +7,7 @@ int main() {
     Model structure;
 
     auto start = chrono::high_resolution_clock::now();
-    structure.loadPDB("src/pdb_cpp/tests/input/2ol9.pdb");
+    structure.loadPDB("3eam.pdb");
 
     auto end = chrono::high_resolution_clock::now();
 
@@ -18,15 +18,18 @@ int main() {
     for(int i = 0 ; i < 5 ; i ++ ){
         cout << structure.getAtomNames()[0][i] ;
     }
+    cout << " ";
     for(int i = 0 ; i < 5 ; i ++ ){
         cout << structure.getResNames()[0][i] ;
     }
+    cout << " ";
     // << structure.getAtomNames()[0] << " "
     // << structure.getResNames()[0] << " "
     cout << structure.getX()[0] << " "
     << structure.getY()[0] << " "
-    << structure.getZ()[0] << "\n";
+    << structure.getZ()[0] << endl;
 
-
+    structure.clear();
+    
     return 0;
 }
