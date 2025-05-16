@@ -1,51 +1,21 @@
 #include <cstring>
 #include <iomanip>
 
-#include "Model.h"
+#include "../Model.h"
 
 using namespace std;
 
-void Model::clear() {
-    x_.clear(); y_.clear(); z_.clear();
-    name_.clear(); resname_.clear();
-    resid_.clear(); chain_.clear();
-}
+Model parse(const string& filename) {
 
-size_t Model::size() const {
-    return x_.size();
-}
+    Model pdb_model;
 
-void Model::addAtom(float x, float y, float z,
-           const array<char, 5>& name,
-           const array<char, 5>& resname,
-           int res_id, const array<char, 2>& chain) {
-
-    field_.push_back(field);
-    num_.push_back(num);
-    name_.push_back(name_array);
-    alterloc_.push_back(alterloc);
-    resname_.push_back(resname_array);
-    chain_.push_back(chain_array);
-    insertres_.push_back(insertres);
-    resid_.push_back(res_id);
-    x_.push_back(x);
-    y_.push_back(y);
-    z_.push_back(z);
-    occ_.push_back(occ);
-    beta_.push_back(beta);
-    elem_.push_back(elem);
-
-    return;
-}
-
-bool Model::loadPDB(const string& filename) {
     ifstream file(filename);
     if (!file) {
         cerr << "Error: cannot open file " << filename << endl;
-        return false;
+        return pdb_model;
     }
 
-    clear();
+    pdb_model.clear();
     string line;
 
     while (getline(file, line)) {
@@ -67,20 +37,20 @@ bool Model::loadPDB(const string& filename) {
             float beta = stof(line.substr(60, 6));
             array<char, 5> elem = {line[76], line[77], ' ', ' ', '\0'};
 
-            field_.push_back(field);
-            num_.push_back(num);
-            name_.push_back(name_array);
-            alterloc_.push_back(alterloc);
-            resname_.push_back(resname_array);
-            chain_.push_back(chain_array);
-            insertres_.push_back(insertres);
-            resid_.push_back(res_id);
-            x_.push_back(x);
-            y_.push_back(y);
-            z_.push_back(z);
-            occ_.push_back(occ);
-            beta_.push_back(beta);
-            elem_.push_back(elem);
+            pdb_model.field_.push_back(field);
+            pdb_model.num_.push_back(num);
+            pdb_model.name_.push_back(name_array);
+            pdb_model.alterloc_.push_back(alterloc);
+            pdb_model.resname_.push_back(resname_array);
+            pdb_model.chain_.push_back(chain_array);
+            pdb_model.insertres_.push_back(insertres);
+            pdb_model.resid_.push_back(res_id);
+            pdb_model.x_.push_back(x);
+            pdb_model.y_.push_back(y);
+            pdb_model.z_.push_back(z);
+            pdb_model.occ_.push_back(occ);
+            pdb_model.beta_.push_back(beta);
+            pdb_model.elem_.push_back(elem);
 
 
         } catch (...) {
@@ -88,7 +58,7 @@ bool Model::loadPDB(const string& filename) {
         }
     }
 
-    return true;
+    return pdb_model;
 }
 
 bool Model::writePDB(const string& filename) const {

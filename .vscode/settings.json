@@ -54,6 +54,11 @@
         "streambuf": "cpp",
         "typeinfo": "cpp",
         "variant": "cpp",
-        "cstring": "cpp"
+        "cstring": "cpp",
+        "locale": "cpp",
+        "__split_buffer": "cpp",
+        "__hash_table": "cpp",
+        "filesystem": "cpp",
+        "ios": "cpp"
     }
 }
