@@ -8,7 +8,7 @@ int main() {
     Model structure;
 
     auto start = chrono::high_resolution_clock::now();
-    structure.loadPDB("3eam.pdb");
+    structure.read("3eam.pdb");
 
     auto end = chrono::high_resolution_clock::now();
 
@@ -34,7 +34,7 @@ int main() {
 
 
     start = chrono::high_resolution_clock::now();
-    structure.writePDB("tmp.pdb");
+    //structure.writePDB("tmp.pdb");
     end = chrono::high_resolution_clock::now();
     elapsed = end - start;
     cout << "Time taken to write coordinates: " << setprecision(3) << elapsed.count() << " seconds\n";

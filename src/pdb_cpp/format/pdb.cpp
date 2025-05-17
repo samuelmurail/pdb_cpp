@@ -5,7 +5,7 @@
 
 using namespace std;
 
-Model parse(const string& filename) {
+Model PDB_parse(const string& filename) {
 
     Model pdb_model;
 
@@ -37,20 +37,33 @@ Model parse(const string& filename) {
             float beta = stof(line.substr(60, 6));
             array<char, 5> elem = {line[76], line[77], ' ', ' ', '\0'};
 
-            pdb_model.field_.push_back(field);
-            pdb_model.num_.push_back(num);
-            pdb_model.name_.push_back(name_array);
-            pdb_model.alterloc_.push_back(alterloc);
-            pdb_model.resname_.push_back(resname_array);
-            pdb_model.chain_.push_back(chain_array);
-            pdb_model.insertres_.push_back(insertres);
-            pdb_model.resid_.push_back(res_id);
-            pdb_model.x_.push_back(x);
-            pdb_model.y_.push_back(y);
-            pdb_model.z_.push_back(z);
-            pdb_model.occ_.push_back(occ);
-            pdb_model.beta_.push_back(beta);
-            pdb_model.elem_.push_back(elem);
+            pdb_model.addAtom(
+                num,
+                name_array,
+                resname_array,
+                res_id,
+                chain_array,
+                x, y, z, occ, beta,
+                alterloc,
+                elem,
+                insertres,
+                field
+            );
+
+            // pdb_model.field_.push_back(field);
+            // pdb_model.num_.push_back(num);
+            // pdb_model.name_.push_back(name_array);
+            // pdb_model.alterloc_.push_back(alterloc);
+            // pdb_model.resname_.push_back(resname_array);
+            // pdb_model.chain_.push_back(chain_array);
+            // pdb_model.insertres_.push_back(insertres);
+            // pdb_model.resid_.push_back(res_id);
+            // pdb_model.x_.push_back(x);
+            // pdb_model.y_.push_back(y);
+            // pdb_model.z_.push_back(z);
+            // pdb_model.occ_.push_back(occ);
+            // pdb_model.beta_.push_back(beta);
+            // pdb_model.elem_.push_back(elem);
 
 
         } catch (...) {
@@ -61,35 +74,35 @@ Model parse(const string& filename) {
     return pdb_model;
 }
 
-bool Model::writePDB(const string& filename) const {
-    ofstream file(filename);
-    if (!file) {
-        cerr << "Error: cannot open file " << filename << endl;
-        return false;
-    }
-    // cout << "Size:" << size() << endl;
+// bool Model::writePDB(const string& filename) const {
+//     ofstream file(filename);
+//     if (!file) {
+//         cerr << "Error: cannot open file " << filename << endl;
+//         return false;
+//     }
+//     // cout << "Size:" << size() << endl;
 
-    string field = "ATOM  "; 
+//     string field = "ATOM  "; 
 
-    for (size_t i = 0; i < size(); ++i) {
-        //cout << "Writing atom " << i << " "<<num_[i] << endl;
-        field = field_[i] ? "HETATM" : "ATOM  ";
-        file << field
-             << setw(6) << num_[i] << " "
-             << setw(4) << name_[i].data()
-             << setw(1) << alterloc_[i].data()
-             << setw(3) << resname_[i].data()
-             << setw(1) << chain_[i].data()
-             << setw(4) << resid_[i]
-             << setw(1) << insertres_[i].data() << "   "
-             << setw(8) << fixed << setprecision(3) << x_[i]
-             << setw(8) << fixed << setprecision(3) << y_[i]
-             << setw(8) << fixed << setprecision(3) << z_[i]
-             << setw(6) << fixed << setprecision(2) << occ_[i]
-             << setw(6) << fixed << setprecision(2) << beta_[i] << "          "
-             << elem_[i].data()
-             << "\n";
-    }
+//     for (size_t i = 0; i < size(); ++i) {
+//         //cout << "Writing atom " << i << " "<<num_[i] << endl;
+//         field = field_[i] ? "HETATM" : "ATOM  ";
+//         file << field
+//              << setw(6) << num_[i] << " "
+//              << setw(4) << name_[i].data()
+//              << setw(1) << alterloc_[i].data()
+//              << setw(3) << resname_[i].data()
+//              << setw(1) << chain_[i].data()
+//              << setw(4) << resid_[i]
+//              << setw(1) << insertres_[i].data() << "   "
+//              << setw(8) << fixed << setprecision(3) << x_[i]
+//              << setw(8) << fixed << setprecision(3) << y_[i]
+//              << setw(8) << fixed << setprecision(3) << z_[i]
+//              << setw(6) << fixed << setprecision(2) << occ_[i]
+//              << setw(6) << fixed << setprecision(2) << beta_[i] << "          "
+//              << elem_[i].data()
+//              << "\n";
+//     }
 
-    return true;
-}   
+//     return true;
+// }   

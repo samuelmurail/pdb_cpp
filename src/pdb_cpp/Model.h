@@ -13,8 +13,21 @@ using namespace std;
 class Model {
 public:
     // === Public interface ===
-    bool loadPDB(const string& filename);
-    bool writePDB(const string& filename) const;
+    bool read(const string& filename);
+    //bool loadPDB(const string& filename);
+    //bool writePDB(const string& filename) const;
+    bool addAtom(
+        int num,
+        const array<char, 5>& name_array,
+        const array<char, 5>& resname_array,
+        int res_id,
+        const array<char, 2>& chain_array,
+        float x, float y, float z, float occ, float beta,
+        const array<char, 2>& alterloc,
+        const array<char, 5>& elem,
+        const array<char, 2>& insertres,
+        bool field);
+
     void clear();
     size_t size() const;
 
