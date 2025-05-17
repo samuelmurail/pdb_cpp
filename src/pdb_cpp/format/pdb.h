@@ -11,5 +11,6 @@
 class Model;
 
 Model PDB_parse(const std::string& filename);
+bool PDB_write(const Model& model, const std::string& filename);
 
 #endif // PDB_CPP_FORMAT_PDB_H

@@ -15,7 +15,7 @@ public:
     // === Public interface ===
     bool read(const string& filename);
     //bool loadPDB(const string& filename);
-    //bool writePDB(const string& filename) const;
+    bool write(const string& filename) const;
     bool addAtom(
         int num,
         const array<char, 5>& name_array,
@@ -32,13 +32,21 @@ public:
     size_t size() const;
 
     // Accessors
-    const vector<float>& getX() const { return x_; }
-    const vector<float>& getY() const { return y_; }
-    const vector<float>& getZ() const { return z_; }
-    const vector<array<char, 5>>& getAtomNames() const { return name_; }
-    const vector<array<char, 5>>& getResNames() const { return resname_; }
-    const vector<int>& getResIDs() const { return resid_; }
-    const vector<array<char, 2>>& getChainIDs() const { return chain_; }
+    const vector<float>& get_x() const { return x_; }
+    const vector<float>& get_y() const { return y_; }
+    const vector<float>& get_z() const { return z_; }
+    const vector<array<char, 5>>& get_name() const { return name_; }
+    const vector<array<char, 5>>& get_resname() const { return resname_; }
+    const vector<int>& get_resid() const { return resid_; }
+    const vector<array<char, 2>>& get_chain() const { return chain_; }
+    const vector<float>& get_occ() const { return occ_; }
+    const vector<float>& get_beta() const { return beta_; }
+    const vector<array<char, 2>>& get_alterloc() const { return alterloc_; }
+    const vector<array<char, 2>>& get_insertres() const { return insertres_; }
+    const vector<array<char, 5>>& get_elem() const { return elem_; }
+    const vector<int>& get_num() const { return num_; }
+    const vector<bool>& get_field() const { return field_; }
+    const vector<int>& get_uniqresid() const { return uniqresid_; }
 
 private:
     // === Storage (Structure of Arrays) ===

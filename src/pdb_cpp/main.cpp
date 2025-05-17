@@ -34,7 +34,7 @@ int main() {
 
 
     start = chrono::high_resolution_clock::now();
-    //structure.writePDB("tmp.pdb");
+    structure.write("tmp.pdb");
     end = chrono::high_resolution_clock::now();
     elapsed = end - start;
     cout << "Time taken to write coordinates: " << setprecision(3) << elapsed.count() << " seconds\n";
