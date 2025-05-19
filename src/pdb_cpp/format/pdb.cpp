@@ -8,23 +8,22 @@ using namespace std;
 
 Coor PDB_parse(const string& filename) {
 
-    Coor pdb_coor;
-    Model pdb_model;
+    Coor coor;
+    Model model;
+
+    coor.clear();
+    model.clear();
 
     ifstream file(filename);
     if (!file) {
         cerr << "Error: cannot open file " << filename << endl;
-        return pdb_coor;
+        return coor;
     }
 
-    pdb_coor.clear();
-    pdb_model.clear();
     string line;
 
     while (getline(file, line)) {
-        if (line.compare(0, 6, "ATOM  ") != 0 && line.compare(0, 6, "HETATM") != 0)
-            continue;
-        try {           
+        if (line.compare(0, 6, "ATOM  ") == 0 || line.compare(0, 6, "HETATM") == 0) {
             bool field = line.compare(0, 6, "ATOM  ") ? true : false;
             int num = stoi(line.substr(6, 5));
             array<char, 5> name_array = {line[12], line[13], line[14], line[15], '\0'};
@@ -40,7 +39,7 @@ Coor PDB_parse(const string& filename) {
             float beta = stof(line.substr(60, 6));
             array<char, 5> elem = {line[76], line[77], ' ', ' ', '\0'};
 
-            pdb_model.addAtom(
+            model.addAtom(
                 num,
                 name_array,
                 resname_array,
@@ -52,13 +51,25 @@ Coor PDB_parse(const string& filename) {
                 insertres,
                 field
             );
+        } else if (line.compare(0, 3, "END") == 0) {
+            coor.add_Model(model);
+            model.clear();
+        } else if (line.compare(0, 6, "CRYST1") == 0) {
+            // Parse CRYST1 line
+            float a = stof(line.substr(6, 9));
+            float b = stof(line.substr(15, 9));
+            float c = stof(line.substr(24, 9));
+            float alpha = stof(line.substr(33, 7));
+            float beta = stof(line.substr(40, 7));
+            float gamma = stof(line.substr(47, 7));
 
-        } catch (...) {
-            cerr << "Warning: skipping malformed line:\n" << line << endl;
+            coor.set_crystal(a, b, c, alpha, beta, gamma);
+
+
         }
-    }
-    pdb_coor.add_Model(pdb_model);
-    return pdb_coor;
+    } 
+    coor.add_Model(model);
+    return coor;
 }
 
 
@@ -71,26 +82,34 @@ bool PDB_write(const Coor& coor, const string& filename) {
     }
     // cout << "Size:" << size() << endl;
     string field;
-    const Model& model = coor.get_Models(0);
 
-    for (size_t i = 0; i < model.size(); ++i) {
-        //cout << "Writing atom " << i << " "<<num_[i] << endl;
-        field = model.get_field()[i] ? "HETATM" : "ATOM  ";
-        file << field
-             << setw(6) << model.get_num()[i] << " "
-             << setw(4) << model.get_name()[i].data()
-             << setw(1) << model.get_alterloc()[i].data()
-             << setw(3) << model.get_resname()[i].data()
-             << setw(1) << model.get_chain()[i].data()
-             << setw(4) << model.get_resid()[i]
-             << setw(1) << model.get_insertres()[i].data() << "   "
-             << setw(8) << fixed << setprecision(3) << model.get_x()[i]
-             << setw(8) << fixed << setprecision(3) << model.get_y()[i]
-             << setw(8) << fixed << setprecision(3) << model.get_z()[i]
-             << setw(6) << fixed << setprecision(2) << model.get_occ()[i]
-             << setw(6) << fixed << setprecision(2) << model.get_beta()[i] << "          "
-             << model.get_elem()[i].data()
-             << "\n";
+    for (int i = 0; i < coor.size(); ++i) {
+
+        const Model& model = coor.get_Models(i);
+
+        file << "MODEL     " << i + 1 << "\n";
+
+        for (size_t i = 0; i < model.size(); ++i) {
+            //cout << "Writing atom " << i << " "<<num_[i] << endl;
+            field = model.get_field()[i] ? "HETATM" : "ATOM  ";
+            file << field
+                << setw(5) << model.get_num()[i] << " "
+                << setw(4) << model.get_name()[i].data()
+                << setw(1) << model.get_alterloc()[i].data()
+                << setw(3) << model.get_resname()[i].data()
+                << setw(1) << model.get_chain()[i].data()
+                << setw(4) << model.get_resid()[i]
+                << setw(1) << model.get_insertres()[i].data() << "   "
+                << setw(8) << fixed << setprecision(3) << model.get_x()[i]
+                << setw(8) << fixed << setprecision(3) << model.get_y()[i]
+                << setw(8) << fixed << setprecision(3) << model.get_z()[i]
+                << setw(6) << fixed << setprecision(2) << model.get_occ()[i]
+                << setw(6) << fixed << setprecision(2) << model.get_beta()[i] << "          "
+                << model.get_elem()[i].data()
+                << "\n";
+        }
+
+        file << "ENDMDL\n";
     }
 
     return true;

@@ -8,7 +8,7 @@ int main() {
     Coor structure;
 
     auto start = chrono::high_resolution_clock::now();
-    structure.read("3eam.pdb");
+    structure.read("2rri.pdb");
 
     auto end = chrono::high_resolution_clock::now();
 
