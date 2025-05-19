@@ -1,0 +1,48 @@
+Metadata-Version: 2.4
+Name: pdb-cpp
+Version: 0.0.1
+Summary: Pdb_cpp is a python library allowing simple operations on pdb coor files.
+Author-email: Samuel Murail <samuel.murail@u-paris.fr>
+License-Expression: GPL-2.0-only
+Project-URL: Homepage, https://pdb-cpp.readthedocs.io/en/latest/
+Keywords: Coor,Model,Numpy,PDB,Python,pdb_cpp
+Classifier: Development Status :: 4 - Beta
+Classifier: Environment :: Console
+Classifier: Intended Audience :: Developers
+Classifier: Natural Language :: English
+Classifier: Programming Language :: Python
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3 :: Only
+Classifier: Programming Language :: Python :: 3.6
+Classifier: Programming Language :: Python :: 3.7
+Classifier: Programming Language :: Python :: 3.8
+Classifier: Programming Language :: Python :: 3.9
+Classifier: Programming Language :: Python :: Implementation :: CPython
+Classifier: Programming Language :: Python :: Implementation :: PyPy
+Classifier: Programming Language :: Python :: 3.10
+Classifier: Topic :: Software Development
+Requires-Python: >=3.6
+Description-Content-Type: text/x-rst
+License-File: LICENSE
+Requires-Dist: pybind11==2.13
+Dynamic: license-file
+
+# pdb_cpp
+
+Library to use pdb/mmcif files with c++.
+
+
+## Installation
+
+```bash
+git clone https://github.com/samuelmurail/pdb_cpp
+cd pdb_cpp
+python setup.py build_ext --inplace
+```
+
+## Usage
+```python
+import pdb_cpp
+
+pdb_cpp.read_pdb("1aon.pdb")
+```
