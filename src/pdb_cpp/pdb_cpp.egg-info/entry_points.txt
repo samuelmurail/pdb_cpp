@@ -1,2 +1,0 @@
-[console_scripts]
-pdb_cpp = pdb_cpp.__main__:main
