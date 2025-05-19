@@ -4,7 +4,7 @@ import sys
 
 sys.path.insert(0, "./src")
 
-from pdb_cpp import pdb_cpp
+from pdb_cpp import core
 
 start_time = time.time()
 coor = pdb_numpy.Coor("3eam.pdb")
@@ -16,7 +16,7 @@ pdb_numpy_write_time = time.time() - start_time
 print(f"Time taken to write coordinates: {pdb_numpy_write_time:.4f} seconds")
 
 start_time = time.time()
-model = pdb_cpp.Model()
+model = core.Model()
 model.read("3eam.pdb")
 cpp_read_time = time.time() - start_time
 print(f"Time taken to get coordinates:   {cpp_read_time:.4f} seconds  {pdb_numpy_read_time/cpp_read_time:.2f}")

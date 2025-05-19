@@ -4,7 +4,7 @@
 
 namespace py = pybind11;
 
-PYBIND11_MODULE(pdb_cpp, m) {
+PYBIND11_MODULE(core, m) {
     py::class_<Model>(m, "Model")
         .def(py::init<>())
         .def("read", &Model::read)
