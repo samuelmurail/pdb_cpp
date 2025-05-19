@@ -2,18 +2,8 @@
 #include <iomanip>
 
 #include "Model.h"
-#include "format/pdb.h"
 
 using namespace std;
-
-
-bool endswith (string const &fullString, string const &ending) {
-    if (fullString.length() >= ending.length()) {
-        return (0 == fullString.compare (fullString.length() - ending.length(), ending.length(), ending));
-    } else {
-        return false;
-    }
-}
 
 void Model::clear() {
     x_.clear(); y_.clear(); z_.clear();
@@ -54,69 +44,3 @@ bool Model::addAtom(
 
     return true;
 }
-
-bool Model::read(const string& filename) {
-    ifstream file(filename);
-    if (!file) {
-        cerr << "Error: cannot open file " << filename << endl;
-        return false;
-    }
-    clear();
-
-    if (endswith(filename, ".pdb")) {
-        cout << "Reading PDB file: " << filename << endl;
-        *this = PDB_parse(filename);
-        return true;
-    } 
-    return false;
-
-}
-
-
-bool Model::write(const string& filename) const {
-    ofstream file(filename);
-    if (!file) {
-        cerr << "Error: cannot open file " << filename << endl;
-        return false;
-    }
-
-    if (endswith(filename, ".pdb")) {
-        cout << "Writing PDB file: " << filename << endl;
-        PDB_write(*this, filename);
-        return true;
-    } 
-    return false;
-}
-
-// bool Model::writePDB(const string& filename) const {
-//     ofstream file(filename);
-//     if (!file) {
-//         cerr << "Error: cannot open file " << filename << endl;
-//         return false;
-//     }
-//     // cout << "Size:" << size() << endl;
-
-//     string field = "ATOM  "; 
-
-//     for (size_t i = 0; i < size(); ++i) {
-//         //cout << "Writing atom " << i << " "<<num_[i] << endl;
-//         field = field_[i] ? "HETATM" : "ATOM  ";
-//         file << field
-//              << setw(6) << num_[i] << " "
-//              << setw(4) << name_[i].data()
-//              << setw(1) << alterloc_[i].data()
-//              << setw(3) << resname_[i].data()
-//              << setw(1) << chain_[i].data()
-//              << setw(4) << resid_[i]
-//              << setw(1) << insertres_[i].data() << "   "
-//              << setw(8) << fixed << setprecision(3) << x_[i]
-//              << setw(8) << fixed << setprecision(3) << y_[i]
-//              << setw(8) << fixed << setprecision(3) << z_[i]
-//              << setw(6) << fixed << setprecision(2) << occ_[i]
-//              << setw(6) << fixed << setprecision(2) << beta_[i] << "          "
-//              << elem_[i].data()
-//              << "\n";
-//     }
-
-//     return true;
-// }   

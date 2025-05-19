@@ -5,7 +5,7 @@ import pybind11
 ext_modules = [
     Extension(
         "pdb_cpp.core",
-        ["src/pdb_cpp/model_pybind.cpp", "src/pdb_cpp/Model.cpp", "src/pdb_cpp/format/pdb.cpp"],
+        ["src/pdb_cpp/model_pybind.cpp", "src/pdb_cpp/Coor.cpp", "src/pdb_cpp/Model.cpp", "src/pdb_cpp/format/pdb.cpp"],
         include_dirs=[
             pybind11.get_include(),
             "src/pdb_cpp"

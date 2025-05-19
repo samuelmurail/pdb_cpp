@@ -2,19 +2,22 @@
 #include <iomanip>
 
 #include "../Model.h"
+#include "../Coor.h"
 
 using namespace std;
 
-Model PDB_parse(const string& filename) {
+Coor PDB_parse(const string& filename) {
 
+    Coor pdb_coor;
     Model pdb_model;
 
     ifstream file(filename);
     if (!file) {
         cerr << "Error: cannot open file " << filename << endl;
-        return pdb_model;
+        return pdb_coor;
     }
 
+    pdb_coor.clear();
     pdb_model.clear();
     string line;
 
@@ -54,12 +57,12 @@ Model PDB_parse(const string& filename) {
             cerr << "Warning: skipping malformed line:\n" << line << endl;
         }
     }
-
-    return pdb_model;
+    pdb_coor.add_Model(pdb_model);
+    return pdb_coor;
 }
 
 
-bool PDB_write(const Model& model, const string& filename) {
+bool PDB_write(const Coor& coor, const string& filename) {
 
     ofstream file(filename);
     if (!file) {
@@ -68,6 +71,7 @@ bool PDB_write(const Model& model, const string& filename) {
     }
     // cout << "Size:" << size() << endl;
     string field;
+    const Model& model = coor.get_Models(0);
 
     for (size_t i = 0; i < model.size(); ++i) {
         //cout << "Writing atom " << i << " "<<num_[i] << endl;

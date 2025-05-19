@@ -6,11 +6,12 @@
 #include <vector>
 #include <iostream>
 #include <fstream>
+#include "../Coor.h"
 #include "../Model.h"
 
-class Model;
+class Coor;
 
-Model PDB_parse(const std::string& filename);
-bool PDB_write(const Model& model, const std::string& filename);
+Coor PDB_parse(const std::string& filename);
+bool PDB_write(const Coor& coor, const std::string& filename);
 
 #endif // PDB_CPP_FORMAT_PDB_H

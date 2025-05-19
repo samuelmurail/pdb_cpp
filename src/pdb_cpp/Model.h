@@ -13,9 +13,7 @@ using namespace std;
 class Model {
 public:
     // === Public interface ===
-    bool read(const string& filename);
     //bool loadPDB(const string& filename);
-    bool write(const string& filename) const;
     bool addAtom(
         int num,
         const array<char, 5>& name_array,

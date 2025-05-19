@@ -1,11 +1,11 @@
-#include "Model.h"
+#include "Coor.h"
 #include <chrono>
 #include <iomanip>
 
 using namespace std;
 
 int main() {
-    Model structure;
+    Coor structure;
 
     auto start = chrono::high_resolution_clock::now();
     structure.read("3eam.pdb");
