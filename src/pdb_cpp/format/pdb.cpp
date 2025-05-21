@@ -3,6 +3,7 @@
 
 #include "../Model.h"
 #include "../Coor.h"
+#include "../geom.h"
 
 using namespace std;
 
@@ -10,6 +11,8 @@ Coor PDB_parse(const string& filename) {
 
     Coor coor;
     Model model;
+    string transformation_txt = "";
+    string symmetry_txt = "";
 
     coor.clear();
     model.clear();
@@ -21,6 +24,7 @@ Coor PDB_parse(const string& filename) {
     }
 
     string line;
+    int uniq_resid = 0;
 
     while (getline(file, line)) {
         if (line.compare(0, 6, "ATOM  ") == 0 || line.compare(0, 6, "HETATM") == 0) {
@@ -49,50 +53,45 @@ Coor PDB_parse(const string& filename) {
                 alterloc,
                 elem,
                 insertres,
-                field
+                field,
+                uniq_resid
             );
+
         } else if (line.compare(0, 3, "END") == 0) {
+            if (model.size() == 0) continue;
             coor.add_Model(model);
             model.clear();
+            uniq_resid = 0;
         } else if (line.compare(0, 6, "CRYST1") == 0) {
             // Parse CRYST1 line
-            float a = stof(line.substr(6, 9));
-            float b = stof(line.substr(15, 9));
-            float c = stof(line.substr(24, 9));
-            float alpha = stof(line.substr(33, 7));
-            float beta = stof(line.substr(40, 7));
-            float gamma = stof(line.substr(47, 7));
-
-            coor.set_crystal(a, b, c, alpha, beta, gamma);
-
-
+            coor.crystal_pack.set_CRYST1_pdb(line);
+        } else if (line.compare(0, 11, "REMARK 350 ") == 0) {
+            transformation_txt += line + "\n";
+        } else if (line.compare(0, 11, "REMARK 290 ") == 0) {
+            symmetry_txt += line + "\n";
         }
     } 
-    coor.add_Model(model);
+    if (model.size() != 0) coor.add_Model(model);
+    if (!transformation_txt.empty()) {
+        coor.transformation.parse_pdb_transformation(transformation_txt);
+        //coor.transformation = transformation;
+    }
+    if (!symmetry_txt.empty()) {
+        coor.symmetry.parse_pdb_symmetry(symmetry_txt);
+    }
     return coor;
 }
 
+string get_pdb_string(const Coor& coor) {
+    ostringstream oss;
+    oss << coor.crystal_pack.get_pdb_crystal_pack();
 
-bool PDB_write(const Coor& coor, const string& filename) {
-
-    ofstream file(filename);
-    if (!file) {
-        cerr << "Error: cannot open file " << filename << endl;
-        return false;
-    }
-    // cout << "Size:" << size() << endl;
-    string field;
-
-    for (int i = 0; i < coor.size(); ++i) {
-
-        const Model& model = coor.get_Models(i);
-
-        file << "MODEL     " << i + 1 << "\n";
-
+    for (int model_index = 0; model_index < coor.size(); ++model_index) {
+        const Model& model = coor.get_Models(model_index);
+        oss << "MODEL      " << setw(3) << model_index + 1 << "\n";
         for (size_t i = 0; i < model.size(); ++i) {
-            //cout << "Writing atom " << i << " "<<num_[i] << endl;
-            field = model.get_field()[i] ? "HETATM" : "ATOM  ";
-            file << field
+            std::string field = model.get_field()[i] ? "HETATM" : "ATOM  ";
+            oss << field
                 << setw(5) << model.get_num()[i] << " "
                 << setw(4) << model.get_name()[i].data()
                 << setw(1) << model.get_alterloc()[i].data()
@@ -108,9 +107,22 @@ bool PDB_write(const Coor& coor, const string& filename) {
                 << model.get_elem()[i].data()
                 << "\n";
         }
-
-        file << "ENDMDL\n";
+        oss << "ENDMDL\n";
     }
+    oss << "END\n";
+    return oss.str();
+}
+
+
+bool PDB_write(const Coor& coor, const string& filename) {
+
+    ofstream file(filename);
+    if (!file) {
+        cerr << "Error: cannot open file " << filename << endl;
+        return false;
+    }
+    // cout << "Size:" << size() << endl;
+    file << get_pdb_string(coor);
 
     return true;
 }   

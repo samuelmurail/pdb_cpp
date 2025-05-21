@@ -9,13 +9,26 @@
 #include <array>
 
 #include "Model.h"
-#include "crystal_pack.h"
+#include "geom.h"
 
 using namespace std;
 
 class Coor {
 public:
+
+
+    // === Constructors ===
+    Coor() = default;
+    Coor(const string& filename) {
+        read(filename);
+    }
+    // === Public values ===
+    CrystalPack crystal_pack;
+    Transformation transformation;
+    Symmetry symmetry;
+
     // === Public interface ===
+
     bool read(const string& filename);
     bool write(const string & filename);
     //bool loadPDB(const string& filename);
@@ -23,20 +36,15 @@ public:
     void add_Model(const Model& model) { models_.push_back(model); }
     int size() const { return models_.size(); }
     Model get_Models(int i) const { return models_[i]; }
-    void set_crystal(float a, float b, float c, float alpha, float beta, float gamma) {
-        crystal_pack_.setA(a);
-        crystal_pack_.setB(b);
-        crystal_pack_.setC(c);
-        crystal_pack_.setAlpha(alpha);
-        crystal_pack_.setBeta(beta);
-        crystal_pack_.setGamma(gamma);
-    }
+    // void set_crystal(float a, float b, float c, float alpha, float beta, float gamma) {
+    //     crystal_pack_.set_unit_cell(alpha, beta, gamma, a, b, c);
+    // }
+    // CrystalPack get_crystal() const { return crystal_pack_; }
+
 
 private:
     // === Storage (Structure of Arrays) ===
     vector<Model> models_;
-    CrystalPack crystal_pack_;
-    
     int active_model_ = 0;
 
 };

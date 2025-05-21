@@ -15,6 +15,7 @@ PYBIND11_MODULE(core, m) {
         ;
     py::class_<Coor>(m, "Coor")
         .def(py::init<>())
+        .def(py::init<const std::string&>())  // constructor from filename
         .def("read", &Coor::read)
         .def("write", &Coor::write)
         .def("clear", &Coor::clear)

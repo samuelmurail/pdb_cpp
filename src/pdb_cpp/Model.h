@@ -24,7 +24,8 @@ public:
         const array<char, 2>& alterloc,
         const array<char, 5>& elem,
         const array<char, 2>& insertres,
-        bool field);
+        bool field,
+        int uniqresid);
 
     void clear();
     size_t size() const;

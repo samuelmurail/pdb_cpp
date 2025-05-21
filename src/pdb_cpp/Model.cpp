@@ -6,9 +6,21 @@
 using namespace std;
 
 void Model::clear() {
-    x_.clear(); y_.clear(); z_.clear();
-    name_.clear(); resname_.clear();
-    resid_.clear(); chain_.clear();
+    x_.clear();
+    y_.clear();
+    z_.clear();
+    name_.clear();
+    resname_.clear();
+    resid_.clear();
+    chain_.clear();
+    occ_.clear();
+    beta_.clear();
+    alterloc_.clear();
+    insertres_.clear();
+    elem_.clear();
+    num_.clear();
+    field_.clear();
+    uniqresid_.clear();
 }
 
 size_t Model::size() const {
@@ -25,7 +37,8 @@ bool Model::addAtom(
            const array<char, 2>& alterloc = {' ', '\0'},
            const array<char, 5>& elem = {' ', ' ', ' ', ' ', '\0'},
            const array<char, 2>& insertres = {' ', '\0'},
-           bool field = true) {
+           bool field = true,
+           int uniqresid = 0) {
 
     field_.push_back(field);
     num_.push_back(num);
@@ -41,6 +54,7 @@ bool Model::addAtom(
     occ_.push_back(occ);
     beta_.push_back(beta);
     elem_.push_back(elem);
+    uniqresid_.push_back(uniqresid);
 
     return true;
 }

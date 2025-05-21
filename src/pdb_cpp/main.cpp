@@ -8,7 +8,7 @@ int main() {
     Coor structure;
 
     auto start = chrono::high_resolution_clock::now();
-    structure.read("2rri.pdb");
+    structure.read("3eam.pdb");
 
     auto end = chrono::high_resolution_clock::now();
 
@@ -39,6 +39,8 @@ int main() {
     elapsed = end - start;
     cout << "Time taken to write coordinates: " << setprecision(3) << elapsed.count() << " seconds\n";
 
-
+    structure.transformation.print();
+    structure.symmetry.print();
+    
     return 0;
 }

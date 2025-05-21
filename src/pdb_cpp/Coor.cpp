@@ -18,7 +18,7 @@ bool endswith (string const &fullString, string const &ending) {
 
 void Coor::clear() {
     models_.clear();
-    crystal_pack_.clear();
+    crystal_pack.clear();
     active_model_ = 0;
 }
 
@@ -33,7 +33,7 @@ bool Coor::read(const string& filename) {
     clear();
 
     if (endswith(filename, ".pdb")) {
-        cout << "Reading PDB file: " << filename << endl;
+        // cout << "Reading PDB file: " << filename << endl;
         *this = PDB_parse(filename);
         return true;
     } 
@@ -49,7 +49,7 @@ bool Coor::write(const string& filename) {
     }
 
     if (endswith(filename, ".pdb")) {
-        cout << "Writing PDB file: " << filename << endl;
+        // cout << "Writing PDB file: " << filename << endl;
         PDB_write(*this, filename);
         return true;
     } 

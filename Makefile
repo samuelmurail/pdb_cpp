@@ -5,6 +5,8 @@ TARGET = main
 SRCS = src/pdb_cpp/main.cpp src/pdb_cpp/Model.cpp  src/pdb_cpp/Coor.cpp src/pdb_cpp/format/pdb.cpp
 OBJS = $(SRCS:.cpp=.o)
 
+scratch: clean $(TARGET)
+
 all: $(TARGET)
 
 $(TARGET): $(OBJS)
