@@ -41,6 +41,11 @@ int main() {
 
     structure.transformation.print();
     structure.symmetry.print();
+
+    Model model = structure.get_Models(0);
+    cout << "Model size: " << model.size() << endl;
+    vector<bool> indexes = model.simple_select_atoms("name", {"CA", "CB"}, "isin");
+    cout << "Number of CA atoms: " << count(indexes.begin(), indexes.end(), true) << endl;
     
     return 0;
 }

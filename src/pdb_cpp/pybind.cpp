@@ -11,6 +11,22 @@ PYBIND11_MODULE(core, m) {
         .def("clear", &Model::clear)
         .def("size", &Model::size)
         .def("addAtom", &Model::addAtom)
+        .def("get_x", &Model::get_x)
+        .def("get_y", &Model::get_y)
+        .def("get_z", &Model::get_z)
+        .def("get_name", &Model::get_name)
+        .def("get_resname", &Model::get_resname)
+        .def("get_resid", &Model::get_resid)
+        .def("get_chain", &Model::get_chain)
+        .def("get_occ", &Model::get_occ)
+        .def("get_beta", &Model::get_beta)
+        .def("get_alterloc", &Model::get_alterloc)
+        .def("get_insertres", &Model::get_insertres)
+        .def("get_elem", &Model::get_elem)
+        .def("get_num", &Model::get_num)
+        .def("get_field", &Model::get_field)
+        .def("get_uniqresid", &Model::get_uniqresid)
+        
         // Add more methods as needed
         ;
     py::class_<Coor>(m, "Coor")

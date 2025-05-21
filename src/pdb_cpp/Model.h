@@ -8,6 +8,8 @@
 #include <cctype>
 #include <array>
 
+#include "select.h"
+
 using namespace std;
 
 class Model {
@@ -29,6 +31,9 @@ public:
 
     void clear();
     size_t size() const;
+    vector<bool> simple_select_atoms(const string &column, const vector<string> &values, const string &op);
+    vector<bool> select_tokens(const Token &tokens);
+
 
     // Accessors
     const vector<float>& get_x() const { return x_; }

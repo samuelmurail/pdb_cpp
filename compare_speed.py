@@ -114,3 +114,8 @@ coor = pdb_numpy.Coor(file_name)
 print(coor.transformation)
 print(coor.symmetry)
 
+
+print(coor.models[0].chain)
+
+coor = core.Coor(file_name)
+print(coor.get_Models(0).get_chain())

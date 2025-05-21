@@ -25,14 +25,33 @@ Coor PDB_parse(const string& filename) {
 
     string line;
     int uniq_resid = 0;
+    size_t array_i = 0;
 
     while (getline(file, line)) {
         if (line.compare(0, 6, "ATOM  ") == 0 || line.compare(0, 6, "HETATM") == 0) {
             bool field = line.compare(0, 6, "ATOM  ") ? true : false;
             int num = stoi(line.substr(6, 5));
-            array<char, 5> name_array = {line[12], line[13], line[14], line[15], '\0'};
+            array<char, 5> name_array;
+            // strip spaces
+            array_i = 0;
+            for (size_t i = 0; i < 5; ++i) {
+                if (line[12 + i] != ' ') {
+                    name_array[array_i] = line[12 + i];
+                    ++array_i;
+                }
+            }
+            name_array[array_i] = '\0';
             array<char, 2> alterloc = {line[16], '\0'};
-            array<char, 5> resname_array = {line[17], line[18], line[19], ' ', '\0'};
+            array<char, 5> resname_array;
+            // strip spaces
+            array_i = 0;
+            for (size_t i = 0; i < 5; ++i) {
+                if (line[12 + i] != ' ') {
+                    resname_array[array_i] = line[17 + i];
+                    ++array_i;
+                }
+            }
+            resname_array[array_i] = '\0';
             array<char, 2> chain_array = {line[21], '\0'};
             int res_id            = stoi(line.substr(22, 4));
             array<char, 2> insertres = {line[26], '\0'};
@@ -41,7 +60,16 @@ Coor PDB_parse(const string& filename) {
             float z = stof(line.substr(46, 8));
             float occ  = stof(line.substr(54, 6));
             float beta = stof(line.substr(60, 6));
-            array<char, 5> elem = {line[76], line[77], ' ', ' ', '\0'};
+            array<char, 5> elem;
+            array_i = 0;
+            for (size_t i = 0; i < 5; ++i) {
+                if (line[12 + i] != ' ') {
+                    elem [array_i] = line[76 + i];
+                    ++array_i;
+                }
+            }
+            elem [array_i] = '\0';
+
 
             model.addAtom(
                 num,
