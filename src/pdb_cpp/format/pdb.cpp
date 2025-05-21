@@ -34,7 +34,7 @@ Coor PDB_parse(const string& filename) {
             array<char, 5> name_array;
             // strip spaces
             array_i = 0;
-            for (size_t i = 0; i < 5; ++i) {
+            for (size_t i = 0; i < 4; ++i) {
                 if (line[12 + i] != ' ') {
                     name_array[array_i] = line[12 + i];
                     ++array_i;
@@ -45,8 +45,8 @@ Coor PDB_parse(const string& filename) {
             array<char, 5> resname_array;
             // strip spaces
             array_i = 0;
-            for (size_t i = 0; i < 5; ++i) {
-                if (line[12 + i] != ' ') {
+            for (size_t i = 0; i < 3; ++i) {
+                if (line[17 + i] != ' ') {
                     resname_array[array_i] = line[17 + i];
                     ++array_i;
                 }
@@ -62,8 +62,8 @@ Coor PDB_parse(const string& filename) {
             float beta = stof(line.substr(60, 6));
             array<char, 5> elem;
             array_i = 0;
-            for (size_t i = 0; i < 5; ++i) {
-                if (line[12 + i] != ' ') {
+            for (size_t i = 0; i < 2; ++i) {
+                if (line[76 + i] != ' ') {
                     elem [array_i] = line[76 + i];
                     ++array_i;
                 }

@@ -1,3 +1,6 @@
+#ifndef MODEL_H
+#define MODEL_H
+
 #pragma once
 #include <vector>
 #include <string>
@@ -8,9 +11,10 @@
 #include <cctype>
 #include <array>
 
-#include "select.h"
 
 using namespace std;
+
+struct Token;
 
 class Model {
 public:
@@ -60,3 +64,5 @@ private:
     vector<int> num_, resid_, uniqresid_;
     vector<bool> field_;
 };
+
+#endif // MODEL_H

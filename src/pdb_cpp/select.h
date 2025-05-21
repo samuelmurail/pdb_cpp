@@ -8,6 +8,8 @@
 
 using namespace std;
 
+class Model;
+
 // Define a recursive variant: a token can be either a string or a nested list of tokens
 struct Token;
 using TokenVariant = variant<string, vector<Token>>;
@@ -31,6 +33,8 @@ void replace_all(string &str, const string &from, const string &to);
 TokenList split(const string &str);
 TokenList parse_parentheses(const TokenList &tokens, size_t start);
 Token parse_selection(string selection, const unordered_map<string, string> &nicknames);
+
+vector<bool> simple_select_atoms_model(const Model &model, const string &column, const vector<string> &values, const string &op);
 
 // Keywords and nicknames
 extern std::vector<std::string> KEYWORDS;

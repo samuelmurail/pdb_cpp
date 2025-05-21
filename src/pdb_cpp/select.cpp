@@ -1,13 +1,17 @@
 #include <vector>
 #include <string>
+#include <cstring>
 #include <sstream>
 #include <algorithm>
 #include <unordered_map>
 #include <stdexcept>
 #include <iostream>
 #include <variant>
+#include <set>
 
 #include "select.h"
+#include "Model.h"
+
 
 using namespace std;
 
@@ -136,6 +140,65 @@ Token parse_selection(string selection, const unordered_map<string, string> &nic
 
     return tokens;
 }
+
+vector<bool> simple_select_atoms_model(const Model &model, const string &column, const vector<string> &values, const string &op) {
+    size_t n = model.size();
+    vector<bool> result(n, false);
+
+    cout << "column: " << column << endl;
+    cout << "op: " << op << endl;
+    cout << "values: ";
+    for (const auto &v : values) {
+        cout << v << " ";
+    }
+    cout << endl;
+
+    auto str_equal = [](const array<char, 5> &a, const string &b) {
+        return strncmp(a.data(), b.c_str(), 5) == 0;
+    };
+
+    auto str_startswith = [](const array<char, 5> &a, const string &b) {
+        return strncmp(a.data(), b.c_str(), b.size()) == 0;
+    };
+
+    if (column == "name" || column == "resname" || column == "elem") {
+        vector<array<char, 5>> model_val;
+        if (column == "name") {
+            model_val = model.get_name();
+        } else if (column == "resname") {
+            model_val = model.get_resname();
+            // cout << "model_val: " << model_val << endl;
+        } else if (column == "elem") {
+            model_val = model.get_elem();
+        }
+
+        if (op == "==") {
+            for (size_t i = 0; i < n; ++i) {
+                result[i] = str_equal(model_val[i], values[0]);
+            }
+        } else if (op == "!=") {
+            for (size_t i = 0; i < n; ++i) {
+                result[i] = !str_equal(model_val[i], values[0]);
+            }
+        } else if (op == "startswith") {
+            for (size_t i = 0; i < n; ++i) {
+                result[i] = str_startswith(model_val[i], values[0]);
+            }
+        } else if (op == "isin") {
+            set<string> value_set(values.begin(), values.end());
+            for (size_t i = 0; i < n; ++i) {
+                //cout << "model_val[i]: " << model_val[i].data() << endl;
+                string val(model_val[i].data(), strnlen(model_val[i].data(), 5));
+                result[i] = value_set.count(val) > 0;
+            }
+        } else {
+            throw invalid_argument("Unsupported operator for 'name'");
+        }
+
+    } 
+    return result;
+}
+
 
 // int main() {
 //     //string selection = "protein and resname ALA and chain A and (x > 10 or y < 5) and not (z == 0)";

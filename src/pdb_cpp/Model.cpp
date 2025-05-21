@@ -1,6 +1,5 @@
 #include <cstring>
 #include <iomanip>
-#include <set>
 
 #include "Model.h"
 #include "select.h"
@@ -63,127 +62,130 @@ bool Model::addAtom(
 
 
 vector<bool> Model::simple_select_atoms(const string &column, const vector<string> &values, const string &op) {
-    size_t n = this->size();
-    vector<bool> result(n, false);
 
-    cout << "column: " << column << endl;
-    cout << "op: " << op << endl;
-    cout << "values: ";
-    for (const auto &v : values) {
-        cout << v << " ";
-    }
-
-    auto str_equal = [](const array<char, 5> &a, const string &b) {
-        return strncmp(a.data(), b.c_str(), 5) == 0;
-    };
-
-    auto str_startswith = [](const array<char, 5> &a, const string &b) {
-        return strncmp(a.data(), b.c_str(), b.size()) == 0;
-    };
-
-    if (column == "name") {
-        if (op == "==") {
-            for (size_t i = 0; i < n; ++i) {
-                result[i] = str_equal(name_[i], values[0]);
-            }
-        } else if (op == "!=") {
-            for (size_t i = 0; i < n; ++i) {
-                result[i] = !str_equal(name_[i], values[0]);
-            }
-        } else if (op == "startswith") {
-            for (size_t i = 0; i < n; ++i) {
-                result[i] = str_startswith(name_[i], values[0]);
-            }
-        } else if (op == "isin") {
-            set<string> value_set(values.begin(), values.end());
-            for (size_t i = 0; i < n; ++i) {
-                string val(name_[i].data(), strnlen(name_[i].data(), 5));
-                result[i] = value_set.count(val) > 0;
-            }
-        } else {
-            throw invalid_argument("Unsupported operator for 'name'");
-        }
-
-    } else if (column == "resname") {
-        if (op == "==") {
-            for (size_t i = 0; i < n; ++i) {
-                result[i] = str_equal(resname_[i], values[0]);
-            }
-        } else if (op == "isin") {
-            set<string> value_set(values.begin(), values.end());
-            for (size_t i = 0; i < n; ++i) {
-                string val(resname_[i].data(), strnlen(resname_[i].data(), 5));
-                result[i] = value_set.count(val) > 0;
-            }
-        } else {
-            throw invalid_argument("Unsupported operator for 'resname'");
-        }
-
-    } else if (column == "chain") {
-        if (op == "==") {
-            for (size_t i = 0; i < n; ++i) {
-                result[i] = chain_[i][0] == values[0][0];
-            }
-        } else if (op == "!=") {
-            for (size_t i = 0; i < n; ++i) {
-                result[i] = chain_[i][0] != values[0][0];
-            }
-        } else {
-            throw invalid_argument("Unsupported operator for 'chain'");
-        }
-
-    } else if (column == "resid") {
-        int val = stoi(values[0]);
-        if (op == "==") {
-            for (size_t i = 0; i < n; ++i) result[i] = resid_[i] == val;
-        } else if (op == "!=") {
-            for (size_t i = 0; i < n; ++i) result[i] = resid_[i] != val;
-        } else if (op == "<") {
-            for (size_t i = 0; i < n; ++i) result[i] = resid_[i] < val;
-        } else if (op == "<=") {
-            for (size_t i = 0; i < n; ++i) result[i] = resid_[i] <= val;
-        } else if (op == ">") {
-            for (size_t i = 0; i < n; ++i) result[i] = resid_[i] > val;
-        } else if (op == ">=") {
-            for (size_t i = 0; i < n; ++i) result[i] = resid_[i] >= val;
-        } else if (op == "isin") {
-            set<int> valset;
-            for (const auto &v : values) valset.insert(stoi(v));
-            for (size_t i = 0; i < n; ++i) result[i] = valset.count(resid_[i]) > 0;
-        } else {
-            throw invalid_argument("Unsupported operator for 'resid'");
-        }
-
-    } else if (column == "x") {
-        float val = stof(values[0]);
-        const vector<float> &data = x_;
-        if (op == "==") {
-            for (size_t i = 0; i < n; ++i) result[i] = data[i] == val;
-        } else if (op == "!=") {        } else if (op == "!=") {
-            for (size_t i = 0; i < n; ++i) {
-                result[i] = !str_equal(name_[i], values[0]);
-            }
-        } else if (op == "startswith") {
-
-            for (size_t i = 0; i < n; ++i) result[i] = data[i] != val;
-        } else if (op == "<") {
-            for (size_t i = 0; i < n; ++i) result[i] = data[i] < val;
-        } else if (op == "<=") {
-            for (size_t i = 0; i < n; ++i) result[i] = data[i] <= val;
-        } else if (op == ">") {
-            for (size_t i = 0; i < n; ++i) result[i] = data[i] > val;
-        } else if (op == ">=") {
-            for (size_t i = 0; i < n; ++i) result[i] = data[i] >= val;
-        } else {
-            throw invalid_argument("Unsupported operator for 'x'");
-        }
-
-    } else {
-        throw invalid_argument("Column '" + column + "' not recognized");
-    }
-
-    return result;
+    return simple_select_atoms_model(*this, column, values, op);
 }
+
+
+    // cout << "column: " << column << endl;
+    // cout << "op: " << op << endl;
+    // cout << "values: ";
+
+    // for (const auto &v : values) {
+    //     cout << v << " ";
+    // }
+
+    // auto str_equal = [](const array<char, 5> &a, const string &b) {
+    //     return strncmp(a.data(), b.c_str(), 5) == 0;
+    // };
+
+    // auto str_startswith = [](const array<char, 5> &a, const string &b) {
+    //     return strncmp(a.data(), b.c_str(), b.size()) == 0;
+    // };
+
+    // if (column == "name") {
+    //     if (op == "==") {
+    //         for (size_t i = 0; i < n; ++i) {
+    //             result[i] = str_equal(name_[i], values[0]);
+    //         }
+    //     } else if (op == "!=") {
+    //         for (size_t i = 0; i < n; ++i) {
+    //             result[i] = !str_equal(name_[i], values[0]);
+    //         }
+    //     } else if (op == "startswith") {
+    //         for (size_t i = 0; i < n; ++i) {
+    //             result[i] = str_startswith(name_[i], values[0]);
+    //         }
+    //     } else if (op == "isin") {
+    //         set<string> value_set(values.begin(), values.end());
+    //         for (size_t i = 0; i < n; ++i) {
+    //             string val(name_[i].data(), strnlen(name_[i].data(), 5));
+    //             result[i] = value_set.count(val) > 0;
+    //         }
+    //     } else {
+    //         throw invalid_argument("Unsupported operator for 'name'");
+    //     }
+
+    // } else if (column == "resname") {
+    //     if (op == "==") {
+    //         for (size_t i = 0; i < n; ++i) {
+    //             result[i] = str_equal(resname_[i], values[0]);
+    //         }
+    //     } else if (op == "isin") {
+    //         set<string> value_set(values.begin(), values.end());
+    //         for (size_t i = 0; i < n; ++i) {
+    //             string val(resname_[i].data(), strnlen(resname_[i].data(), 5));
+    //             result[i] = value_set.count(val) > 0;
+    //         }
+    //     } else {
+    //         throw invalid_argument("Unsupported operator for 'resname'");
+    //     }
+
+    // } else if (column == "chain") {
+    //     if (op == "==") {
+    //         for (size_t i = 0; i < n; ++i) {
+    //             result[i] = chain_[i][0] == values[0][0];
+    //         }
+    //     } else if (op == "!=") {
+    //         for (size_t i = 0; i < n; ++i) {
+    //             result[i] = chain_[i][0] != values[0][0];
+    //         }
+    //     } else {
+    //         throw invalid_argument("Unsupported operator for 'chain'");
+    //     }
+
+    // } else if (column == "resid") {
+    //     int val = stoi(values[0]);
+    //     if (op == "==") {
+    //         for (size_t i = 0; i < n; ++i) result[i] = resid_[i] == val;
+    //     } else if (op == "!=") {
+    //         for (size_t i = 0; i < n; ++i) result[i] = resid_[i] != val;
+    //     } else if (op == "<") {
+    //         for (size_t i = 0; i < n; ++i) result[i] = resid_[i] < val;
+    //     } else if (op == "<=") {
+    //         for (size_t i = 0; i < n; ++i) result[i] = resid_[i] <= val;
+    //     } else if (op == ">") {
+    //         for (size_t i = 0; i < n; ++i) result[i] = resid_[i] > val;
+    //     } else if (op == ">=") {
+    //         for (size_t i = 0; i < n; ++i) result[i] = resid_[i] >= val;
+    //     } else if (op == "isin") {
+    //         set<int> valset;
+    //         for (const auto &v : values) valset.insert(stoi(v));
+    //         for (size_t i = 0; i < n; ++i) result[i] = valset.count(resid_[i]) > 0;
+    //     } else {
+    //         throw invalid_argument("Unsupported operator for 'resid'");
+    //     }
+
+    // } else if (column == "x") {
+    //     float val = stof(values[0]);
+    //     const vector<float> &data = x_;
+    //     if (op == "==") {
+    //         for (size_t i = 0; i < n; ++i) result[i] = data[i] == val;
+    //     } else if (op == "!=") {        } else if (op == "!=") {
+    //         for (size_t i = 0; i < n; ++i) {
+    //             result[i] = !str_equal(name_[i], values[0]);
+    //         }
+    //     } else if (op == "startswith") {
+
+    //         for (size_t i = 0; i < n; ++i) result[i] = data[i] != val;
+    //     } else if (op == "<") {
+    //         for (size_t i = 0; i < n; ++i) result[i] = data[i] < val;
+    //     } else if (op == "<=") {
+    //         for (size_t i = 0; i < n; ++i) result[i] = data[i] <= val;
+    //     } else if (op == ">") {
+    //         for (size_t i = 0; i < n; ++i) result[i] = data[i] > val;
+    //     } else if (op == ">=") {
+    //         for (size_t i = 0; i < n; ++i) result[i] = data[i] >= val;
+    //     } else {
+    //         throw invalid_argument("Unsupported operator for 'x'");
+    //     }
+
+    // } else {
+    //     throw invalid_argument("Column '" + column + "' not recognized");
+    // }
+
+    // return result;
+//}
 
 
 // vector<bool> Model::simple_select_atoms(const string &column, const vector<string> &values, const string &op = "==") {

@@ -20,6 +20,7 @@ file_name = "3eam.pdb"
 pdb_id = file_name.split(".")[0]
 read_times = []
 write_times = []
+select_times = []
 read_cpp_times = []
 write_cpp_times = []
 
@@ -36,6 +37,10 @@ for i in range(N):
     coor.write(f"tmp_python_{pdb_id}.pdb", overwrite=True)
     pdb_numpy_write_time = time.time() - start_time
     write_times.append(pdb_numpy_write_time)
+    start_time = time.time()
+    coor.select_atoms("name CA CB CG")
+    pdb_numpy_select_time = time.time() - start_time
+    select_times.append(pdb_numpy_select_time)
 
     # cpp
     start_time = time.time()
@@ -52,6 +57,8 @@ avg_read, std_read = avg_std(read_times)
 print(f"-pdb_numpy Time taken to get coordinates:   {avg_read:.4f} +- {std_read:.4f} seconds")
 avg_write, std_write = avg_std(write_times)
 print(f"-pdb_numpy Time taken to write coordinates: {avg_write:.4f} +- {std_write:.4f} seconds")
+avg_select, std_select = avg_std(select_times)
+print(f"-pdb_numpy Time taken to select atoms:    {avg_select:.4f} +- {std_select:.4f} seconds")
 avg_cpp_read, std_cpp_read = avg_std(read_cpp_times)
 print(f"-pdb_cpp   Time taken to get coordinates:   {avg_cpp_read:.4f} +- {std_cpp_read:.4f} seconds, speed-up:  {avg_read/avg_cpp_read:.2f}")
 avg_cpp_write, std_cpp_write = avg_std(write_cpp_times)
@@ -104,18 +111,25 @@ print(f"-pdb_cpp   Time taken to write coordinates: {avg_cpp_write:.4f} +- {std_
 print("3eam:")
 file_name = "3eam.pdb"
 coor = pdb_numpy.Coor(file_name)
-print(coor.transformation)
-print(coor.symmetry)
+# print(coor.transformation)
+# print(coor.symmetry)
+
+sel = coor.select_atoms("name CA CB CG")
+print(F"Number of CA CB CG : {sel.len}")
+sel = coor.select_atoms("resname ALA GLY")
+print(F"Number of ALA GLY : {sel.len}")
 
 
 print("3rri:")
 file_name = "2rri.pdb"
 coor = pdb_numpy.Coor(file_name)
-print(coor.transformation)
-print(coor.symmetry)
+# print(coor.transformation)
+# print(coor.symmetry)
 
 
-print(coor.models[0].chain)
+#print(coor.models[0].chain)
 
 coor = core.Coor(file_name)
-print(coor.get_Models(0).get_chain())
+#print(coor.get_Models(0).get_chain())
+
+
