@@ -37,6 +37,7 @@ public:
     size_t size() const;
     vector<bool> simple_select_atoms(const string &column, const vector<string> &values, const string &op);
     vector<bool> select_tokens(const Token &tokens);
+    vector<bool> select_atoms(const string selection);
 
 
     // Accessors

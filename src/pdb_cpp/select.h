@@ -5,25 +5,41 @@
 #include <string>
 #include <unordered_map>
 #include <variant>
+#include <unordered_set>
 
 using namespace std;
 
 class Model;
 
-// Define a recursive variant: a token can be either a string or a nested list of tokens
+
+// Recursive token structure
 struct Token;
 using TokenVariant = variant<string, vector<Token>>;
 struct Token {
     TokenVariant value;
 
-    // Constructors for convenience
     Token() = default;
     Token(const string& str) : value(str) {}
     Token(const vector<Token>& tokens) : value(tokens) {}
+
+    bool is_string() const {
+        return std::holds_alternative<string>(value);
+    }
+    bool is_list() const {
+        return std::holds_alternative<vector<Token>>(value);
+    }
+
+    const string& as_string() const {
+        return std::get<string>(value);
+    }
+    const vector<Token>& as_list() const {
+        return std::get<vector<Token>>(value);
+    }
 };
 
 // Alias for list of tokens
 using TokenList = vector<Token>;
+
 
 // Function declarations
 bool is_simple_list(const Token &tokens);
@@ -31,13 +47,13 @@ bool is_operator(const string &token);
 void print_tokens(const Token& token, int indent=0);
 void replace_all(string &str, const string &from, const string &to);
 TokenList split(const string &str);
-TokenList parse_parentheses(const TokenList &tokens, size_t start);
-Token parse_selection(string selection, const unordered_map<string, string> &nicknames);
+TokenList parse_parentheses(const TokenList &tokens, size_t start = 0);
+Token parse_selection(string selection);
 
 vector<bool> simple_select_atoms_model(const Model &model, const string &column, const vector<string> &values, const string &op);
 
 // Keywords and nicknames
-extern std::vector<std::string> KEYWORDS;
+extern const unordered_set<string> KEYWORDS;
 extern unordered_map<string, string> NICKNAMES;
 
 #endif // SELECT_H

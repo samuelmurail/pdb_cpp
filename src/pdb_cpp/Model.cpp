@@ -64,89 +64,85 @@ vector<bool> Model::simple_select_atoms(const string &column, const vector<strin
     return simple_select_atoms_model(*this, column, values, op);
 }
 
-
 vector<bool> Model::select_tokens(const Token &tokens) {
     vector<bool> bool_list;
     vector<bool> new_bool_list;
     string logical;
     bool not_flag = false;
 
-    cout << "Selecting tokens..." << endl;
-
-
     // Case for simple selection
-    if (is_simple_list(tokens)) {
-        const auto &token_list = get<vector<Token>>(tokens.value);
-        if (token_list.size() >= 3 && is_operator(get<string>(token_list[1].value))) {
-            cout << "Simple selection with operator: " << get<string>(token_list[1].value) << endl;
-            // values for operators like ==, !=, etc. should be a vector, not a single string
-            std::vector<std::string> values = {get<string>(token_list[2].value)};
-            return simple_select_atoms(
-                get<string>(token_list[0].value), // column
-                values, // values as vector
-                get<string>(token_list[1].value)  // operator
-            );
-        } else {
-            cout << "Simple selection without operator: " << get<string>(token_list[0].value) << endl;
-            vector<string> values;
-            for (size_t i = 1; i < token_list.size(); ++i) {
-                values.push_back(get<string>(token_list[i].value));
+    if (tokens.is_list()) {
+        const auto &token_list = tokens.as_list();
+        if (!token_list.empty() && token_list[0].is_string()) {
+            const string &first = token_list[0].as_string();
+
+            // Case: simple operator-based or keyword-based selection
+            if (KEYWORDS.count(first)) {
+                if (token_list.size() >= 3 && token_list[1].is_string() && is_operator(token_list[1].as_string())) {
+                    vector<string> values = {token_list[2].as_string()};
+                    return simple_select_atoms(first, values, token_list[1].as_string());
+                } else {
+                    vector<string> values;
+                    for (size_t i = 1; i < token_list.size(); ++i) {
+                        values.push_back(token_list[i].as_string());
+                    }
+                    return simple_select_atoms(first, values, "isin");
+                }
             }
-            // Provide default operator for simple selection (e.g., "isin")
-            return simple_select_atoms(get<string>(token_list[0].value), values, "isin");
+
+            // Case: within keyword
+            if (first == "within" && token_list.size() == 4) {
+                float distance = stof(token_list[1].as_string());
+                vector<bool> selection = select_tokens(token_list[3]);
+                //vector<int> sel_index = select_index(selection);
+                //return dist_under_index(sel_index, distance);
+            }
         }
     }
-    // // Case for "within" selection
-    // else if (holds_alternative<string>(tokens.value) && get<string>(tokens.value) == "within") {
-    //     const auto &token_list = get<vector<Token>>(tokens.value);
-    //     if (token_list.size() != 4) {
-    //         throw invalid_argument("within selection must have 3 arguments");
-    //     }
-    //     new_bool_list = select_tokens(token_list[3]);
-    //     float distance = stof(get<string>(token_list[1].value));
-    //     vector<int> sel_2 = select_index(new_bool_list);
 
-    //     return dist_under_index(sel_2, distance);
-    // }
+    // Nested structure
+    const auto &nested_tokens = tokens.as_list();
+    for (size_t i = 0; i < nested_tokens.size(); ++i) {
+        const Token &tok = nested_tokens[i];
 
-    // Process nested tokens
-    const auto &token_list_nested = get<vector<Token>>(tokens.value);
-    for (size_t i = 0; i < token_list_nested.size(); ++i) {
-        cout << "Processing token: " << i << endl;
-        cout << "Token value: " << get<string>(token_list_nested[i].value) << endl;
-        if (holds_alternative<string>(token_list_nested[i].value)) {
-            string token = get<string>(token_list_nested[i].value);
-
-            if (token == "and" || token == "or") {
-                logical = token;
+        if (tok.is_string()) {
+            string token_str = tok.as_string();
+            if (token_str == "and" || token_str == "or") {
+                logical = token_str;
                 bool_list = new_bool_list;
                 new_bool_list.clear();
                 continue;
-            } else if (token == "not") {
+            } else if (token_str == "not") {
                 not_flag = true;
                 continue;
             }
         }
 
-        // Recursive call for nested tokens
-        new_bool_list = select_tokens(token_list_nested[i]);
+        new_bool_list = select_tokens(tok);
 
         if (not_flag) {
-            for (size_t j = 0; j < new_bool_list.size(); ++j) {
-                new_bool_list[j] = !new_bool_list[j];
+            for (bool val : new_bool_list) {
+                val = !val;
             }
             not_flag = false;
         }
 
         if (!bool_list.empty() && !logical.empty()) {
             if (logical == "and") {
-                transform(bool_list.begin(), bool_list.end(), new_bool_list.begin(), new_bool_list.begin(), logical_and<bool>());
+                std::transform(bool_list.begin(), bool_list.end(), new_bool_list.begin(), new_bool_list.begin(), std::logical_and<bool>());
             } else if (logical == "or") {
-                transform(bool_list.begin(), bool_list.end(), new_bool_list.begin(), new_bool_list.begin(), logical_or<bool>());
+                std::transform(bool_list.begin(), bool_list.end(), new_bool_list.begin(), new_bool_list.begin(), std::logical_or<bool>());
             }
             logical.clear();
         }
     }
 
     return new_bool_list;
+}
+
+vector<bool> Model::select_atoms(const string selection) {
+
+    Token parsed_selection = parse_selection(selection);
+    return select_tokens(parsed_selection);
+
 }

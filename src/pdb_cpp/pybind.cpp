@@ -1,5 +1,6 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
+#include <pybind11/stl_bind.h>
 #include "Model.h"
 #include "Coor.h"
 
@@ -11,6 +12,8 @@ PYBIND11_MODULE(core, m) {
         .def("clear", &Model::clear)
         .def("size", &Model::size)
         .def("addAtom", &Model::addAtom)
+        .def("select_atoms", &Model::select_atoms)
+
         .def("get_x", &Model::get_x)
         .def("get_y", &Model::get_y)
         .def("get_z", &Model::get_z)
@@ -26,7 +29,6 @@ PYBIND11_MODULE(core, m) {
         .def("get_num", &Model::get_num)
         .def("get_field", &Model::get_field)
         .def("get_uniqresid", &Model::get_uniqresid)
-        
         // Add more methods as needed
         ;
     py::class_<Coor>(m, "Coor")
@@ -39,4 +41,5 @@ PYBIND11_MODULE(core, m) {
         .def("get_Models", &Coor::get_Models)
         // Add more methods as needed
         ;
+
 }

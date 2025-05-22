@@ -8,67 +8,43 @@
 #include <iostream>
 #include <variant>
 #include <set>
+#include <unordered_set>
 
 #include "select.h"
 #include "Model.h"
 
-
 using namespace std;
 
-std::vector<std::string> KEYWORDS = {
-    "resname",
-    "chain",
-    "name",
-    "altloc",
-    "resid",
-    "residue",
-    "beta",
-    "occ",
-    "x",
-    "y",
-    "z"
+
+const unordered_set<string> KEYWORDS = {
+    "resname", "chain", "name", "altloc",
+    "resid", "residue", "beta", "occupancy",
+    "x", "y", "z", "within"
 };
 
-//NICKNAMES
+// NICKNAMES
 unordered_map<string, string> NICKNAMES = {
     {"protein", "resname ALA ARG ASN ASP CYS GLN GLU GLY HIS ILE LEU LYS MET PHE PRO SER THR TRP TYR VAL"},
     {"dna", "resname DA DC DG DT"},
     {"backbone", "resname ALA ARG ASN ASP CYS GLN GLU GLY HIS ILE LEU LYS MET PHE PRO SER THR TRP TYR VAL and name N CA C O"},
     {"noh", "not name H*"},
-    {"ions", "resname NA CL CA MG ZN MN FE CU CO NI CD K"}
-};
+    {"ions", "resname NA CL CA MG ZN MN FE CU CO NI CD K"}};
 
-bool is_simple_list(const Token &tokens) {
-    // Check if the token is a list of tokens
-    if (!holds_alternative<vector<Token>>(tokens.value)) {
-        return false;
-    }
 
-    // Get the list of tokens
-    const auto &token_list = get<vector<Token>>(tokens.value);
-
-    // Check if any token in the list is itself a nested list
-    for (const auto &token : token_list) {
-        if (holds_alternative<vector<Token>>(token.value)) {
-            return false;
-        }
-    }
-    return true;
-}
-
-bool is_operator(const string &token) {
+bool is_operator(const string &token)
+{
     // List of valid operators
     static const vector<string> operators = {"==", "!=", ">", ">=", "<", "<="};
     // Check if the token is in the list of operators
     return find(operators.begin(), operators.end(), token) != operators.end();
 }
 
-void print_tokens(const Token& token, int indent) {
-    if (holds_alternative<string>(token.value)) {
-        cout << string(indent, ' ') << get<string>(token.value) << '\n';
+void print_tokens(const Token &token, int indent) {
+    if (token.is_string()) {
+        cout << string(indent, ' ') << token.as_string() << '\n';
     } else {
         cout << string(indent, ' ') << "(\n";
-        for (const auto& sub : get<vector<Token>>(token.value)) {
+        for (const auto &sub : token.as_list()) {
             print_tokens(sub, indent + 2);
         }
         cout << string(indent, ' ') << ")\n";
@@ -84,35 +60,33 @@ void replace_all(string &str, const string &from, const string &to) {
     }
 }
 
-TokenList split(const string &str) {
+TokenList split(const string &str)
+{
     istringstream iss(str);
     TokenList tokens;
     string token;
-    while (iss >> token) {
+    while (iss >> token)
+    {
         tokens.emplace_back(token); // Each token is stored as a string in the Token variant
     }
     return tokens;
 }
 
 // Recursive parser
-TokenList parse_parentheses(const TokenList &tokens, size_t start = 0) {
+TokenList parse_parentheses(const TokenList &tokens, size_t start) {
     TokenList result;
     size_t i = start;
 
     while (i < tokens.size()) {
-        if (holds_alternative<string>(tokens[i].value) && get<string>(tokens[i].value) == "(") {
-            // Recursively parse the nested parentheses
+        if (tokens[i].is_string() && tokens[i].as_string() == "(") {
             TokenList nested = parse_parentheses(tokens, i + 1);
-            result.emplace_back(nested); // Add the nested TokenList as a Token
-            // Skip to the position after the closing parenthesis
-            while (i < tokens.size() && !(holds_alternative<string>(tokens[i].value) && get<string>(tokens[i].value) == ")")) {
+            result.emplace_back(nested);
+            while (i < tokens.size() && !(tokens[i].is_string() && tokens[i].as_string() == ")")) {
                 ++i;
             }
-        } else if (holds_alternative<string>(tokens[i].value) && get<string>(tokens[i].value) == ")") {
-            // End of the current nested list
+        } else if (tokens[i].is_string() && tokens[i].as_string() == ")") {
             return result;
         } else {
-            // Add a simple string token
             result.emplace_back(tokens[i]);
         }
         ++i;
@@ -121,183 +95,345 @@ TokenList parse_parentheses(const TokenList &tokens, size_t start = 0) {
     return result;
 }
 
+TokenList parse_keywords(const TokenList &tokens)
+{
+    TokenList new_tokens;
+    TokenList local_sel;
+
+    for (const auto &token : tokens) {
+        if (token.is_string()) {
+            const string &val = token.as_string();
+
+            if (std::find(KEYWORDS.begin(), KEYWORDS.end(), val) != KEYWORDS.end()) {
+                if (!local_sel.empty() && local_sel[0].is_string() && local_sel[0].as_string() == "within") {
+                    new_tokens.push_back(Token(local_sel));
+                } else if (!local_sel.empty()) {
+                    throw runtime_error("Invalid selection string: " + val);
+                }
+                local_sel = {token};
+            } else if (val == "and" || val == "or" || val == "not") {
+                if (!local_sel.empty()) {
+                    new_tokens.push_back(Token(local_sel));
+                    local_sel.clear();
+                }
+                new_tokens.push_back(token);
+            } else {
+                local_sel.push_back(token);
+            }
+        } else if (token.is_list()) {
+            if (!local_sel.empty()) {
+                new_tokens.push_back(Token(local_sel));
+                local_sel.clear();
+            }
+            TokenList nested = parse_keywords(token.as_list());
+            new_tokens.push_back(Token(nested));
+        }
+    }
+
+    if (!local_sel.empty()) {
+        new_tokens.push_back(Token(local_sel));
+    }
+
+    return new_tokens;
+}
+
+
+TokenList parse_within(const TokenList& tokens) {
+    TokenList new_tokens;
+    size_t i = 0;
+    while (i < tokens.size()) {
+        if (tokens[i].is_list()) {
+            const auto& sublist = tokens[i].as_list();
+            if (!sublist.empty() && sublist[0].is_string() && sublist[0].as_string() == "within") {
+                TokenList new_token = sublist;
+                if (i + 1 < tokens.size() && tokens[i + 1].is_string() && tokens[i + 1].as_string() != "not") {
+                    new_token.emplace_back(tokens[i + 1]);
+                    ++i;
+                } else if (i + 2 < tokens.size()) {
+                    new_token.emplace_back(Token(TokenList{tokens[i + 1], tokens[i + 2]}));
+                    i += 2;
+                }
+                new_tokens.push_back(Token(new_token));
+            } else {
+                new_tokens.push_back(Token(parse_within(sublist)));
+            }
+        } else {
+            new_tokens.push_back(tokens[i]);
+        }
+        ++i;
+    }
+    return new_tokens;
+}
+
+
 // Main function to parse the selection string
-Token parse_selection(string selection, const unordered_map<string, string> &nicknames) {
+Token parse_selection(string selection)
+{
 
     // Add spaces around operators and parentheses
-    for (const string &op : initializer_list<string>{"(", ")", "<", ">", "!=", "==", "<=", ">=", ":", "and", "or", "not"}) {
+    for (const string &op : initializer_list<string>{"(", ")", "<", ">", "!=", "==", "<=", ">=", ":", "and", "or", "not"})
+    {
         replace_all(selection, op, " " + op + " ");
     }
 
     // Replace nicknames with their corresponding values
-    for (const auto &pair : nicknames) {
+    for (const auto &pair : NICKNAMES)
+    {
         replace_all(selection, pair.first, pair.second);
     }
 
     TokenList tokens = split(selection);
 
     tokens = parse_parentheses(tokens);
+    tokens = parse_keywords(tokens);
+    tokens = parse_within(tokens);
 
     return tokens;
 }
 
-vector<bool> simple_select_atoms_model(const Model &model, const string &column, const vector<string> &values, const string &op) {
+vector<bool> simple_select_atoms_model(const Model &model, const string &column, const vector<string> &values, const string &op)
+{
     size_t n = model.size();
     vector<bool> result(n, false);
 
-    cout << "column: " << column << endl;
-    cout << "op: " << op << endl;
-    cout << "values: ";
-    for (const auto &v : values) {
-        cout << v << " ";
-    }
-    cout << endl;
+    // cout << "column: " << column << endl;
+    // cout << "op: " << op << endl;
+    // cout << "values: ";
+    // for (const auto &v : values)
+    // {
+    //     cout << v << " ";
+    // }
+    // cout << endl;
 
-    auto str_equal = [](const array<char, 5> &a, const string &b) {
+    auto str_equal = [](const array<char, 5> &a, const string &b)
+    {
         return strncmp(a.data(), b.c_str(), 5) == 0;
     };
 
-    auto str_startswith = [](const array<char, 5> &a, const string &b) {
+    auto str_startswith = [](const array<char, 5> &a, const string &b)
+    {
         return strncmp(a.data(), b.c_str(), b.size()) == 0;
     };
 
-    if (column == "name" || column == "resname" || column == "elem") {
-        vector<array<char, 5>> model_val = (column == "name") ? model.get_name() : (column == "resname") ? model.get_resname() : model.get_elem();
+    if (column == "name" || column == "resname" || column == "elem")
+    {
+        vector<array<char, 5>> model_val = (column == "name") ? model.get_name() : (column == "resname") ? model.get_resname()
+                                                                                                         : model.get_elem();
 
-        if (op == "==") {
-            for (size_t i = 0; i < n; ++i) {
+        if (op == "==")
+        {
+            for (size_t i = 0; i < n; ++i)
+            {
                 result[i] = str_equal(model_val[i], values[0]);
             }
             return result;
-        } else if (op == "!=") {
-            for (size_t i = 0; i < n; ++i) {
+        }
+        else if (op == "!=")
+        {
+            for (size_t i = 0; i < n; ++i)
+            {
                 result[i] = !str_equal(model_val[i], values[0]);
             }
             return result;
-        } else if (op == "startswith") {
-            for (size_t i = 0; i < n; ++i) {
+        }
+        else if (op == "startswith")
+        {
+            for (size_t i = 0; i < n; ++i)
+            {
                 result[i] = str_startswith(model_val[i], values[0]);
             }
             return result;
-        } else if (op == "isin") {
+        }
+        else if (op == "isin")
+        {
             set<string> value_set(values.begin(), values.end());
-            for (size_t i = 0; i < n; ++i) {
+            for (size_t i = 0; i < n; ++i)
+            {
                 string val(model_val[i].data(), strnlen(model_val[i].data(), 5));
                 result[i] = value_set.count(val) > 0;
             }
             return result;
-        } else {
+        }
+        else
+        {
             throw invalid_argument("Unsupported operator for 'name'");
         }
-    } else if (column == "x" || column == "y" || column == "z" || column == "occ" || column == "beta") {
-        const vector<float> &model_val = (column == "x") ? model.get_x() : (column == "y") ? model.get_y() : (column == "z") ? model.get_z() : (column == "occ") ? model.get_occ() : model.get_beta();
+    }
+    else if (column == "x" || column == "y" || column == "z" || column == "occ" || column == "beta")
+    {
+        const vector<float> &model_val = (column == "x") ? model.get_x() : (column == "y") ? model.get_y()
+                                                                       : (column == "z")   ? model.get_z()
+                                                                       : (column == "occ") ? model.get_occ()
+                                                                                           : model.get_beta();
         float val = stof(values[0]);
-        if (op == "==") {
-            for (size_t i = 0; i < n; ++i) {
+        if (op == "==")
+        {
+            for (size_t i = 0; i < n; ++i)
+            {
                 result[i] = model_val[i] == val;
             }
             return result;
-        } else if (op == "!=") {
-            for (size_t i = 0; i < n; ++i) {
+        }
+        else if (op == "!=")
+        {
+            for (size_t i = 0; i < n; ++i)
+            {
                 result[i] = model_val[i] != val;
             }
             return result;
-        } else if (op == "<") {
-            for (size_t i = 0; i < n; ++i) {
+        }
+        else if (op == "<")
+        {
+            for (size_t i = 0; i < n; ++i)
+            {
                 result[i] = model_val[i] < val;
             }
             return result;
-        } else if (op == "<=") {
-            for (size_t i = 0; i < n; ++i) {
+        }
+        else if (op == "<=")
+        {
+            for (size_t i = 0; i < n; ++i)
+            {
                 result[i] = model_val[i] <= val;
             }
             return result;
-        } else if (op == ">") {
-            for (size_t i = 0; i < n; ++i) {
+        }
+        else if (op == ">")
+        {
+            for (size_t i = 0; i < n; ++i)
+            {
                 result[i] = model_val[i] > val;
             }
             return result;
-        } else if (op == ">=") {
-            for (size_t i = 0; i < n; ++i) {
+        }
+        else if (op == ">=")
+        {
+            for (size_t i = 0; i < n; ++i)
+            {
                 result[i] = model_val[i] >= val;
             }
             return result;
-        } else if (op == "isin") {
+        }
+        else if (op == "isin")
+        {
             set<float> value_set;
-            for (const auto &v : values) value_set.insert(stof(v));
-            for (size_t i = 0; i < n; ++i) result[i] = value_set.count(model_val[i]) > 0;
+            for (const auto &v : values)
+                value_set.insert(stof(v));
+            for (size_t i = 0; i < n; ++i)
+                result[i] = value_set.count(model_val[i]) > 0;
             return result;
-        } else {
+        }
+        else
+        {
             throw invalid_argument("Unsupported operator for '" + column + "'");
         }
-    } else if (column == "resid" || column == "uniqresid" || column == "num") {
-        const vector<int> &model_val = (column == "resid") ? model.get_resid() : (column == "uniqresid") ? model.get_uniqresid() : model.get_num();
+    }
+    else if (column == "resid" || column == "uniqresid" || column == "num")
+    {
+        const vector<int> &model_val = (column == "resid") ? model.get_resid() : (column == "uniqresid") ? model.get_uniqresid()
+                                                                                                         : model.get_num();
         int val = stoi(values[0]);
-        if (op == "==") {
-            for (size_t i = 0; i < n; ++i) {
+        if (op == "==")
+        {
+            for (size_t i = 0; i < n; ++i)
+            {
                 result[i] = model_val[i] == val;
             }
             return result;
-        } else if (op == "!=") {
-            for (size_t i = 0; i < n; ++i) {
+        }
+        else if (op == "!=")
+        {
+            for (size_t i = 0; i < n; ++i)
+            {
                 result[i] = model_val[i] != val;
             }
             return result;
-        } else if (op == "<") {
-            for (size_t i = 0; i < n; ++i) {
+        }
+        else if (op == "<")
+        {
+            for (size_t i = 0; i < n; ++i)
+            {
                 result[i] = model_val[i] < val;
             }
             return result;
-        } else if (op == "<=") {
-            for (size_t i = 0; i < n; ++i) {
+        }
+        else if (op == "<=")
+        {
+            for (size_t i = 0; i < n; ++i)
+            {
                 result[i] = model_val[i] <= val;
             }
             return result;
-        } else if (op == ">") {
-            for (size_t i = 0; i < n; ++i) {
+        }
+        else if (op == ">")
+        {
+            for (size_t i = 0; i < n; ++i)
+            {
                 result[i] = model_val[i] > val;
             }
             return result;
-        } else if (op == ">=") {
-            for (size_t i = 0; i < n; ++i) {
+        }
+        else if (op == ">=")
+        {
+            for (size_t i = 0; i < n; ++i)
+            {
                 result[i] = model_val[i] >= val;
             }
             return result;
-        } else
-        if (op == "isin") {
+        }
+        else if (op == "isin")
+        {
             set<int> value_set;
-            for (const auto &v : values) value_set.insert(stoi(v));
-            for (size_t i = 0; i < n; ++i) result[i] = value_set.count(model_val[i]) > 0;
+            for (const auto &v : values)
+                value_set.insert(stoi(v));
+            for (size_t i = 0; i < n; ++i)
+                result[i] = value_set.count(model_val[i]) > 0;
             return result;
-        } else {
+        }
+        else
+        {
             throw invalid_argument("Unsupported operator for '" + column + "'");
         }
-    } else if (column == "chain" || column == "altloc" || column == "insertres") {
-        const vector<array<char, 2>> &model_val = (column == "chain") ? model.get_chain() : (column == "altloc") ? model.get_alterloc() : model.get_insertres();
-        if (op == "==") {
-            for (size_t i = 0; i < n; ++i) {
+    }
+    else if (column == "chain" || column == "altloc" || column == "insertres")
+    {
+        const vector<array<char, 2>> &model_val = (column == "chain") ? model.get_chain() : (column == "altloc") ? model.get_alterloc()
+                                                                                                                 : model.get_insertres();
+        if (op == "==")
+        {
+            for (size_t i = 0; i < n; ++i)
+            {
                 result[i] = model_val[i][0] == values[0][0];
             }
-        } else if (op == "!=") {
-            for (size_t i = 0; i < n; ++i) {
+        }
+        else if (op == "!=")
+        {
+            for (size_t i = 0; i < n; ++i)
+            {
                 result[i] = model_val[i][0] != values[0][0];
             }
-        } else if (op == "isin") {
+        }
+        else if (op == "isin")
+        {
             set<string> value_set(values.begin(), values.end());
-            for (size_t i = 0; i < n; ++i) {
+            for (size_t i = 0; i < n; ++i)
+            {
                 string val(model_val[i].data(), strnlen(model_val[i].data(), 2));
                 result[i] = value_set.count(val) > 0;
             }
-        } else {
+        }
+        else
+        {
             throw invalid_argument("Unsupported operator for '" + column + "'");
         }
-    } else {
+    }
+    else
+    {
         throw invalid_argument("Invalid column: " + column);
     }
 
     return result;
 }
-
 
 // int main() {
 //     //string selection = "protein and resname ALA and chain A and (x > 10 or y < 5) and not (z == 0)";
@@ -307,7 +443,6 @@ vector<bool> simple_select_atoms_model(const Model &model, const string &column,
 //     cout << "Parsed selection: ";
 
 //     print_tokens(parsed_selection);
-
 
 //     return 0;
 // }

@@ -89,8 +89,8 @@ int main() {
     indexes = model.simple_select_atoms("name", {"C"}, "startswith");
     cout << "Number of name C* atoms: " << count(indexes.begin(), indexes.end(), true) << endl;
 
-    string selection = "resname ALA GLY CYS";
-    Token parsed_selection = parse_selection(selection, NICKNAMES);
+    string selection = "resname ALA GLY CYS and chain A B";
+    Token parsed_selection = parse_selection(selection);
     cout << "Parsed selection: ";
     print_tokens(parsed_selection);
     cout << "Starting selection..." << endl;
@@ -98,7 +98,7 @@ int main() {
     cout << "Number of SEL atoms: " << count(indexes.begin(), indexes.end(), true) << endl;
 
     selection = "resid > 250";
-    parsed_selection = parse_selection(selection, NICKNAMES);
+    parsed_selection = parse_selection(selection);
     cout << "Parsed selection: ";
     print_tokens(parsed_selection);
     cout << "Starting selection..." << endl;
@@ -106,13 +106,15 @@ int main() {
     cout << "Number of SEL atoms: " << count(indexes.begin(), indexes.end(), true) << endl;
 
     selection = "resid > 250 and chain A B and resname ALA GLY";
-    parsed_selection = parse_selection(selection, NICKNAMES);
+    parsed_selection = parse_selection(selection);
     cout << "Parsed selection: ";
     print_tokens(parsed_selection);
     cout << "Starting selection..." << endl;
     indexes = model.select_tokens(parsed_selection);
     cout << "Number of SEL atoms: " << count(indexes.begin(), indexes.end(), true) << endl;
 
+    indexes = model.select_atoms(selection);
+    cout << "Number of SEL2 atoms: " << count(indexes.begin(), indexes.end(), true) << endl;
 
     return 0;
 }

@@ -23,6 +23,7 @@ write_times = []
 select_times = []
 read_cpp_times = []
 write_cpp_times = []
+select_cpp_times = []
 
 print(f"- Testing with {file_name} file")
 
@@ -38,7 +39,7 @@ for i in range(N):
     pdb_numpy_write_time = time.time() - start_time
     write_times.append(pdb_numpy_write_time)
     start_time = time.time()
-    coor.select_atoms("name CA CB CG")
+    coor.select_atoms("resid > 250 and chain A B and resname ALA GLY")
     pdb_numpy_select_time = time.time() - start_time
     select_times.append(pdb_numpy_select_time)
 
@@ -52,17 +53,25 @@ for i in range(N):
     pdb_numpy_write_time = time.time() - start_time
     write_cpp_times.append(pdb_numpy_write_time)
 
+    model = coor.get_Models(0)
+    start_time = time.time()
+    model.select_atoms("resid > 250 and chain A B and resname ALA GLY")
+    pdb_numpy_select_time = time.time() - start_time
+    select_cpp_times.append(pdb_numpy_select_time)
+
 
 avg_read, std_read = avg_std(read_times)
 print(f"-pdb_numpy Time taken to get coordinates:   {avg_read:.4f} +- {std_read:.4f} seconds")
 avg_write, std_write = avg_std(write_times)
 print(f"-pdb_numpy Time taken to write coordinates: {avg_write:.4f} +- {std_write:.4f} seconds")
 avg_select, std_select = avg_std(select_times)
-print(f"-pdb_numpy Time taken to select atoms:    {avg_select:.4f} +- {std_select:.4f} seconds")
+print(f"-pdb_numpy Time taken to select atoms:      {avg_select:.4f} +- {std_select:.4f} seconds")
 avg_cpp_read, std_cpp_read = avg_std(read_cpp_times)
 print(f"-pdb_cpp   Time taken to get coordinates:   {avg_cpp_read:.4f} +- {std_cpp_read:.4f} seconds, speed-up:  {avg_read/avg_cpp_read:.2f}")
 avg_cpp_write, std_cpp_write = avg_std(write_cpp_times)
 print(f"-pdb_cpp   Time taken to write coordinates: {avg_cpp_write:.4f} +- {std_cpp_write:.4f} seconds, speed-up:  {avg_write/avg_cpp_write:.2f} ")
+avg_cpp_select, std_select = avg_std(select_cpp_times)
+print(f"-pdb_cpp   Time taken to select atoms:      {avg_select:.4f} +- {std_select:.4f} seconds , speed-up:  {avg_select/avg_cpp_select:.2f}")
 
 read_times = []
 write_times = []

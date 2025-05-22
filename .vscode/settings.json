@@ -69,6 +69,7 @@
         "thread": "cpp",
         "__nullptr": "cpp",
         "map": "cpp",
-        "valarray": "cpp"
+        "valarray": "cpp",
+        "set": "cpp"
     }
 }
