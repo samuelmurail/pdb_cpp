@@ -10,3 +10,11 @@ __version__ = "0.0.1"
 __maintainer__ = "Samuel Murail"
 __email__ = "samuel.murail@u-paris.fr"
 __status__ = "Beta"
+
+from .core import Coor, Model
+
+@property
+def len(self):
+    """Return the number of atoms in the selection."""
+    return self.size()
+Coor.len = len

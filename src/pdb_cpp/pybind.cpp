@@ -37,6 +37,7 @@ PYBIND11_MODULE(core, m) {
         .def("read", &Coor::read)
         .def("write", &Coor::write)
         .def("clear", &Coor::clear)
+        .def("size", &Coor::size)
         .def("add_Model", &Coor::add_Model)
         .def("get_Models", &Coor::get_Models)
         // Add more methods as needed
