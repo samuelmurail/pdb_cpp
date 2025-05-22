@@ -1,4 +1,5 @@
 #include "Coor.h"
+#include "select.h"
 #include <chrono>
 #include <iomanip>
 
@@ -58,11 +59,60 @@ int main() {
     elapsed = end - start;
     cout << "Time taken to select coordinates: " << setprecision(3) << elapsed.count() << " seconds\n";
 
-    indexes = model.simple_select_atoms("resname", {"ALA", "GLY"}, "isin");
-    cout << "Number of ALA GLY atoms: " << count(indexes.begin(), indexes.end(), true) << endl;
+    indexes = model.simple_select_atoms("resname", {"ALA"}, "==");
+    cout << "Number of ALA atoms: " << count(indexes.begin(), indexes.end(), true) << endl;
+
+    indexes = model.simple_select_atoms("resname", {"ALA", "GLY", "CYS"}, "isin");
+    cout << "Number of ALA GLY CYS atoms: " << count(indexes.begin(), indexes.end(), true) << endl;
     end = chrono::high_resolution_clock::now();
     elapsed = end - start;
     cout << "Time taken to select coordinates: " << setprecision(3) << elapsed.count() << " seconds\n";
+
+    indexes = model.simple_select_atoms("x", {"30.0"}, ">=");
+    cout << "Number of x >= 0.0 atoms: " << count(indexes.begin(), indexes.end(), true) << endl;
+    end = chrono::high_resolution_clock::now();
+    elapsed = end - start;
+    cout << "Time taken to select coordinates: " << setprecision(3) << elapsed.count() << " seconds\n";
+
+    indexes = model.simple_select_atoms("z", {"20.0"}, "<");
+    cout << "Number of z < 20.0 atoms: " << count(indexes.begin(), indexes.end(), true) << endl;
+
+    indexes = model.simple_select_atoms("resid", {"20"}, "<");
+    cout << "Number of resid < 20.0 atoms: " << count(indexes.begin(), indexes.end(), true) << endl;
+
+    indexes = model.simple_select_atoms("resid", {"20", "21", "25"}, "isin");
+    cout << "Number of resid 20 21 25 atoms: " << count(indexes.begin(), indexes.end(), true) << endl;
+
+    indexes = model.simple_select_atoms("chain", {"A", "B"}, "isin");
+    cout << "Number of chain A B atoms: " << count(indexes.begin(), indexes.end(), true) << endl;
+
+    indexes = model.simple_select_atoms("name", {"C"}, "startswith");
+    cout << "Number of name C* atoms: " << count(indexes.begin(), indexes.end(), true) << endl;
+
+    string selection = "resname ALA GLY CYS";
+    Token parsed_selection = parse_selection(selection, NICKNAMES);
+    cout << "Parsed selection: ";
+    print_tokens(parsed_selection);
+    cout << "Starting selection..." << endl;
+    indexes = model.select_tokens(parsed_selection);
+    cout << "Number of SEL atoms: " << count(indexes.begin(), indexes.end(), true) << endl;
+
+    selection = "resid > 250";
+    parsed_selection = parse_selection(selection, NICKNAMES);
+    cout << "Parsed selection: ";
+    print_tokens(parsed_selection);
+    cout << "Starting selection..." << endl;
+    indexes = model.select_tokens(parsed_selection);
+    cout << "Number of SEL atoms: " << count(indexes.begin(), indexes.end(), true) << endl;
+
+    selection = "resid > 250 and chain A B and resname ALA GLY";
+    parsed_selection = parse_selection(selection, NICKNAMES);
+    cout << "Parsed selection: ";
+    print_tokens(parsed_selection);
+    cout << "Starting selection..." << endl;
+    indexes = model.select_tokens(parsed_selection);
+    cout << "Number of SEL atoms: " << count(indexes.begin(), indexes.end(), true) << endl;
+
 
     return 0;
 }

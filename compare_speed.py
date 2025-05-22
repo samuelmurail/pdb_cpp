@@ -116,9 +116,28 @@ coor = pdb_numpy.Coor(file_name)
 
 sel = coor.select_atoms("name CA CB CG")
 print(F"Number of CA CB CG : {sel.len}")
-sel = coor.select_atoms("resname ALA GLY")
-print(F"Number of ALA GLY : {sel.len}")
+sel = coor.select_atoms("resname ALA GLY CYS")
+print(F"Number of ALA GLY CYS: {sel.len}")
 
+sel = coor.select_atoms("x >= 30")
+print(F"Number of x>=30 : {sel.len}")
+sel = coor.select_atoms("z < 20")
+print(F"Number of z <20 : {sel.len}")
+sel = coor.select_atoms("resid < 20.0")
+print(F"Number of resid <20 : {sel.len}")
+
+sel = coor.select_atoms("resid 20 21 25")
+print(F"Number of resid 20 21 25 : {sel.len}")
+
+
+sel = coor.select_atoms("chain A B")
+print(F"Number of chain A B : {sel.len}")
+
+sel = coor.select_atoms("name C*")
+print(F"Number of name C* : {sel.len}")
+
+sel = coor.select_atoms("resid > 250 and chain A B and resname ALA GLY")
+print(F"Number of resid > 250 and chain A B and resname ALA GLY : {sel.len}")
 
 print("3rri:")
 file_name = "2rri.pdb"

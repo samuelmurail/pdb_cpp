@@ -63,7 +63,7 @@ bool is_operator(const string &token) {
     return find(operators.begin(), operators.end(), token) != operators.end();
 }
 
-void print_tokens(const Token& token, int indent = 0) {
+void print_tokens(const Token& token, int indent) {
     if (holds_alternative<string>(token.value)) {
         cout << string(indent, ' ') << get<string>(token.value) << '\n';
     } else {
@@ -162,40 +162,139 @@ vector<bool> simple_select_atoms_model(const Model &model, const string &column,
     };
 
     if (column == "name" || column == "resname" || column == "elem") {
-        vector<array<char, 5>> model_val;
-        if (column == "name") {
-            model_val = model.get_name();
-        } else if (column == "resname") {
-            model_val = model.get_resname();
-            // cout << "model_val: " << model_val << endl;
-        } else if (column == "elem") {
-            model_val = model.get_elem();
-        }
+        vector<array<char, 5>> model_val = (column == "name") ? model.get_name() : (column == "resname") ? model.get_resname() : model.get_elem();
 
         if (op == "==") {
             for (size_t i = 0; i < n; ++i) {
                 result[i] = str_equal(model_val[i], values[0]);
             }
+            return result;
         } else if (op == "!=") {
             for (size_t i = 0; i < n; ++i) {
                 result[i] = !str_equal(model_val[i], values[0]);
             }
+            return result;
         } else if (op == "startswith") {
             for (size_t i = 0; i < n; ++i) {
                 result[i] = str_startswith(model_val[i], values[0]);
             }
+            return result;
         } else if (op == "isin") {
             set<string> value_set(values.begin(), values.end());
             for (size_t i = 0; i < n; ++i) {
-                //cout << "model_val[i]: " << model_val[i].data() << endl;
                 string val(model_val[i].data(), strnlen(model_val[i].data(), 5));
                 result[i] = value_set.count(val) > 0;
             }
+            return result;
         } else {
             throw invalid_argument("Unsupported operator for 'name'");
         }
+    } else if (column == "x" || column == "y" || column == "z" || column == "occ" || column == "beta") {
+        const vector<float> &model_val = (column == "x") ? model.get_x() : (column == "y") ? model.get_y() : (column == "z") ? model.get_z() : (column == "occ") ? model.get_occ() : model.get_beta();
+        float val = stof(values[0]);
+        if (op == "==") {
+            for (size_t i = 0; i < n; ++i) {
+                result[i] = model_val[i] == val;
+            }
+            return result;
+        } else if (op == "!=") {
+            for (size_t i = 0; i < n; ++i) {
+                result[i] = model_val[i] != val;
+            }
+            return result;
+        } else if (op == "<") {
+            for (size_t i = 0; i < n; ++i) {
+                result[i] = model_val[i] < val;
+            }
+            return result;
+        } else if (op == "<=") {
+            for (size_t i = 0; i < n; ++i) {
+                result[i] = model_val[i] <= val;
+            }
+            return result;
+        } else if (op == ">") {
+            for (size_t i = 0; i < n; ++i) {
+                result[i] = model_val[i] > val;
+            }
+            return result;
+        } else if (op == ">=") {
+            for (size_t i = 0; i < n; ++i) {
+                result[i] = model_val[i] >= val;
+            }
+            return result;
+        } else if (op == "isin") {
+            set<float> value_set;
+            for (const auto &v : values) value_set.insert(stof(v));
+            for (size_t i = 0; i < n; ++i) result[i] = value_set.count(model_val[i]) > 0;
+            return result;
+        } else {
+            throw invalid_argument("Unsupported operator for '" + column + "'");
+        }
+    } else if (column == "resid" || column == "uniqresid" || column == "num") {
+        const vector<int> &model_val = (column == "resid") ? model.get_resid() : (column == "uniqresid") ? model.get_uniqresid() : model.get_num();
+        int val = stoi(values[0]);
+        if (op == "==") {
+            for (size_t i = 0; i < n; ++i) {
+                result[i] = model_val[i] == val;
+            }
+            return result;
+        } else if (op == "!=") {
+            for (size_t i = 0; i < n; ++i) {
+                result[i] = model_val[i] != val;
+            }
+            return result;
+        } else if (op == "<") {
+            for (size_t i = 0; i < n; ++i) {
+                result[i] = model_val[i] < val;
+            }
+            return result;
+        } else if (op == "<=") {
+            for (size_t i = 0; i < n; ++i) {
+                result[i] = model_val[i] <= val;
+            }
+            return result;
+        } else if (op == ">") {
+            for (size_t i = 0; i < n; ++i) {
+                result[i] = model_val[i] > val;
+            }
+            return result;
+        } else if (op == ">=") {
+            for (size_t i = 0; i < n; ++i) {
+                result[i] = model_val[i] >= val;
+            }
+            return result;
+        } else
+        if (op == "isin") {
+            set<int> value_set;
+            for (const auto &v : values) value_set.insert(stoi(v));
+            for (size_t i = 0; i < n; ++i) result[i] = value_set.count(model_val[i]) > 0;
+            return result;
+        } else {
+            throw invalid_argument("Unsupported operator for '" + column + "'");
+        }
+    } else if (column == "chain" || column == "altloc" || column == "insertres") {
+        const vector<array<char, 2>> &model_val = (column == "chain") ? model.get_chain() : (column == "altloc") ? model.get_alterloc() : model.get_insertres();
+        if (op == "==") {
+            for (size_t i = 0; i < n; ++i) {
+                result[i] = model_val[i][0] == values[0][0];
+            }
+        } else if (op == "!=") {
+            for (size_t i = 0; i < n; ++i) {
+                result[i] = model_val[i][0] != values[0][0];
+            }
+        } else if (op == "isin") {
+            set<string> value_set(values.begin(), values.end());
+            for (size_t i = 0; i < n; ++i) {
+                string val(model_val[i].data(), strnlen(model_val[i].data(), 2));
+                result[i] = value_set.count(val) > 0;
+            }
+        } else {
+            throw invalid_argument("Unsupported operator for '" + column + "'");
+        }
+    } else {
+        throw invalid_argument("Invalid column: " + column);
+    }
 
-    } 
     return result;
 }
 

@@ -60,230 +60,9 @@ bool Model::addAtom(
     return true;
 }
 
-
 vector<bool> Model::simple_select_atoms(const string &column, const vector<string> &values, const string &op) {
-
     return simple_select_atoms_model(*this, column, values, op);
 }
-
-
-    // cout << "column: " << column << endl;
-    // cout << "op: " << op << endl;
-    // cout << "values: ";
-
-    // for (const auto &v : values) {
-    //     cout << v << " ";
-    // }
-
-    // auto str_equal = [](const array<char, 5> &a, const string &b) {
-    //     return strncmp(a.data(), b.c_str(), 5) == 0;
-    // };
-
-    // auto str_startswith = [](const array<char, 5> &a, const string &b) {
-    //     return strncmp(a.data(), b.c_str(), b.size()) == 0;
-    // };
-
-    // if (column == "name") {
-    //     if (op == "==") {
-    //         for (size_t i = 0; i < n; ++i) {
-    //             result[i] = str_equal(name_[i], values[0]);
-    //         }
-    //     } else if (op == "!=") {
-    //         for (size_t i = 0; i < n; ++i) {
-    //             result[i] = !str_equal(name_[i], values[0]);
-    //         }
-    //     } else if (op == "startswith") {
-    //         for (size_t i = 0; i < n; ++i) {
-    //             result[i] = str_startswith(name_[i], values[0]);
-    //         }
-    //     } else if (op == "isin") {
-    //         set<string> value_set(values.begin(), values.end());
-    //         for (size_t i = 0; i < n; ++i) {
-    //             string val(name_[i].data(), strnlen(name_[i].data(), 5));
-    //             result[i] = value_set.count(val) > 0;
-    //         }
-    //     } else {
-    //         throw invalid_argument("Unsupported operator for 'name'");
-    //     }
-
-    // } else if (column == "resname") {
-    //     if (op == "==") {
-    //         for (size_t i = 0; i < n; ++i) {
-    //             result[i] = str_equal(resname_[i], values[0]);
-    //         }
-    //     } else if (op == "isin") {
-    //         set<string> value_set(values.begin(), values.end());
-    //         for (size_t i = 0; i < n; ++i) {
-    //             string val(resname_[i].data(), strnlen(resname_[i].data(), 5));
-    //             result[i] = value_set.count(val) > 0;
-    //         }
-    //     } else {
-    //         throw invalid_argument("Unsupported operator for 'resname'");
-    //     }
-
-    // } else if (column == "chain") {
-    //     if (op == "==") {
-    //         for (size_t i = 0; i < n; ++i) {
-    //             result[i] = chain_[i][0] == values[0][0];
-    //         }
-    //     } else if (op == "!=") {
-    //         for (size_t i = 0; i < n; ++i) {
-    //             result[i] = chain_[i][0] != values[0][0];
-    //         }
-    //     } else {
-    //         throw invalid_argument("Unsupported operator for 'chain'");
-    //     }
-
-    // } else if (column == "resid") {
-    //     int val = stoi(values[0]);
-    //     if (op == "==") {
-    //         for (size_t i = 0; i < n; ++i) result[i] = resid_[i] == val;
-    //     } else if (op == "!=") {
-    //         for (size_t i = 0; i < n; ++i) result[i] = resid_[i] != val;
-    //     } else if (op == "<") {
-    //         for (size_t i = 0; i < n; ++i) result[i] = resid_[i] < val;
-    //     } else if (op == "<=") {
-    //         for (size_t i = 0; i < n; ++i) result[i] = resid_[i] <= val;
-    //     } else if (op == ">") {
-    //         for (size_t i = 0; i < n; ++i) result[i] = resid_[i] > val;
-    //     } else if (op == ">=") {
-    //         for (size_t i = 0; i < n; ++i) result[i] = resid_[i] >= val;
-    //     } else if (op == "isin") {
-    //         set<int> valset;
-    //         for (const auto &v : values) valset.insert(stoi(v));
-    //         for (size_t i = 0; i < n; ++i) result[i] = valset.count(resid_[i]) > 0;
-    //     } else {
-    //         throw invalid_argument("Unsupported operator for 'resid'");
-    //     }
-
-    // } else if (column == "x") {
-    //     float val = stof(values[0]);
-    //     const vector<float> &data = x_;
-    //     if (op == "==") {
-    //         for (size_t i = 0; i < n; ++i) result[i] = data[i] == val;
-    //     } else if (op == "!=") {        } else if (op == "!=") {
-    //         for (size_t i = 0; i < n; ++i) {
-    //             result[i] = !str_equal(name_[i], values[0]);
-    //         }
-    //     } else if (op == "startswith") {
-
-    //         for (size_t i = 0; i < n; ++i) result[i] = data[i] != val;
-    //     } else if (op == "<") {
-    //         for (size_t i = 0; i < n; ++i) result[i] = data[i] < val;
-    //     } else if (op == "<=") {
-    //         for (size_t i = 0; i < n; ++i) result[i] = data[i] <= val;
-    //     } else if (op == ">") {
-    //         for (size_t i = 0; i < n; ++i) result[i] = data[i] > val;
-    //     } else if (op == ">=") {
-    //         for (size_t i = 0; i < n; ++i) result[i] = data[i] >= val;
-    //     } else {
-    //         throw invalid_argument("Unsupported operator for 'x'");
-    //     }
-
-    // } else {
-    //     throw invalid_argument("Column '" + column + "' not recognized");
-    // }
-
-    // return result;
-//}
-
-
-// vector<bool> Model::simple_select_atoms(const string &column, const vector<string> &values, const string &op = "==") {
-//     size_t n = this->size();
-//     vector<bool> result(n, false); // Initialize a boolean vector with the size of the model
-
-//     // Lambda function to compare based on the operator
-//     auto compare = [&](const auto &atom_value, const string &value) -> bool {
-//         if (op == "==") return atom_value == value;
-//         if (op == "!=") return atom_value != value;
-//         if (op == ">") return stof(atom_value) > stof(value);
-//         if (op == ">=") return stof(atom_value) >= stof(value);
-//         if (op == "<") return stof(atom_value) < stof(value);
-//         if (op == "<=") return stof(atom_value) <= stof(value);
-//         if (op == "isin") return find(values.begin(), values.end(), atom_value) != values.end();
-//         throw invalid_argument("Invalid operator: " + op);
-//     };
-
-// // Select based on the column
-// if (column == "name") {
-//     for (size_t i = 0; i < name_.size(); ++i) {
-//         for (const auto &value : values) {
-//             if (compare(name_[i], value)) {
-//                 result[i] = true;
-//                 break;
-//             }
-//         }
-//     }
-// }
-// } else if (column == "chain") {
-//     for (size_t i = 0; i < chain_.size(); ++i) {
-//         for (const auto &value : values) {
-//             if (compare(chain_[i], value)) {
-//                 result[i] = true;
-//                 break;
-//             }
-//         }
-//     }
-// } else if (column == "name") {
-//     for (size_t i = 0; i < name_.size(); ++i) {
-//         for (const auto &value : values) {
-//             if (compare(name_[i], value)) {
-//                 result[i] = true;
-//                 break;
-//             }
-//         }
-//     }
-// } else if (column == "altloc") {
-//     for (size_t i = 0; i < alterloc_.size(); ++i) {
-//         for (const auto &value : values) {
-//             if (compare(alterloc_[i], value)) {
-//                 result[i] = true;
-//                 break;
-//             }
-//         }
-//     }
-// } else if (column == "resid") {
-//     for (size_t i = 0; i < resid_.size(); ++i) {
-//         for (const auto &value : values) {
-//             if (compare(to_string(resid_[i]), value)) {
-//                 result[i] = true;
-//                 break;
-//             }
-//         }
-//     }
-// } else if (column == "beta") {
-//     for (size_t i = 0; i < beta_.size(); ++i) {
-//         for (const auto &value : values) {
-//             if (compare(to_string(beta_[i]), value)) {
-//                 result[i] = true;
-//                 break;
-//             }
-//         }
-//     }
-// } else if (column == "occ") {
-//     for (size_t i = 0; i < occ_.size(); ++i) {
-//         for (const auto &value : values) {
-//             if (compare(to_string(occ_[i]), value)) {
-//                 result[i] = true;
-//                 break;
-//             }
-//         }
-//     }
-// } else if (column == "x" || column == "y" || column == "z") {
-//     const auto &coords = (column == "x") ? x_ : (column == "y") ? y_ : z_;
-//     for (size_t i = 0; i < coords.size(); ++i) {
-//         for (const auto &value : values) {
-//             if (compare(to_string(coords[i]), value)) {
-//                 result[i] = true;
-//                 break;
-//             }
-//         }
-//     }
-// } else {
-//     throw invalid_argument("Invalid column: " + column);
-// }
-//     return result;
-// }
 
 
 vector<bool> Model::select_tokens(const Token &tokens) {
@@ -292,23 +71,31 @@ vector<bool> Model::select_tokens(const Token &tokens) {
     string logical;
     bool not_flag = false;
 
-    // // Case for simple selection
-    // if (is_simple_list(tokens)) {
-    //     const auto &token_list = get<vector<Token>>(tokens.value);
-    //     if (token_list.size() >= 3 && is_operator(get<string>(token_list[1].value))) {
-    //         return simple_select_atoms(
-    //             get<string>(token_list[0].value), // column
-    //             get<string>(token_list[2].value), // values
-    //             get<string>(token_list[1].value)  // operator
-    //         );
-    //     } else {
-    //         vector<string> values;
-    //         for (size_t i = 1; i < token_list.size(); ++i) {
-    //             values.push_back(get<string>(token_list[i].value));
-    //         }
-    //         return simple_select_atoms(get<string>(token_list[0].value), values);
-    //     }
-    // }
+    cout << "Selecting tokens..." << endl;
+
+
+    // Case for simple selection
+    if (is_simple_list(tokens)) {
+        const auto &token_list = get<vector<Token>>(tokens.value);
+        if (token_list.size() >= 3 && is_operator(get<string>(token_list[1].value))) {
+            cout << "Simple selection with operator: " << get<string>(token_list[1].value) << endl;
+            // values for operators like ==, !=, etc. should be a vector, not a single string
+            std::vector<std::string> values = {get<string>(token_list[2].value)};
+            return simple_select_atoms(
+                get<string>(token_list[0].value), // column
+                values, // values as vector
+                get<string>(token_list[1].value)  // operator
+            );
+        } else {
+            cout << "Simple selection without operator: " << get<string>(token_list[0].value) << endl;
+            vector<string> values;
+            for (size_t i = 1; i < token_list.size(); ++i) {
+                values.push_back(get<string>(token_list[i].value));
+            }
+            // Provide default operator for simple selection (e.g., "isin")
+            return simple_select_atoms(get<string>(token_list[0].value), values, "isin");
+        }
+    }
     // // Case for "within" selection
     // else if (holds_alternative<string>(tokens.value) && get<string>(tokens.value) == "within") {
     //     const auto &token_list = get<vector<Token>>(tokens.value);
@@ -322,42 +109,44 @@ vector<bool> Model::select_tokens(const Token &tokens) {
     //     return dist_under_index(sel_2, distance);
     // }
 
-    // // Process nested tokens
-    // const auto &token_list = get<vector<Token>>(tokens.value);
-    // for (size_t i = 0; i < token_list.size(); ++i) {
-    //     if (holds_alternative<string>(token_list[i].value)) {
-    //         string token = get<string>(token_list[i].value);
+    // Process nested tokens
+    const auto &token_list_nested = get<vector<Token>>(tokens.value);
+    for (size_t i = 0; i < token_list_nested.size(); ++i) {
+        cout << "Processing token: " << i << endl;
+        cout << "Token value: " << get<string>(token_list_nested[i].value) << endl;
+        if (holds_alternative<string>(token_list_nested[i].value)) {
+            string token = get<string>(token_list_nested[i].value);
 
-    //         if (token == "and" || token == "or") {
-    //             logical = token;
-    //             bool_list = new_bool_list;
-    //             new_bool_list.clear();
-    //             continue;
-    //         } else if (token == "not") {
-    //             not_flag = true;
-    //             continue;
-    //         }
-    //     }
+            if (token == "and" || token == "or") {
+                logical = token;
+                bool_list = new_bool_list;
+                new_bool_list.clear();
+                continue;
+            } else if (token == "not") {
+                not_flag = true;
+                continue;
+            }
+        }
 
-    //     // Recursive call for nested tokens
-    //     new_bool_list = select_tokens(token_list[i]);
+        // Recursive call for nested tokens
+        new_bool_list = select_tokens(token_list_nested[i]);
 
-    //     if (not_flag) {
-    //         for (auto &val : new_bool_list) {
-    //             val = !val;
-    //         }
-    //         not_flag = false;
-    //     }
+        if (not_flag) {
+            for (size_t j = 0; j < new_bool_list.size(); ++j) {
+                new_bool_list[j] = !new_bool_list[j];
+            }
+            not_flag = false;
+        }
 
-    //     if (!bool_list.empty() && !logical.empty()) {
-    //         if (logical == "and") {
-    //             transform(bool_list.begin(), bool_list.end(), new_bool_list.begin(), new_bool_list.begin(), logical_and<bool>());
-    //         } else if (logical == "or") {
-    //             transform(bool_list.begin(), bool_list.end(), new_bool_list.begin(), new_bool_list.begin(), logical_or<bool>());
-    //         }
-    //         logical.clear();
-    //     }
-    // }
+        if (!bool_list.empty() && !logical.empty()) {
+            if (logical == "and") {
+                transform(bool_list.begin(), bool_list.end(), new_bool_list.begin(), new_bool_list.begin(), logical_and<bool>());
+            } else if (logical == "or") {
+                transform(bool_list.begin(), bool_list.end(), new_bool_list.begin(), new_bool_list.begin(), logical_or<bool>());
+            }
+            logical.clear();
+        }
+    }
 
     return new_bool_list;
 }
