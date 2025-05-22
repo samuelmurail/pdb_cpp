@@ -39,7 +39,7 @@ for i in range(N):
     pdb_numpy_write_time = time.time() - start_time
     write_times.append(pdb_numpy_write_time)
     start_time = time.time()
-    selection = "resid > 250 and chain A B and resname ALA GLY"
+    selection = "resid > 250 and chain A B and resname ALA GLY and within 20 of chain C"
     coor.select_atoms(selection)
     pdb_numpy_select_time = time.time() - start_time
     select_times.append(pdb_numpy_select_time)
@@ -72,7 +72,7 @@ print(f"-pdb_cpp   Time taken to get coordinates:   {avg_cpp_read:.4f} +- {std_c
 avg_cpp_write, std_cpp_write = avg_std(write_cpp_times)
 print(f"-pdb_cpp   Time taken to write coordinates: {avg_cpp_write:.4f} +- {std_cpp_write:.4f} seconds, speed-up:  {avg_write/avg_cpp_write:.2f} ")
 avg_cpp_select, std_select = avg_std(select_cpp_times)
-print(f"-pdb_cpp   Time taken to select atoms:      {avg_select:.4f} +- {std_select:.4f} seconds , speed-up:  {avg_select/avg_cpp_select:.2f}")
+print(f"-pdb_cpp   Time taken to select atoms:      {avg_cpp_select:.4f} +- {std_select:.4f} seconds , speed-up:  {avg_select/avg_cpp_select:.2f}")
 
 read_times = []
 write_times = []
@@ -147,7 +147,20 @@ sel = coor.select_atoms("name C*")
 print(F"Number of name C* : {sel.len}")
 
 sel = coor.select_atoms("resid > 250 and chain A B and resname ALA GLY")
-print(F"Number of resid > 250 and chain A B and resname ALA GLY : {sel.len}")
+print(F"Number of :{selection} : {sel.len}")
+
+selection = "resid > 250 and chain A B and resname ALA GLY and within 20.0 of chain C";
+sel = coor.select_atoms(selection)
+print(F"Number of :{selection} : {sel.len}")
+
+selection = "resid >= 250 and not chain C D E and resname ALA GLY and within 20.0 of chain C"
+sel = coor.select_atoms(selection)
+print(F"Number of :{selection} : {sel.len}")
+
+
+selection = "within 10.0 of chain C";
+sel = coor.select_atoms(selection)
+print(F" within 10.0 of chain C : {sel.len}")
 
 print("3rri:")
 file_name = "2rri.pdb"
@@ -161,4 +174,8 @@ coor = pdb_numpy.Coor(file_name)
 coor = core.Coor(file_name)
 #print(coor.get_Models(0).get_chain())
 
+selection = "resid >= 250 and not chain C D E and resname ALA GLY and within 20.0 of chain C"
+from pdb_numpy import select
+
+print(select.parse_selection(selection))
 

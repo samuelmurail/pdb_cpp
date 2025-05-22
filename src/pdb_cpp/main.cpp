@@ -116,15 +116,25 @@ int main() {
     indexes = model.select_atoms(selection);
     cout << "Number of SEL2 atoms: " << count(indexes.begin(), indexes.end(), true) << endl;
 
-    selection = "resid > 250 and chain A B and resname ALA GLY and within 5.0 of chain C";
+    selection = "resid >= 250 and not chain C D E and resname ALA GLY and within 20.0 of chain C";
 
-    parsed_selection = parse_selection(selection);
-    cout << "Parsed selection: ";
-    print_tokens(parsed_selection);
+    //parsed_selection = parse_selection(selection);
+    //cout << "Parsed selection: ";
+    //print_tokens(parsed_selection);
     cout << "Starting selection..." << endl;
-    indexes = model.select_tokens(parsed_selection);
+    indexes = model.select_atoms(selection);
+    cout << "- Number of not SEL atoms: " << count(indexes.begin(), indexes.end(), true) << endl;
+    selection = "resid >= 250 and chain A B and resname ALA GLY and within 20.0 of chain C";
+    indexes = model.select_atoms(selection);
+    cout << "- Number of not SEL atoms: " << count(indexes.begin(), indexes.end(), true) << endl;
+
+    selection = "within 10.0 of chain C";
+    indexes = model.select_atoms(selection);
     cout << "Number of SEL atoms: " << count(indexes.begin(), indexes.end(), true) << endl;
 
+    selection = "backbone and resid > 796 and resid < 848";
+    indexes = model.select_atoms(selection);
+    cout << "Number of SEL atoms: " << count(indexes.begin(), indexes.end(), true) << endl;
 
     return 0;
 }

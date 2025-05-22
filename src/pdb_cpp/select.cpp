@@ -56,6 +56,10 @@ void print_tokens(const Token &token, int indent) {
 void replace_all(string &str, const string &from, const string &to) {
     size_t start_pos = 0;
     while ((start_pos = str.find(from, start_pos)) != string::npos) {
+        if (str[start_pos + 1] == '=' && (from == ">" || from =="<")) { // Handle special case for >= and <=
+            start_pos += 2;
+            continue;
+        }
         str.replace(start_pos, from.length(), to);
         start_pos += to.length();
     }
@@ -105,7 +109,7 @@ TokenList parse_keywords(const TokenList &tokens)
         if (token.is_string()) {
             const string &val = token.as_string();
 
-            if (std::find(KEYWORDS.begin(), KEYWORDS.end(), val) != KEYWORDS.end()) {
+            if (KEYWORDS.count(val)) {
                 if (!local_sel.empty() && local_sel[0].is_string() && local_sel[0].as_string() == "within") {
                     new_tokens.push_back(Token(local_sel));
                 } else if (!local_sel.empty()) {
@@ -143,14 +147,23 @@ TokenList parse_within(const TokenList& tokens) {
     TokenList new_tokens;
     size_t i = 0;
     while (i < tokens.size()) {
+        // if (!tokens[i].is_list()){
+        //     cout << "parse_within: string : tokens[" << i << "] = " << tokens[i].as_string() << endl;
+        // } else {
+        //     cout << "parse_within: list :   tokens[" << i << "] = (";
+        //     for (const auto& sub : tokens[i].as_list()) {
+        //         cout << sub.as_string() << " ";
+        //     }
+        //     cout << ")" << endl;
+        // }
         if (tokens[i].is_list()) {
             const auto& sublist = tokens[i].as_list();
             if (!sublist.empty() && sublist[0].is_string() && sublist[0].as_string() == "within") {
                 TokenList new_token = sublist;
-                if (i + 1 < tokens.size() && tokens[i + 1].is_string() && tokens[i + 1].as_string() != "not") {
+                if (tokens[i + 1].is_list() || (tokens[i + 1].is_string() && tokens[i + 1].as_string() != "not")) {
                     new_token.emplace_back(tokens[i + 1]);
                     ++i;
-                } else if (i + 2 < tokens.size()) {
+                } else {
                     new_token.emplace_back(Token(TokenList{tokens[i + 1], tokens[i + 2]}));
                     i += 2;
                 }
@@ -172,22 +185,30 @@ Token parse_selection(string selection)
 {
 
     // Add spaces around operators and parentheses
-    for (const string &op : initializer_list<string>{"(", ")", "<", ">", "!=", "==", "<=", ">=", ":", "and", "or", "not"})
-    {
+    for (const string &op : initializer_list<string>{"!=", "==", "<=", ">=", ":", "and", "or", "not", "(", ")", "<", ">", }) {
         replace_all(selection, op, " " + op + " ");
     }
 
     // Replace nicknames with their corresponding values
-    for (const auto &pair : NICKNAMES)
-    {
+    for (const auto &pair : NICKNAMES) {
         replace_all(selection, pair.first, pair.second);
     }
 
     TokenList tokens = split(selection);
-
+    // cout << "tokens before parentheses: " << endl;
+    // print_tokens(tokens);
     tokens = parse_parentheses(tokens);
+    // cout << "tokens after parentheses: " << endl;
+    // print_tokens(tokens);
     tokens = parse_keywords(tokens);
+    // cout << "tokens after keywords: " << endl;
+    // print_tokens(tokens);
+    // Parse within keyword
+    // cout << "tokens after keywords: " << endl;
+    // print_tokens(tokens);
     tokens = parse_within(tokens);
+    // cout << "tokens after within: " << endl;
+    // print_tokens(tokens);
 
     return tokens;
 }
@@ -197,15 +218,15 @@ vector<bool> simple_select_atoms_model(const Model &model, const string &column,
     size_t n = model.size();
     vector<bool> result(n, false);
 
-    // cout << "column: " << column << endl;
-    // cout << "op: " << op << endl;
-    // cout << "values: ";
-    // for (const auto &v : values)
-    // {
-    //     cout << v << " ";
-    // }
-    // cout << endl;
-
+    if (0) {
+        cout << "column: " << column << endl;
+        cout << "op: " << op << endl;
+        cout << "values: ";
+        for (const auto &v : values) {
+            cout << v << " ";
+        }
+        cout << endl;
+    }
     auto str_equal = [](const array<char, 5> &a, const string &b) {
         return strncmp(a.data(), b.c_str(), 5) == 0;
     };
@@ -288,8 +309,8 @@ vector<bool> simple_select_atoms_model(const Model &model, const string &column,
         } else {
             throw invalid_argument("Unsupported operator for '" + column + "'");
         }
-    } else if (column == "resid" || column == "uniqresid" || column == "num") {
-        const vector<int> &model_val = (column == "resid") ? model.get_resid() : (column == "uniqresid") ? model.get_uniqresid()
+    } else if (column == "resid" || column == "residue" || column == "num") {
+        const vector<int> &model_val = (column == "resid") ? model.get_resid() : (column == "residue") ? model.get_uniqresid()
                                                                                                          : model.get_num();
         int val = stoi(values[0]);
         if (op == "==") {
@@ -367,16 +388,17 @@ vector<bool> dist_under_index(Model &model, vector<bool> selection, float distan
     vector<float> z = model.get_z();
     float square_distance = distance * distance, sq_dist;
 
-
     for (size_t i = 0; i < selection.size(); ++i) {
         if (selection[i]) {
             result[i] = true;
         } else {
             for (size_t j = 0; j < selection.size(); ++j) {
-                sq_dist = calculate_square_distance(x[i], y[i], z[i], x[j], y[j], z[j]);
-                if (sq_dist < square_distance) {
-                    result[i] = true;
-                    break;
+                if (selection[j]) {
+                    sq_dist = calculate_square_distance(x[i], y[i], z[i], x[j], y[j], z[j]);
+                    if (sq_dist < square_distance) {
+                        result[i] = true;
+                        break;
+                    }
                 }
             }
         }

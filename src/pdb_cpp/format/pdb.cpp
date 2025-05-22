@@ -24,7 +24,10 @@ Coor PDB_parse(const string& filename) {
     }
 
     string line;
-    int uniq_resid = 0;
+    int uniq_resid = -1; // Unique residue ID, will be incremented for each new residue
+    int old_resid = -99999999;
+    char old_insert_res = ' ';
+
     size_t array_i = 0;
 
     while (getline(file, line)) {
@@ -54,6 +57,11 @@ Coor PDB_parse(const string& filename) {
             resname_array[array_i] = '\0';
             array<char, 2> chain_array = {line[21], '\0'};
             int res_id            = stoi(line.substr(22, 4));
+            if (res_id != old_resid || line[26] != old_insert_res) {
+                ++uniq_resid;
+                old_resid = res_id;
+                old_insert_res = line[26];
+            }
             array<char, 2> insertres = {line[26], '\0'};
             float x = stof(line.substr(30, 8));
             float y = stof(line.substr(38, 8));

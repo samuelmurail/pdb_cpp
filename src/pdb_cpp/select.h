@@ -23,17 +23,17 @@ struct Token {
     Token(const vector<Token>& tokens) : value(tokens) {}
 
     bool is_string() const {
-        return std::holds_alternative<string>(value);
+        return holds_alternative<string>(value);
     }
     bool is_list() const {
-        return std::holds_alternative<vector<Token>>(value);
+        return holds_alternative<vector<Token>>(value);
     }
 
     const string& as_string() const {
-        return std::get<string>(value);
+        return get<string>(value);
     }
     const vector<Token>& as_list() const {
-        return std::get<vector<Token>>(value);
+        return get<vector<Token>>(value);
     }
 
     const string get_first() const {

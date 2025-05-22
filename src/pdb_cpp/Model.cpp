@@ -78,7 +78,6 @@ vector<bool> Model::select_tokens(const Token &tokens)
 
     // Case for simple selection
     if (tokens.is_list()) {
-        cout << "tokens is list" << endl;
         const auto &token_list = tokens.as_list();
         if (!token_list.empty() && token_list[0].is_string()) {
             const string &first = token_list[0].as_string();
@@ -100,26 +99,9 @@ vector<bool> Model::select_tokens(const Token &tokens)
         } 
     }
 
-    cout << "tokens is not list" << endl;
-    cout << "tokens: ";
-    print_tokens(tokens);
-
-    // Case: within keyword
-    // const string &first = tokens.get_first();
-    // cout << "first: " << first << endl;
-    // if (first == "within") {
-    //     const auto &token_list = tokens.as_list();
-    //     cout << "within start" << endl;
-    //     float distance = stof(token_list[1].as_string());
-    //     vector<bool> selection = select_tokens(token_list[3]);
-    //     // vector<int> sel_index = select_index(selection);
-    //     return dist_under_index(*this, selection, distance);
-    // }
-    
     // Nested structure
     const auto &nested_tokens = tokens.as_list();
     for (size_t i = 0; i < nested_tokens.size(); ++i) {
-        cout << "nested_tokens[" << i << "]" << endl;
         const Token &tok = nested_tokens[i];
 
         if (tok.is_string()) {
@@ -133,19 +115,19 @@ vector<bool> Model::select_tokens(const Token &tokens)
                 not_flag = true;
                 continue;
             }
-            // else if (token_str == "within") {
-            //     const auto &token_list = tokens.as_list();
-            //     distance = stof(token_list[1].as_string());
-            //     cout << "distance: " << distance << endl;
-            //     logical = token_str;
-            // }
+            else if (token_str == "within") {
+                const auto &token_list = tokens.as_list();
+                distance = stof(token_list[1].as_string());
+                new_bool_list = select_tokens(token_list[3]);
+                return dist_under_index(*this, new_bool_list, distance);
+            }
         }
 
         new_bool_list = move(select_tokens(tok)); // Avoid copy
 
         if (not_flag) {
-            for (bool val : new_bool_list) {
-                val = !val;
+            for (size_t j = 0; j < new_bool_list.size(); ++j) {
+                new_bool_list[j] = !new_bool_list[j];
             }
             not_flag = false;
         }
@@ -167,11 +149,6 @@ vector<bool> Model::select_tokens(const Token &tokens)
                     new_bool_list[k] = bool_list[k] || new_bool_list[k];
                 }
             }
-            // else if (logical == "within") {
-            //     // Handle within logic here
-            //     // For now, just clear the logical variable
-            //     return dist_under_index(*this, new_bool_list, distance);
-            // }
             logical.clear();
         }
     }
