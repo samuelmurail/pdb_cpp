@@ -70,6 +70,7 @@
         "__nullptr": "cpp",
         "map": "cpp",
         "valarray": "cpp",
-        "set": "cpp"
+        "set": "cpp",
+        "unordered_set": "cpp"
     }
 }

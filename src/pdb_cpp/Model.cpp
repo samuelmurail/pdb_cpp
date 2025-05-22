@@ -129,9 +129,12 @@ vector<bool> Model::select_tokens(const Token &tokens) {
 
         if (!bool_list.empty() && !logical.empty()) {
             if (logical == "and") {
-                std::transform(bool_list.begin(), bool_list.end(), new_bool_list.begin(), new_bool_list.begin(), std::logical_and<bool>());
+                //transform(bool_list.begin(), bool_list.end(), new_bool_list.begin(), new_bool_list.begin(), logical_and<bool>());
+                for (size_t k = 0; k < bool_list.size(); ++k) {
+                    new_bool_list[k] = bool_list[k] && new_bool_list[k];
+                }
             } else if (logical == "or") {
-                std::transform(bool_list.begin(), bool_list.end(), new_bool_list.begin(), new_bool_list.begin(), std::logical_or<bool>());
+                transform(bool_list.begin(), bool_list.end(), new_bool_list.begin(), new_bool_list.begin(), logical_or<bool>());
             }
             logical.clear();
         }
