@@ -39,7 +39,8 @@ for i in range(N):
     pdb_numpy_write_time = time.time() - start_time
     write_times.append(pdb_numpy_write_time)
     start_time = time.time()
-    coor.select_atoms("resid > 250 and chain A B and resname ALA GLY")
+    selection = "resid > 250 and chain A B and resname ALA GLY"
+    coor.select_atoms(selection)
     pdb_numpy_select_time = time.time() - start_time
     select_times.append(pdb_numpy_select_time)
 
@@ -55,7 +56,7 @@ for i in range(N):
 
     model = coor.get_Models(0)
     start_time = time.time()
-    model.select_atoms("resid > 250 and chain A B and resname ALA GLY")
+    model.select_atoms(selection)
     pdb_numpy_select_time = time.time() - start_time
     select_cpp_times.append(pdb_numpy_select_time)
 
