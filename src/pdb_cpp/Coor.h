@@ -26,6 +26,7 @@ public:
     CrystalPack crystal_pack;
     Transformation transformation;
     Symmetry symmetry;
+    size_t active_model = 0;
 
     // === Public interface ===
 
@@ -34,7 +35,9 @@ public:
     //bool loadPDB(const string& filename);
     void clear();
     void add_Model(const Model& model) { models_.push_back(model); };
-    size_t size() const { return models_[active_model_].size(); };
+    size_t get_active_model() const { return active_model; };
+    void set_active_model(size_t model) { active_model = model; };
+    size_t size() const { return models_[active_model].size(); };
     size_t model_size() const { return models_.size(); };
     Coor select_atoms(const string &selection, size_t frame=0) const;
     Coor select_bool_index(const vector<bool> &indexes) const;
@@ -52,6 +55,5 @@ public:
 private:
     // === Storage (Structure of Arrays) ===
     vector<Model> models_;
-    size_t active_model_ = 0;
 
 };

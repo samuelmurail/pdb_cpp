@@ -21,7 +21,7 @@ void Coor::clear()
 {
     models_.clear();
     crystal_pack.clear();
-    active_model_ = 0;
+    active_model = 0;
 }
 
 bool Coor::read(const string &filename) {
@@ -75,7 +75,7 @@ Coor Coor::select_bool_index(const vector<bool> &indexes) const {
     selected.crystal_pack = crystal_pack;
     selected.transformation = transformation;
     selected.symmetry = symmetry;
-    selected.active_model_ = active_model_;
+    selected.active_model = active_model;
 
     for (size_t i = 0; i < models_.size(); ++i) {
         Model model = models_[i].select_index(indexes);

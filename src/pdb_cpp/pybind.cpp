@@ -33,6 +33,7 @@ PYBIND11_MODULE(core, m) {
         // Add more methods as needed
         ;
     py::class_<Coor>(m, "Coor")
+        .def_property("active_model", &Coor::get_active_model, &Coor::set_active_model)
         .def(py::init<>())
         .def(py::init<const std::string&>())  // constructor from filename
         .def("read", &Coor::read)
@@ -42,6 +43,7 @@ PYBIND11_MODULE(core, m) {
         .def("add_Model", &Coor::add_Model)
         .def("get_Models", &Coor::get_Models)
         .def("get_all_Models", &Coor::get_all_Models)
+        .def("model_size", &Coor::model_size)
         .def("select_atoms", &Coor::select_atoms, 
             py::arg("selection"), py::arg("frame") = 0, // Specify default value for `frame`
             "Select atoms based on a selection string and an optional frame index")
