@@ -9,7 +9,7 @@ import os
 import pytest
 import numpy as np
 
-from pdb_cpp import core
+from pdb_cpp import Coor
 # from pdb_cpp import select as select
 
 from .datafiles import PDB_1Y0M, PDB_2RRI
@@ -177,7 +177,7 @@ from .datafiles import PDB_1Y0M, PDB_2RRI
 
 def test_select_atoms_model():
     """Test select_atoms function."""
-    test = core.Coor(PDB_1Y0M)
+    test = Coor(PDB_1Y0M)
     model = test.get_Models(0)
 
     assert model.size() == 648
@@ -240,35 +240,43 @@ def test_select_atoms_multi_frame():
     test = Coor(PDB_2RRI)
     assert test.len == 479
 
+    
+
     selec = "name N CA and residue > 20 and residue < 80"
     new = test.select_atoms(selec)
+    new_model_10 = new.get_Models(10)
     assert new.len == 16
-    assert new.models[10].len == 16
+    assert new_model_10.len == 16
 
     selec = "name N CA and residue > -20 and residue < 80"
     new = test.select_atoms(selec)
+    new_model_10 = new.get_Models(10)
     assert new.len == 58
-    assert new.models[10].len == 58
+    assert new_model_10.len == 58
 
     selec = "name N CA and residue > 20 and residue < 80"
     new = test.select_atoms(selec, frame=19)
+    new_model_10 = new.get_Models(10)
     assert new.len == 16
-    assert new.models[10].len == 16
+    assert new_model_10.len == 16
 
     selec = "x > 10"
     new = test.select_atoms(selec)
+    new_model_10 = new.get_Models(10)
     assert new.len == 57
-    assert new.models[10].len == 57
+    assert new_model_10.len == 57
 
     selec = "x > 10"
     new = test.select_atoms(selec, frame=10)
+    new_model_10 = new.get_Models(10)
     assert new.len == 58
-    assert new.models[10].len == 58
+    assert new_model_10.len == 58
 
     selec = "noh"
     new = test.select_atoms(selec)
+    new_model_10 = new.get_Models(10)
     assert new.len == 237
-    assert new.models[10].len == 237
+    assert new_model_10.len == 237
 
 
 def test_select_atoms_within(tmp_path):

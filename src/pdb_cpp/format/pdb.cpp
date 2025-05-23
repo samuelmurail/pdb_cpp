@@ -97,7 +97,8 @@ Coor PDB_parse(const string& filename) {
             if (model.size() == 0) continue;
             coor.add_Model(model);
             model.clear();
-            uniq_resid = 0;
+            uniq_resid = -1;
+            old_resid = -99999999;
         } else if (line.compare(0, 6, "CRYST1") == 0) {
             // Parse CRYST1 line
             coor.crystal_pack.set_CRYST1_pdb(line);

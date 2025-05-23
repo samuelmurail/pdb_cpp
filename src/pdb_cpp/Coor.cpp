@@ -95,7 +95,7 @@ void Coor::get_aa_seq(bool gap_in_seq, size_t frame) const {
     vector<bool> CA_indexes = models_[frame].select_atoms("name CA");
     vector<array<char, 5>> resname_array = models_[frame].get_resname();
 
-    unordered_map<char, char> AA_DICT_L = {
+    //unordered_map<char, char> AA_DICT_L = {
 
 
     for (size_t i = 0; i < CA_indexes.size(); ++i) {

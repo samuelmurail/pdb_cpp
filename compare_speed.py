@@ -4,7 +4,7 @@ import sys
 
 sys.path.insert(0, "./src")
 
-from pdb_cpp import core
+from pdb_cpp import Coor
 
 def avg_std(arr):
     """
@@ -46,7 +46,7 @@ for i in range(N):
 
     # cpp
     start_time = time.time()
-    coor = core.Coor(file_name)
+    coor = Coor(file_name)
     pdb_numpy_read_time = time.time() - start_time 
     read_cpp_times.append(pdb_numpy_read_time)
     start_time = time.time()
@@ -106,7 +106,7 @@ for i in range(N):
 
     # cpp
     start_time = time.time()
-    coor = core.Coor(file_name)
+    coor = Coor(file_name)
     pdb_numpy_read_time = time.time() - start_time 
     read_cpp_times.append(pdb_numpy_read_time)
     start_time = time.time()
@@ -186,7 +186,7 @@ coor = pdb_numpy.Coor(file_name)
 
 #print(coor.models[0].chain)
 
-coor = core.Coor(file_name)
+coor = Coor(file_name)
 #print(coor.get_Models(0).get_chain())
 
 selection = "resid >= 250 and not chain C D E and resname ALA GLY and within 20.0 of chain C"

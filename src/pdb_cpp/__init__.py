@@ -18,4 +18,12 @@ def len(self):
     """Return the number of atoms in the selection."""
     return self.size()
 
+@property
+def models(self):
+    """Return the model of the selection."""
+    return self.get_Models()
+
 Model.len = len
+
+Coor.len = len
+Coor.models = models
