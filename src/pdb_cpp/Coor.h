@@ -41,6 +41,8 @@ public:
     void get_aa_seq(bool gap_in_seq=true, size_t frame=0) const;
 
     Model get_Models(int i) const { return models_[i]; }
+    vector<Model> get_all_Models() const { return models_; }
+
     // void set_crystal(float a, float b, float c, float alpha, float beta, float gamma) {
     //     crystal_pack_.set_unit_cell(alpha, beta, gamma, a, b, c);
     // }

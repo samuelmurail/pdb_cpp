@@ -14,16 +14,82 @@ __status__ = "Beta"
 from .core import Coor, Model
 
 @property
+def residue(self):
+    """Return the residue of the selection."""
+    return self.get_uniqresid()
+
+@property
+def name(self):
+    """Return the atom name of the selection."""
+    return self.get_name()
+
+@property
+def chain(self):
+    """Return the chain of the selection."""
+    return self.get_chain()
+
+@property
+def resname(self):
+    """Return the residue name of the selection."""
+    return self.get_resname()
+
+@property
+def resid(self):
+    """Return the residue id of the selection."""
+    return self.get_resid()
+
+@property
+def x(self):
+    """Return the x coordinate of the selection."""
+    return self.get_x()
+
+@property
+def y(self):
+    """Return the y coordinate of the selection."""
+    return self.get_y()
+
+@property
+def z(self):
+    """Return the z coordinate of the selection."""
+    return self.get_z()
+
+@property
+def beta(self):
+    """Return the beta factor of the selection."""
+    return self.get_beta()
+
+@property
+def occ(self):
+    """Return the occupancy of the selection."""
+    return self.get_occupancy()
+
+Model.residue = residue
+Model.name = name
+Model.chain = chain
+Model.resname = resname
+Model.resid = resid
+Model.x = x
+Model.y = y
+Model.z = z
+Model.beta = beta
+Model.occ = occ
+
+@property
 def len(self):
     """Return the number of atoms in the selection."""
     return self.size()
 
+Model.len = len
+Coor.len = len
+
 @property
 def models(self):
     """Return the model of the selection."""
-    return self.get_Models()
+    return self.get_all_Models()
 
-Model.len = len
+# @property
+# def residue(self):
+#     """Return the residue of the selection."""
+#     return self.models[0].get_uniqresid()
 
-Coor.len = len
 Coor.models = models
