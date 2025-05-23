@@ -58,7 +58,7 @@ TokenList parse_parentheses(const TokenList &tokens, size_t start = 0);
 Token parse_selection(string selection);
 
 vector<bool> simple_select_atoms_model(const Model &model, const string &column, const vector<string> &values, const string &op);
-vector<bool> dist_under_index(Model &model, vector<bool> selection, float distance);
+vector<bool> dist_under_index(const Model &model, vector<bool> selection, float distance);
 
 // Keywords and nicknames
 extern const unordered_set<string> KEYWORDS;

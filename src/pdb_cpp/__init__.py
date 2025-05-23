@@ -17,4 +17,5 @@ from .core import Coor, Model
 def len(self):
     """Return the number of atoms in the selection."""
     return self.size()
-Coor.len = len
+
+Model.len = len

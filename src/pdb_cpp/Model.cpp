@@ -6,8 +6,7 @@
 
 using namespace std;
 
-void Model::clear()
-{
+void Model::clear() {
     x_.clear();
     y_.clear();
     z_.clear();
@@ -25,8 +24,7 @@ void Model::clear()
     uniqresid_.clear();
 }
 
-size_t Model::size() const
-{
+size_t Model::size() const {
     return x_.size();
 }
 
@@ -41,8 +39,7 @@ bool Model::addAtom(
     const array<char, 5> &elem = {' ', ' ', ' ', ' ', '\0'},
     const array<char, 2> &insertres = {' ', '\0'},
     bool field = true,
-    int uniqresid = 0)
-{
+    int uniqresid = 0) {
 
     field_.push_back(field);
     num_.push_back(num);
@@ -63,13 +60,12 @@ bool Model::addAtom(
     return true;
 }
 
-vector<bool> Model::simple_select_atoms(const string &column, const vector<string> &values, const string &op)
-{
+vector<bool> Model::simple_select_atoms(const string &column, const vector<string> &values, const string &op) const{
     return simple_select_atoms_model(*this, column, values, op);
 }
 
-vector<bool> Model::select_tokens(const Token &tokens)
-{
+vector<bool> Model::select_tokens(const Token &tokens) const {
+
     vector<bool> bool_list;
     vector<bool> new_bool_list;
     string logical;
@@ -84,8 +80,7 @@ vector<bool> Model::select_tokens(const Token &tokens)
 
             // Case: simple operator-based or keyword-based selection
             if (KEYWORDS.count(first)) {
-                if (token_list.size() >= 3 && token_list[1].is_string() && is_operator(token_list[1].as_string()))
-                {
+                if (token_list.size() >= 3 && token_list[1].is_string() && is_operator(token_list[1].as_string())) {
                     return simple_select_atoms(first, {token_list[2].as_string()}, token_list[1].as_string());
                 } else {
                     vector<string> values;
@@ -156,9 +151,30 @@ vector<bool> Model::select_tokens(const Token &tokens)
     return new_bool_list;
 }
 
-vector<bool> Model::select_atoms(const string selection)
-{
-
+vector<bool> Model::select_atoms(const string selection) const{
     Token parsed_selection = parse_selection(selection);
     return select_tokens(parsed_selection);
+}
+
+Model Model::select_index(const vector<bool> &indexes) const {
+    Model selected;
+    selected.clear();
+
+    for (size_t i = 0; i < indexes.size(); ++i) {
+        if (indexes[i]) {
+            selected.addAtom(
+                num_[i],
+                name_[i],
+                resname_[i],
+                resid_[i],
+                chain_[i],
+                x_[i], y_[i], z_[i], occ_[i], beta_[i],
+                alterloc_[i],
+                elem_[i],
+                insertres_[i],
+                field_[i],
+                uniqresid_[i]);
+        }
+    }
+    return selected;
 }

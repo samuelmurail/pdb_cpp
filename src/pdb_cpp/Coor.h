@@ -30,11 +30,15 @@ public:
     // === Public interface ===
 
     bool read(const string& filename);
-    bool write(const string & filename);
+    bool write(const string & filename) const;
     //bool loadPDB(const string& filename);
     void clear();
-    void add_Model(const Model& model) { models_.push_back(model); }
-    int size() const { return models_.size(); }
+    void add_Model(const Model& model) { models_.push_back(model); };
+    int size() const { return models_[active_model_].size(); };
+    int model_size() const { return models_.size(); };
+    Coor select_atoms(const string &selection, size_t frame=0) const;
+    Coor select_bool_index(const vector<bool> &indexes) const;
+
     Model get_Models(int i) const { return models_[i]; }
     // void set_crystal(float a, float b, float c, float alpha, float beta, float gamma) {
     //     crystal_pack_.set_unit_cell(alpha, beta, gamma, a, b, c);

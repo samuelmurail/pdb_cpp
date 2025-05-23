@@ -13,6 +13,7 @@ PYBIND11_MODULE(core, m) {
         .def("size", &Model::size)
         .def("addAtom", &Model::addAtom)
         .def("select_atoms", &Model::select_atoms)
+        
 
         .def("get_x", &Model::get_x)
         .def("get_y", &Model::get_y)
@@ -40,6 +41,10 @@ PYBIND11_MODULE(core, m) {
         .def("size", &Coor::size)
         .def("add_Model", &Coor::add_Model)
         .def("get_Models", &Coor::get_Models)
+        .def("select_atoms", &Coor::select_atoms, 
+            py::arg("selection"), py::arg("frame") = 0, // Specify default value for `frame`
+            "Select atoms based on a selection string and an optional frame index")
+        .def("select_bool_index", &Coor::select_bool_index)
         // Add more methods as needed
         ;
 

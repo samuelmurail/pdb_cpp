@@ -381,7 +381,7 @@ vector<bool> simple_select_atoms_model(const Model &model, const string &column,
     return result;
 }
 
-vector<bool> dist_under_index(Model &model, vector<bool> selection, float distance) {
+vector<bool> dist_under_index(const Model &model, vector<bool> selection, float distance) {
     vector<bool> result(selection.size(), false);
     vector<float> x = model.get_x();
     vector<float> y = model.get_y();

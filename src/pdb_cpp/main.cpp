@@ -132,9 +132,12 @@ int main() {
     indexes = model.select_atoms(selection);
     cout << "Number of SEL atoms: " << count(indexes.begin(), indexes.end(), true) << endl;
 
-    selection = "backbone and resid > 796 and resid < 848";
+    selection = "backbone and residue > 796 and residue < 848";
     indexes = model.select_atoms(selection);
     cout << "Number of SEL atoms: " << count(indexes.begin(), indexes.end(), true) << endl;
+
+    Coor new_structure = structure.select_atoms("resname ALA GLY CYS and chain A B");
+    cout << "New model size: " << new_structure.size() << endl;
 
     return 0;
 }
