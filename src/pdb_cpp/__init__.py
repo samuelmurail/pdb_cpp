@@ -115,55 +115,55 @@ Coor.model_num = model_num
 @property
 def resname(self):
     """Return the residue name of the selection."""
-    return self.models[0].get_resname()
+    return self.models[self.active_model].get_resname()
 
 @property
 def resid(self):
     """Return the residue id of the selection."""
-    return self.models[0].get_resid()
+    return self.models[self.active_model].get_resid()
 
 @property
 def residue(self):
     """Return the residue of the selection."""
-    return self.models[0].get_uniqresid()
+    return self.models[self.active_model].get_uniqresid()
 
 @property
 def uniq_resid(self):
     """Return the residue of the selection."""
-    return self.models[0].get_uniqresid()
+    return self.models[self.active_model].get_uniqresid()
 
 @property
 def chain(self):
     """Return the chain of the selection."""
-    return self.models[0].get_chain()
+    return self.models[self.active_model].get_chain()
 @property
 def name(self):
     """Return the atom name of the selection."""
-    return self.models[0].get_name()
+    return self.models[self.active_model].get_name()
 @property
 def num(self):
     """Return the atom number of the selection."""
-    return self.models[0].get_num()
+    return self.models[self.active_model].get_num()
 @property
 def x(self):
     """Return the x coordinate of the selection."""
-    return self.models[0].get_x()
+    return self.models[self.active_model].get_x()
 @property
 def y(self):
     """Return the y coordinate of the selection."""
-    return self.models[0].get_y()
+    return self.models[self.active_model].get_y()
 @property
 def z(self):
     """Return the z coordinate of the selection."""
-    return self.models[0].get_z()
+    return self.models[self.active_model].get_z()
 @property
 def beta(self):
     """Return the beta factor of the selection."""
-    return self.models[0].get_beta()
+    return self.models[self.active_model].get_beta()
 @property
 def occ(self):
     """Return the occupancy of the selection."""
-    return self.models[0].get_occupancy()
+    return self.models[self.active_model].get_occupancy()
 
 Coor.resname = resname
 Coor.resid = resid
