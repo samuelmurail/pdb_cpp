@@ -34,10 +34,11 @@ public:
     //bool loadPDB(const string& filename);
     void clear();
     void add_Model(const Model& model) { models_.push_back(model); };
-    int size() const { return models_[active_model_].size(); };
-    int model_size() const { return models_.size(); };
+    size_t size() const { return models_[active_model_].size(); };
+    size_t model_size() const { return models_.size(); };
     Coor select_atoms(const string &selection, size_t frame=0) const;
     Coor select_bool_index(const vector<bool> &indexes) const;
+    void get_aa_seq(bool gap_in_seq=true, size_t frame=0) const;
 
     Model get_Models(int i) const { return models_[i]; }
     // void set_crystal(float a, float b, float c, float alpha, float beta, float gamma) {
@@ -49,6 +50,6 @@ public:
 private:
     // === Storage (Structure of Arrays) ===
     vector<Model> models_;
-    int active_model_ = 0;
+    size_t active_model_ = 0;
 
 };

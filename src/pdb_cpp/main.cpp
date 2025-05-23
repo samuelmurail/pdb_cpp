@@ -139,5 +139,7 @@ int main() {
     Coor new_structure = structure.select_atoms("resname ALA GLY CYS and chain A B");
     cout << "New model size: " << new_structure.size() << endl;
 
+    structure.get_aa_seq();
+
     return 0;
 }

@@ -122,7 +122,7 @@ string get_pdb_string(const Coor& coor) {
     ostringstream oss;
     oss << coor.crystal_pack.get_pdb_crystal_pack();
 
-    for (int model_index = 0; model_index < coor.model_size(); ++model_index) {
+    for (size_t model_index = 0; model_index < coor.model_size(); ++model_index) {
         const Model& model = coor.get_Models(model_index);
         oss << "MODEL      " << setw(3) << model_index + 1 << "\n";
         for (size_t i = 0; i < model.size(); ++i) {

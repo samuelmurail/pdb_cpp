@@ -1,9 +1,11 @@
 #include <cstring>
 #include <iomanip>
+#include <unordered_map>
 
 #include "Coor.h"
 #include "Model.h"
 #include "format/pdb.h"
+#include "sequence.h"
 
 using namespace std;
 
@@ -56,7 +58,7 @@ bool Coor::write(const string &filename) const {
 
 Coor Coor::select_atoms(const string &selection, size_t frame) const {
     // Ensure the frame index is valid
-    if (frame >= models_.size()) {
+    if (frame >= model_size()) {
         throw out_of_range("Frame index out of range");
     }
 
@@ -81,4 +83,24 @@ Coor Coor::select_bool_index(const vector<bool> &indexes) const {
     }
 
     return selected;
+}
+
+void Coor::get_aa_seq(bool gap_in_seq, size_t frame) const {
+    // Ensure the frame index is valid
+    if (frame >= model_size()) {
+        throw out_of_range("Frame index out of range");
+    }
+
+    // Get the indexes of the selected atoms from the specified model
+    vector<bool> CA_indexes = models_[frame].select_atoms("name CA");
+    vector<array<char, 5>> resname_array = models_[frame].get_resname();
+
+    unordered_map<char, char> AA_DICT_L = {
+
+
+    for (size_t i = 0; i < CA_indexes.size(); ++i) {
+        if (CA_indexes[i]) {
+            cout << convert_to_one_letter_resname(resname_array[i]);
+        }
+    }
 }
