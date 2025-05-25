@@ -48,6 +48,10 @@ PYBIND11_MODULE(core, m) {
             py::arg("selection"), py::arg("frame") = 0, // Specify default value for `frame`
             "Select atoms based on a selection string and an optional frame index")
         .def("select_bool_index", &Coor::select_bool_index)
+        .def("get_uniq_chain", &Coor::get_uniq_chain)
+        .def("get_aa_sequences", &Coor::get_aa_sequences, 
+            py::arg("gap_in_seq") = true, py::arg("frame") = 0, // Specify default values for `gap_in_seq` and `frame`
+            "Get the amino acid sequence, optionally including gaps and specifying a frame index")
         // Add more methods as needed
         ;
 

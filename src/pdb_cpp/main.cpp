@@ -139,7 +139,19 @@ int main() {
     Coor new_structure = structure.select_atoms("resname ALA GLY CYS and chain A B");
     cout << "New model size: " << new_structure.size() << endl;
 
-    structure.get_aa_seq();
+    vector<string> seq_vec = structure.get_aa_sequences();
+    cout << "The sequence is: ";
+    for (const auto &seq : seq_vec) {
+        cout << seq << endl;
+    }
+    cout << endl;
+
+    vector<array<char, 2>> uniq_chain = structure.get_uniq_chain();
+    cout << "Unique chains: ";
+    for (const auto &chain : uniq_chain) {
+        cout << chain[0] << " ";
+    }
+    cout << endl;
 
     return 0;
 }

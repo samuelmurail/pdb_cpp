@@ -87,12 +87,12 @@ Model.beta = beta
 Model.occ = occ
 
 @property
-def len(self):
+def length(self): # Call it length to avoid conflict with len()
     """Return the number of atoms in the selection."""
     return self.size()
 
-Model.len = len
-Coor.len = len
+Model.len = length
+Coor.len = length
 
 @property
 def models(self):
@@ -177,3 +177,19 @@ Coor.beta = beta
 Coor.occ = occ
 Coor.residue = residue
 Coor.uniq_resid = uniq_resid
+
+def get_aa_seq(self):
+    """Return the amino acid sequence of the selection."""
+    uniq_chains = self.get_uniq_chain()
+    sequences = self.get_aa_sequences()
+    seq_dict = {}
+
+    for chain, seq in zip(uniq_chains, sequences):
+        new_chain = ""
+        for letter in chain:
+            if letter != '\x00':
+                new_chain += letter
+        seq_dict[new_chain] = seq
+    return seq_dict
+
+Coor.get_aa_seq = get_aa_seq

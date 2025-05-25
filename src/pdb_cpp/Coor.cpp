@@ -85,7 +85,14 @@ Coor Coor::select_bool_index(const vector<bool> &indexes) const {
     return selected;
 }
 
-void Coor::get_aa_seq(bool gap_in_seq, size_t frame) const {
+vector<array<char, 2>> Coor::get_uniq_chain() const {
+    if (models_.empty()) {
+        throw runtime_error("No models available");
+    }
+    return models_[active_model].get_uniq_chain();
+}
+
+vector<string> Coor::get_aa_sequences(bool gap_in_seq, size_t frame) const {
     // Ensure the frame index is valid
     if (frame >= model_size()) {
         throw out_of_range("Frame index out of range");
@@ -94,13 +101,34 @@ void Coor::get_aa_seq(bool gap_in_seq, size_t frame) const {
     // Get the indexes of the selected atoms from the specified model
     vector<bool> CA_indexes = models_[frame].select_atoms("name CA");
     vector<array<char, 5>> resname_array = models_[frame].get_resname();
+    vector<array<char, 2>> chain_array = models_[frame].get_chain();
+    vector<int> resid_array = models_[frame].get_resid();
 
-    //unordered_map<char, char> AA_DICT_L = {
-
+    array<char, 2> old_chain = chain_array[0];
+    vector<string> seq_vec;
+    int old_resid = resid_array[0];
+    int chain_index = 0;
+    seq_vec.emplace_back("");
 
     for (size_t i = 0; i < CA_indexes.size(); ++i) {
         if (CA_indexes[i]) {
-            cout << convert_to_one_letter_resname(resname_array[i]);
+            if (chain_array[i] != old_chain) {
+                // New chain or new residue
+                old_chain = chain_array[i];
+                old_resid = resid_array[i];
+                chain_index++;
+                seq_vec.emplace_back("");
+            }
+            if (resid_array[i] != old_resid) {
+                // New residue
+                old_resid = resid_array[i];
+                if (gap_in_seq) {
+                    seq_vec[chain_index] += "-"; // Add gap for new residue
+                }
+            }
+            seq_vec[chain_index] += convert_to_one_letter_resname(resname_array[i]);
+            old_resid += 1;
         }
     }
+    return seq_vec;
 }

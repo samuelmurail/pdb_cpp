@@ -178,3 +178,18 @@ Model Model::select_index(const vector<bool> &indexes) const {
     }
     return selected;
 }
+
+vector<array<char, 2>> Model::get_uniq_chain() const{
+    unordered_set<string> uniq_chains;
+    vector<array<char, 2>> uniq_chain;
+
+    for (const auto &chain : chain_) {
+        string chain_str(chain.data(), strnlen(chain.data(), 2));
+        if (uniq_chains.insert(chain_str).second) {
+            uniq_chain.push_back(chain);
+        }
+    }
+
+    return uniq_chain;
+
+}

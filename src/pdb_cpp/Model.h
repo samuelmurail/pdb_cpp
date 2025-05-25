@@ -57,6 +57,8 @@ public:
     const vector<bool> &get_field() const { return field_; }
     const vector<int> &get_uniqresid() const { return uniqresid_; }
 
+    vector<array<char, 2>> get_uniq_chain() const;
+
 private:
     // === Storage (Structure of Arrays) ===
     vector<float> x_, y_, z_, occ_, beta_;
