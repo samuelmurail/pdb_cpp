@@ -1,6 +1,8 @@
 #include <cstring>
 #include <iomanip>
 #include <unordered_map>
+#include <string>
+#include <fstream>
 
 #include "Coor.h"
 #include "Model.h"

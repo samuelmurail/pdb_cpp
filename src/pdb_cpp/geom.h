@@ -4,9 +4,10 @@
 #pragma once
 #include <cstring>
 #include <iomanip>
-
 #include <string>
 #include <cmath>
+#include <algorithm>
+#include <iostream>
 
 using namespace std;
 
@@ -27,7 +28,7 @@ public:
         {
             z = stoi(line.substr(67, 3));
         }
-        catch(const std::exception& e)
+        catch(const exception& e)
         {
             z = 1;
         }
@@ -64,7 +65,7 @@ private:
 
 class Transformation {
 public:
-    void parse_pdb_transformation(const std::string& text) {
+    void parse_pdb_transformation(const string& text) {
         chains.clear();
         matrix.clear();
         istringstream iss(text);
@@ -79,7 +80,7 @@ public:
                 string chains_str = line.substr(42);
                 istringstream chainss(chains_str);
                 string chain;
-                while (std::getline(chainss, chain, ',')) {
+                while (getline(chainss, chain, ',')) {
                     // Remove leading/trailing whitespace
                     chain.erase(chain.begin(), find_if(chain.begin(), chain.end(), [](unsigned char ch) { return !isspace(ch); }));
                     chain.erase(find_if(chain.rbegin(), chain.rend(), [](unsigned char ch) { return !isspace(ch); }).base(), chain.end());
@@ -124,7 +125,7 @@ private:
 
 class Symmetry {
 public:
-    void parse_pdb_symmetry(const std::string& text) {
+    void parse_pdb_symmetry(const string& text) {
         matrix.clear();
         istringstream iss(text);
         string line;

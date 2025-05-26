@@ -1,11 +1,8 @@
-#pragma once
+#ifndef COOR_H
+#define COOR_H
+
 #include <vector>
 #include <string>
-#include <iostream>
-#include <fstream>
-#include <sstream>
-#include <algorithm>
-#include <cctype>
 #include <array>
 
 #include "Model.h"
@@ -58,3 +55,5 @@ private:
     vector<Model> models_;
 
 };
+
+#endif // COOR_H

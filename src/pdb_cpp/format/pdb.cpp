@@ -1,5 +1,6 @@
 #include <cstring>
 #include <iomanip>
+#include <fstream>
 
 #include "../Model.h"
 #include "../Coor.h"
@@ -127,7 +128,7 @@ string get_pdb_string(const Coor& coor) {
         const Model& model = coor.get_Models(model_index);
         oss << "MODEL      " << setw(3) << model_index + 1 << "\n";
         for (size_t i = 0; i < model.size(); ++i) {
-            std::string field = model.get_field()[i] ? "HETATM" : "ATOM  ";
+            string field = model.get_field()[i] ? "HETATM" : "ATOM  ";
             oss << field
                 << setw(5) << model.get_num()[i] << " "
                 << setw(4) << model.get_name()[i].data()
