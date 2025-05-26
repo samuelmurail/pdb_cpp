@@ -1,7 +1,10 @@
-#include "Coor.h"
-#include "select.h"
 #include <chrono>
 #include <iomanip>
+
+#include "Coor.h"
+#include "select.h"
+#include "Model.h"
+#include "TMAlign.h"
 
 using namespace std;
 
@@ -9,7 +12,7 @@ int main() {
     Coor structure;
 
     auto start = chrono::high_resolution_clock::now();
-    structure.read("3eam.pdb");
+    structure.read("3eam_gap.pdb");
     //structure.read("2rri.pdb");
     auto end = chrono::high_resolution_clock::now();
 
@@ -128,9 +131,21 @@ int main() {
     indexes = model.select_atoms(selection);
     cout << "- Number of not SEL atoms: " << count(indexes.begin(), indexes.end(), true) << endl;
 
+    vector<int> indices = model.get_index_select(selection);
+    cout << "Number of indices: " << indices.size() << endl;
+    cout << "First index: " << indices[0] << endl;
+    cout << "Last index: " << indices[indices.size() - 1] << endl;
+    cout << "Indexes: ";
+    for (const auto &index : indices) {
+        cout << index << " ";
+    }
+
+
+
     selection = "within 10.0 of chain C";
     indexes = model.select_atoms(selection);
     cout << "Number of SEL atoms: " << count(indexes.begin(), indexes.end(), true) << endl;
+
 
     selection = "backbone and residue > 796 and residue < 848";
     indexes = model.select_atoms(selection);
@@ -153,5 +168,15 @@ int main() {
     }
     cout << endl;
 
+    model = structure.get_Models(0);
+    vector<vector<string>> sec_vec = compute_SS(structure);
+    cout << "The secondary structure is: ";
+
+    for (const auto &sec : sec_vec) {
+        for (const auto &s : sec) {
+            cout << s << " ";
+        }
+        cout << endl;
+    }
     return 0;
 }

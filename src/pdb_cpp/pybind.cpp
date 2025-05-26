@@ -3,6 +3,7 @@
 #include <pybind11/stl_bind.h>
 #include "Model.h"
 #include "Coor.h"
+#include "TMAlign.h"
 
 namespace py = pybind11;
 
@@ -54,5 +55,10 @@ PYBIND11_MODULE(core, m) {
             "Get the amino acid sequence, optionally including gaps and specifying a frame index")
         // Add more methods as needed
         ;
-
+    // Bind the TMAlign function
+    m.def("compute_SS",
+        static_cast<std::vector<std::vector<std::string>>(*)(const Coor&, bool)>(&compute_SS),
+        py::arg("coor"),
+        py::arg("gap_in_seq") = false,
+        "Compute secondary structure for all models in a Coor object");
 }

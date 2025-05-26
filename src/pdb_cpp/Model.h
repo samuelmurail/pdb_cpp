@@ -34,6 +34,7 @@ public:
     vector<bool> select_tokens(const Token &tokens) const;
     vector<bool> select_atoms(const string selection) const;
     Model select_index(const vector<bool> &indexes) const;
+    vector<int> get_index_select(const string selection) const;
 
     // Accessors
     const vector<float> &get_x() const { return x_; }
@@ -53,6 +54,8 @@ public:
     const vector<int> &get_uniqresid() const { return uniqresid_; }
 
     vector<array<char, 2>> get_uniq_chain() const;
+
+    float distance(size_t i, size_t j) const;
 
 private:
     // === Storage (Structure of Arrays) ===

@@ -3,6 +3,7 @@
 
 #include "Model.h"
 #include "select.h"
+#include "geom.h"
 
 using namespace std;
 
@@ -179,6 +180,17 @@ Model Model::select_index(const vector<bool> &indexes) const {
     return selected;
 }
 
+vector<int> Model::get_index_select(const string selection) const{
+    vector<bool> bool_indexes = select_atoms(selection);
+    vector<int> indices;
+    for (size_t i = 0; i < bool_indexes.size(); ++i) {
+        if (bool_indexes[i]) {
+            indices.push_back(i);
+        }
+    }
+    return indices;
+}
+
 vector<array<char, 2>> Model::get_uniq_chain() const{
     unordered_set<string> uniq_chains;
     vector<array<char, 2>> uniq_chain;
@@ -192,4 +204,8 @@ vector<array<char, 2>> Model::get_uniq_chain() const{
 
     return uniq_chain;
 
+}
+
+float Model::distance(size_t i, size_t j) const{
+    return calculate_distance(x_[i], y_[i], z_[i], x_[j], y_[j], z_[j]);
 }

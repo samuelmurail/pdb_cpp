@@ -38,6 +38,7 @@ public:
     size_t model_size() const { return models_.size(); };
     Coor select_atoms(const string &selection, size_t frame=0) const;
     Coor select_bool_index(const vector<bool> &indexes) const;
+    vector<int> get_index_select(const string selection, size_t frame=0) const;
     vector<array<char, 2>> get_uniq_chain() const;
     vector<string> get_aa_sequences(bool gap_in_seq=true, size_t frame=0) const;
 

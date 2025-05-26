@@ -5,6 +5,7 @@ import sys
 sys.path.insert(0, "./src")
 
 from pdb_cpp import Coor
+from pdb_cpp import TMalign
 
 def avg_std(arr):
     """

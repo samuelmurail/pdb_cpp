@@ -87,6 +87,17 @@ Coor Coor::select_bool_index(const vector<bool> &indexes) const {
     return selected;
 }
 
+vector<int> Coor::get_index_select(const string selection, size_t frame) const{
+    // Ensure the frame index is valid
+    if (frame >= model_size()) {
+        throw out_of_range("Frame index out of range");
+    }
+
+    // Get the indexes of the selected atoms from the specified model
+    return models_[frame].get_index_select(selection);
+}
+
+
 vector<array<char, 2>> Coor::get_uniq_chain() const {
     if (models_.empty()) {
         throw runtime_error("No models available");
@@ -115,6 +126,7 @@ vector<string> Coor::get_aa_sequences(bool gap_in_seq, size_t frame) const {
         throw runtime_error("Chain not found in unique chains");
     }
     int chain_index = distance(uniq_chains.begin(), it);
+    size_t gap_num;
 
     vector<string> seq_vec;
     int old_resid = resid_array[0];
@@ -136,10 +148,13 @@ vector<string> Coor::get_aa_sequences(bool gap_in_seq, size_t frame) const {
             }
             if (resid_array[i] != old_resid) {
                 // New residue
-                old_resid = resid_array[i];
                 if (gap_in_seq) {
-                    seq_vec[chain_index] += "-"; // Add gap for new residue
+                    gap_num = resid_array[i] - old_resid;
+                    for (size_t j = 0; j < gap_num; ++j) {
+                        seq_vec[chain_index] += "-"; // Add gap for new residue
+                    }
                 }
+                old_resid = resid_array[i];
             }
             seq_vec[chain_index] += convert_to_one_letter_resname(resname_array[i]);
             old_resid += 1;

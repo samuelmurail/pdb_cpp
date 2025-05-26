@@ -16,7 +16,7 @@ PDB_2RRI = os.path.join(TEST_FILE_PATH, "2rri.pdb")
 MMCIF_2RRI = os.path.join(TEST_FILE_PATH, "2rri.cif")
 GRO_2RRI = os.path.join(TEST_FILE_PATH, "2rri.gro")
 
-# PDB_1U85 = os.path.join(TEST_FILE_PATH, "1u85.pdb")
+PDB_1U85 = os.path.join(TEST_FILE_PATH, "1u85.pdb")
 # PDB_1UBD = os.path.join(TEST_FILE_PATH, "1ubd.pdb")
 
 # PDB_1JD4 = os.path.join(TEST_FILE_PATH, "1jd4.pdb")
