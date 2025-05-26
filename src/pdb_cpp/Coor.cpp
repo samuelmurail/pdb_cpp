@@ -104,10 +104,18 @@ vector<string> Coor::get_aa_sequences(bool gap_in_seq, size_t frame) const {
     vector<array<char, 2>> chain_array = models_[frame].get_chain();
     vector<int> resid_array = models_[frame].get_resid();
 
+    vector<array<char, 2>> uniq_chains= get_uniq_chain();
+
     array<char, 2> old_chain = chain_array[0];
+    // Get the index of the old chain in the unique chains
+    auto it = find(uniq_chains.begin(), uniq_chains.end(), old_chain);
+    if (it == uniq_chains.end()) {
+        throw runtime_error("Chain not found in unique chains");
+    }
+    int chain_index = distance(uniq_chains.begin(), it);
+
     vector<string> seq_vec;
     int old_resid = resid_array[0];
-    int chain_index = 0;
     seq_vec.emplace_back("");
 
     for (size_t i = 0; i < CA_indexes.size(); ++i) {
@@ -116,7 +124,12 @@ vector<string> Coor::get_aa_sequences(bool gap_in_seq, size_t frame) const {
                 // New chain or new residue
                 old_chain = chain_array[i];
                 old_resid = resid_array[i];
-                chain_index++;
+                // Get the index of the old chain in the unique chains
+                it = find(uniq_chains.begin(), uniq_chains.end(), old_chain);
+                if (it == uniq_chains.end()) {
+                    throw runtime_error("Chain not found in unique chains");
+                }
+                chain_index = distance(uniq_chains.begin(), it);
                 seq_vec.emplace_back("");
             }
             if (resid_array[i] != old_resid) {

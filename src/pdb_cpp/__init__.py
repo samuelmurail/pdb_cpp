@@ -178,10 +178,10 @@ Coor.occ = occ
 Coor.residue = residue
 Coor.uniq_resid = uniq_resid
 
-def get_aa_seq(self):
+def get_aa_seq(self, gap_in_seq=True, frame=0):
     """Return the amino acid sequence of the selection."""
     uniq_chains = self.get_uniq_chain()
-    sequences = self.get_aa_sequences()
+    sequences = self.get_aa_sequences(gap_in_seq=gap_in_seq, frame=frame)
     seq_dict = {}
 
     for chain, seq in zip(uniq_chains, sequences):
