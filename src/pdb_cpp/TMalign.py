@@ -30,11 +30,6 @@ def compute_secondary_structure(coor, **kwargs):
     """
     ss_list = compute_SS(coor, **kwargs)
     uniq_chains = coor.get_uniq_chain()
-    print("Unique chains:", uniq_chains)
-
-    print(ss_list)
-    print(len(ss_list))
-    print(len(ss_list[0]))
 
     SS_new_list = []
 
@@ -53,5 +48,4 @@ def compute_secondary_structure(coor, **kwargs):
             ss_dict[new_chain] = seq
         SS_new_list.append(ss_dict)
 
-    print(SS_new_list)
     return SS_new_list

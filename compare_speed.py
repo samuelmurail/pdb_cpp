@@ -1,5 +1,6 @@
 import time
 import pdb_numpy
+from pdb_numpy import DSSP
 import sys
 
 sys.path.insert(0, "./src")
@@ -23,10 +24,12 @@ read_times = []
 write_times = []
 select_times = []
 get_seq_times = []
+ss_times = []
 read_cpp_times = []
 write_cpp_times = []
 select_cpp_times = []
 get_seq_cpp_times = []
+ss_cpp_times = []
 
 print(f"- Testing with {file_name} file")
 
@@ -50,6 +53,10 @@ for i in range(N):
     seqs = coor.get_aa_seq()
     pdb_numpy_get_seq_time = time.time() - start_time
     get_seq_times.append(pdb_numpy_get_seq_time)
+    start_time = time.time()
+    DSSP.compute_DSSP(coor)
+    pdb_numpy_ss_time = time.time() - start_time
+    ss_times.append(pdb_numpy_ss_time)
 
     # cpp
     start_time = time.time()
@@ -71,6 +78,11 @@ for i in range(N):
     pdb_numpy_get_seq_time = time.time() - start_time
     get_seq_cpp_times.append(pdb_numpy_get_seq_time)
 
+    start_time = time.time()
+    TMalign.compute_secondary_structure(coor)
+    ss_cpp_time = time.time() - start_time
+    ss_cpp_times.append(ss_cpp_time)
+
 
 avg_read, std_read = avg_std(read_times)
 print(f"-pdb_numpy Time taken to get coordinates:   {avg_read:.4f} +- {std_read:.4f} seconds")
@@ -80,6 +92,8 @@ avg_select, std_select = avg_std(select_times)
 print(f"-pdb_numpy Time taken to select atoms:      {avg_select:.4f} +- {std_select:.4f} seconds")
 avg_seq, std_seq = avg_std(get_seq_times)
 print(f"-pdb_numpy Time taken to get sequence:      {avg_seq:.4f} +- {std_seq:.4f} seconds")
+avg_ss, std_ss = avg_std(ss_times)
+print(f"-pdb_numpy Time taken to get DSSP:          {avg_ss:.4f} +- {std_ss:.4f} seconds")
 
 avg_cpp_read, std_cpp_read = avg_std(read_cpp_times)
 print(f"-pdb_cpp   Time taken to get coordinates:   {avg_cpp_read:.4f} +- {std_cpp_read:.4f} seconds, speed-up:  {avg_read/avg_cpp_read:.2f}")
@@ -89,6 +103,8 @@ avg_cpp_select, std_select = avg_std(select_cpp_times)
 print(f"-pdb_cpp   Time taken to select atoms:      {avg_cpp_select:.4f} +- {std_select:.4f} seconds, speed-up:  {avg_select/avg_cpp_select:.2f}")
 avg_cpp_seq, std_cpp_seq = avg_std(get_seq_cpp_times)
 print(f"-pdb_cpp   Time taken to get sequence:      {avg_cpp_seq:.4f} +- {std_cpp_seq:.4f} seconds, speed-up:  {avg_seq/avg_cpp_seq:.2f}")
+avg_cpp_ss, std_cpp_ss = avg_std(ss_cpp_times)
+print(f"-pdb_cpp   Time taken to get DSSP:          {avg_cpp_ss:.4f} +- {std_cpp_ss:.4f} seconds, speed-up:  {avg_ss/avg_cpp_ss:.2f}")
 
 read_times = []
 write_times = []
