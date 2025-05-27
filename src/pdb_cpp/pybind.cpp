@@ -4,6 +4,7 @@
 #include "Model.h"
 #include "Coor.h"
 #include "TMAlign.h"
+#include "sequence_align.h"
 
 namespace py = pybind11;
 
@@ -61,4 +62,28 @@ PYBIND11_MODULE(core, m) {
         py::arg("coor"),
         py::arg("gap_in_seq") = false,
         "Compute secondary structure for all models in a Coor object");
+
+    // Bind the Alignment structure
+    py::class_<Alignment>(m, "Alignment")
+        .def(py::init<>())  // Default constructor
+        .def_readwrite("seq1", &Alignment::seq1, "Aligned sequence 1")
+        .def_readwrite("seq2", &Alignment::seq2, "Aligned sequence 2")
+        .def_readwrite("score", &Alignment::score, "Alignment score");
+
+    // Bind the align function
+    m.def("sequence_align",
+        &sequence_align,  // Directly bind the align function
+        py::arg("seq1"),
+        py::arg("seq2"),
+        py::arg("matrix_file") = "src/pdb_cpp/data/blosum62.txt",
+        py::arg("GAP_COST") = -11,
+        py::arg("GAP_EXT") = -1,
+        "Align two sequences using a substitution matrix and gap penalties");
 }
+
+// // Alignment align(
+// const string &seq1
+//  const string &seq2, 
+//  onst string &matrix_file,
+//  int GAP_COST,
+//  int GAP_EXT) {

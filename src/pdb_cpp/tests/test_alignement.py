@@ -6,7 +6,7 @@ Tests for _alignement functions
 """
 
 from .datafiles import PDB_1Y0M, PDB_2RRI#, PDB_1U85, PDB_1UBD, PDB_2MUS, PDB_2MUS_MODEL
-from pdb_cpp import Coor
+from pdb_cpp import Coor, alignement
 import logging
 import pytest
 
@@ -48,7 +48,6 @@ def test_get_aa_seq():
 # def test_seq_align(capsys):
 #     """Test seq_align function."""
 
-#     pdb_numpy.logger.setLevel(level=logging.INFO)
 
 #     seq_1 = (
 #         "AQDMVSPPPPIADEPLTVNTGIYLIECYSLDDKAETFKVNAFLSLSWKDRRLAFDPV"
@@ -138,37 +137,36 @@ def test_get_aa_seq():
 #     assert captured[-1] == "Similarity seq2: 49.12%"
 
 
-# def test_seq_align_cython_X(capsys):
-#     """Test seq_align function."""
+def test_seq_align_cython_X(capsys):
+    """Test seq_align function."""
 
-#     pdb_numpy.logger.setLevel(level=logging.INFO)
 
-#     seq_1 = "AQDMVSPPXPIADEPLTVXSLSWKDRRL"
-#     seq_2 = "AQDMVSPPPPIADEPLTVNTGIYLIECYSLDDKAETFKVNAFLSLSWKDRRLAFDPV"
+    seq_1 = "AQDMVSPPXPIADEPLTVXSLSWKDRRL"
+    seq_2 = "AQDMVSPPPPIADEPLTVNTGIYLIECYSLDDKAETFKVNAFLSLSWKDRRLAFDPV"
 
-#     align_seq_1, align_seq_2 = alignement.align_seq_cython(seq_1, seq_2)
-#     alignement.print_align_seq(align_seq_1, align_seq_2, line_len=80)
-#     captured = capsys.readouterr().out.split("\n")[:-1]
+    align_seq_1, align_seq_2 = alignement.align_seq(seq_1, seq_2)
+    alignement.print_align_seq(align_seq_1, align_seq_2, line_len=80)
+    captured = capsys.readouterr().out.split("\n")[:-1]
 
-#     for line in captured:
-#         print(line)
+    for line in captured:
+        print(line)
 
-#     assert captured[-4] == "Identity seq1: 78.57%"
-#     assert captured[-3] == "Identity seq2: 38.60%"
-#     assert captured[-2] == "Similarity seq1: 92.86%"
-#     assert captured[-1] == "Similarity seq2: 45.61%"
+    assert captured[-4] == "Identity seq1: 78.57%"
+    assert captured[-3] == "Identity seq2: 38.60%"
+    assert captured[-2] == "Similarity seq1: 92.86%"
+    assert captured[-1] == "Similarity seq2: 45.61%"
 
-#     align_seq_1, align_seq_2 = alignement.align_seq(seq_1, seq_2)
-#     alignement.print_align_seq(align_seq_1, align_seq_2, line_len=80)
-#     captured = capsys.readouterr().out.split("\n")[:-1]
+    align_seq_1, align_seq_2 = alignement.align_seq(seq_1, seq_2)
+    alignement.print_align_seq(align_seq_1, align_seq_2, line_len=80)
+    captured = capsys.readouterr().out.split("\n")[:-1]
 
-#     for line in captured:
-#         print(line)
+    for line in captured:
+        print(line)
 
-#     assert captured[-4] == "Identity seq1: 75.00%"
-#     assert captured[-3] == "Identity seq2: 36.84%"
-#     assert captured[-2] == "Similarity seq1: 92.86%"
-#     assert captured[-1] == "Similarity seq2: 45.61%"
+    assert captured[-4] == "Identity seq1: 75.00%"
+    assert captured[-3] == "Identity seq2: 36.84%"
+    assert captured[-2] == "Similarity seq1: 92.86%"
+    assert captured[-1] == "Similarity seq2: 45.61%"
 
 
 # #def test_seq_align_C(capsys):

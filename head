@@ -1,0 +1,889 @@
+src/pdb_cpp/sequence_align.cpp: In function ‘void print_alignment(Alignment*)’:
+src/pdb_cpp/sequence_align.cpp:35:75: warning: second operand of conditional expression has no effect [-Wunused-value]
+   35 |             cout << (alignment->seq1[i] == alignment->seq2[i]) ? '*' : ' ';
+      |                                                                           ^
+src/pdb_cpp/sequence_align.cpp:35:75: warning: third operand of conditional expression has no effect [-Wunused-value]
+src/pdb_cpp/sequence_align.cpp: At global scope:
+src/pdb_cpp/sequence_align.cpp:82:6: error: ‘unique_ptr’ in namespace ‘std’ does not name a template type
+   82 | std::unique_ptr<Alignment> align_test(const std::string &seq1, const std::string &seq2, const std::string &matrix_file, int GAP_COST, int GAP_EXT) {
+      |      ^~~~~~~~~~
+src/pdb_cpp/sequence_align.cpp:13:1: note: ‘std::unique_ptr’ is defined in header ‘<memory>’; did you forget to ‘#include <memory>’?
+   12 | #include "sequence_align.h"
+  +++ |+#include <memory>
+   13 | 
+src/pdb_cpp/sequence_align.cpp: In function ‘Alignment* align(const char*, const char*, const char*, int, int)’:
+src/pdb_cpp/sequence_align.cpp:129:34: error: invalid conversion from ‘void*’ to ‘Alignment*’ [-fpermissive]
+  129 |     Alignment *alignment = malloc(sizeof(Alignment));
+      |                            ~~~~~~^~~~~~~~~~~~~~~~~~~
+      |                                  |
+      |                                  void*
+src/pdb_cpp/sequence_align.cpp:143:32: error: cannot convert ‘std::vector<int>’ to ‘int*’ in initialization
+  143 |     int *seq_1_num = seq_to_num(seq1);
+      |                      ~~~~~~~~~~^~~~~~
+      |                                |
+      |                                std::vector<int>
+src/pdb_cpp/sequence_align.cpp:144:32: error: cannot convert ‘std::vector<int>’ to ‘int*’ in initialization
+  144 |     int *seq_2_num = seq_to_num(seq2);
+      |                      ~~~~~~~~~~^~~~~~
+      |                                |
+      |                                std::vector<int>
+src/pdb_cpp/sequence_align.cpp:146:24: error: expected unqualified-id before ‘delete’
+  146 |     int match, insert, delete;
+      |                        ^~~~~~
+src/pdb_cpp/sequence_align.cpp:155:20: error: expected primary-expression before ‘=’ token
+  155 |             delete = score_matrix[i - 1][j] + (prev_score ? GAP_EXT : GAP_COST);
+      |                    ^
+src/pdb_cpp/sequence_align.cpp:158:49: error: expected primary-expression before ‘)’ token
+  158 |             if (match > insert && match > delete) {
+      |                                                 ^
+src/pdb_cpp/sequence_align.cpp:160:38: error: ‘FALSE’ was not declared in this scope
+  160 |                 prev_score_line[j] = FALSE;
+      |                                      ^~~~~
+src/pdb_cpp/sequence_align.cpp:162:31: error: expected primary-expression before ‘>’ token
+  162 |             } else if (delete > insert) {
+      |                               ^
+src/pdb_cpp/sequence_align.cpp:163:44: error: expected primary-expression before ‘;’ token
+  163 |                 score_matrix[i][j] = delete;
+      |                                            ^
+src/pdb_cpp/sequence_align.cpp:308:59: error: no match for ‘operator=’ (operand types are ‘std::string’ {aka ‘std::__cxx11::basic_string<char>’} and ‘void*’)
+  308 |     alignment->seq1 = calloc((align_len + 1), sizeof(char));
+      |                                                           ^
+In file included from /usr/include/c++/13/string:54,
+                 from src/pdb_cpp/sequence_align.cpp:8:
+/usr/include/c++/13/bits/basic_string.h:936:8: note: candidate: ‘template<class _Tp> std::__cxx11::basic_string<_CharT, _Traits, _Alloc>::_If_sv<_Tp, std::__cxx11::basic_string<_CharT, _Traits, _Alloc>&> std::__cxx11::basic_string<_CharT, _Traits, _Alloc>::operator=(const _Tp&) [with _CharT = char; _Traits = std::char_traits<char>; _Alloc = std::allocator<char>]’
+  936 |        operator=(const _Tp& __svt)
+      |        ^~~~~~~~
+/usr/include/c++/13/bits/basic_string.h:936:8: note:   template argument deduction/substitution failed:
+In file included from /usr/include/c++/13/bits/stl_pair.h:60,
+                 from /usr/include/c++/13/bits/stl_algobase.h:64,
+                 from /usr/include/c++/13/vector:62,
+                 from src/pdb_cpp/sequence_align.cpp:7:
+/usr/include/c++/13/type_traits: In substitution of ‘template<bool _Cond, class _Tp> using std::enable_if_t = typename std::enable_if::type [with bool _Cond = false; _Tp = std::__cxx11::basic_string<char>&]’:
+/usr/include/c++/13/bits/basic_string.h:144:8:   required by substitution of ‘template<class _CharT, class _Traits, class _Alloc> template<class _Tp, class _Res> using std::__cxx11::basic_string<_CharT, _Traits, _Alloc>::_If_sv = std::enable_if_t<std::__and_<std::is_convertible<const _Tp&, std::basic_string_view<_CharT, _Traits> >, std::__not_<std::is_convertible<const _Tp*, const std::__cxx11::basic_string<_CharT, _Traits, _Alloc>*> >, std::__not_<std::is_convertible<const _Tp&, const _CharT*> > >::value, _Res> [with _Tp = void*; _Res = std::__cxx11::basic_string<char>&; _CharT = char; _Traits = std::char_traits<char>; _Alloc = std::allocator<char>]’
+/usr/include/c++/13/bits/basic_string.h:936:8:   required by substitution of ‘template<class _Tp> std::__cxx11::basic_string<char>::_If_sv<_Tp, std::__cxx11::basic_string<char>&> std::__cxx11::basic_string<char>::operator=(const _Tp&) [with _Tp = void*]’
+src/pdb_cpp/sequence_align.cpp:308:59:   required from here
+/usr/include/c++/13/type_traits:2610:11: error: no type named ‘type’ in ‘struct std::enable_if<false, std::__cxx11::basic_string<char>&>’
+ 2610 |     using enable_if_t = typename enable_if<_Cond, _Tp>::type;
+      |           ^~~~~~~~~~~
+/usr/include/c++/13/bits/basic_string.h:812:7: note: candidate: ‘std::__cxx11::basic_string<_CharT, _Traits, _Alloc>& std::__cxx11::basic_string<_CharT, _Traits, _Alloc>::operator=(const std::__cxx11::basic_string<_CharT, _Traits, _Alloc>&) [with _CharT = char; _Traits = std::char_traits<char>; _Alloc = std::allocator<char>]’
+  812 |       operator=(const basic_string& __str)
+      |       ^~~~~~~~
+/usr/include/c++/13/bits/basic_string.h:812:37: note:   no known conversion for argument 1 from ‘void*’ to ‘const std::__cxx11::basic_string<char>&’
+  812 |       operator=(const basic_string& __str)
+      |                 ~~~~~~~~~~~~~~~~~~~~^~~~~
+/usr/include/c++/13/bits/basic_string.h:823:7: note: candidate: ‘std::__cxx11::basic_string<_CharT, _Traits, _Alloc>& std::__cxx11::basic_string<_CharT, _Traits, _Alloc>::operator=(const _CharT*) [with _CharT = char; _Traits = std::char_traits<char>; _Alloc = std::allocator<char>]’ (near match)
+  823 |       operator=(const _CharT* __s)
+      |       ^~~~~~~~
+/usr/include/c++/13/bits/basic_string.h:823:7: note:   conversion of argument 1 would be ill-formed:
+src/pdb_cpp/sequence_align.cpp:308:29: error: invalid conversion from ‘void*’ to ‘const char*’ [-fpermissive]
+  308 |     alignment->seq1 = calloc((align_len + 1), sizeof(char));
+      |                       ~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      |                             |
+      |                             void*
+/usr/include/c++/13/bits/basic_string.h:835:7: note: candidate: ‘std::__cxx11::basic_string<_CharT, _Traits, _Alloc>& std::__cxx11::basic_string<_CharT, _Traits, _Alloc>::operator=(_CharT) [with _CharT = char; _Traits = std::char_traits<char>; _Alloc = std::allocator<char>]’ (near match)
+  835 |       operator=(_CharT __c)
+      |       ^~~~~~~~
+/usr/include/c++/13/bits/basic_string.h:835:7: note:   conversion of argument 1 would be ill-formed:
+src/pdb_cpp/sequence_align.cpp:308:29: error: invalid conversion from ‘void*’ to ‘char’ [-fpermissive]
+  308 |     alignment->seq1 = calloc((align_len + 1), sizeof(char));
+      |                       ~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      |                             |
+      |                             void*
+/usr/include/c++/13/bits/basic_string.h:853:7: note: candidate: ‘std::__cxx11::basic_string<_CharT, _Traits, _Alloc>& std::__cxx11::basic_string<_CharT, _Traits, _Alloc>::operator=(std::__cxx11::basic_string<_CharT, _Traits, _Alloc>&&) [with _CharT = char; _Traits = std::char_traits<char>; _Alloc = std::allocator<char>]’
+  853 |       operator=(basic_string&& __str)
+      |       ^~~~~~~~
+/usr/include/c++/13/bits/basic_string.h:853:32: note:   no known conversion for argument 1 from ‘void*’ to ‘std::__cxx11::basic_string<char>&&’
+  853 |       operator=(basic_string&& __str)
+      |                 ~~~~~~~~~~~~~~~^~~~~
+/usr/include/c++/13/bits/basic_string.h:921:7: note: candidate: ‘std::__cxx11::basic_string<_CharT, _Traits, _Alloc>& std::__cxx11::basic_string<_CharT, _Traits, _Alloc>::operator=(std::initializer_list<_Tp>) [with _CharT = char; _Traits = std::char_traits<char>; _Alloc = std::allocator<char>]’
+  921 |       operator=(initializer_list<_CharT> __l)
+      |       ^~~~~~~~
+/usr/include/c++/13/bits/basic_string.h:921:42: note:   no known conversion for argument 1 from ‘void*’ to ‘std::initializer_list<char>’
+  921 |       operator=(initializer_list<_CharT> __l)
+      |                 ~~~~~~~~~~~~~~~~~~~~~~~~~^~~
+src/pdb_cpp/sequence_align.cpp:309:59: error: no match for ‘operator=’ (operand types are ‘std::string’ {aka ‘std::__cxx11::basic_string<char>’} and ‘void*’)
+  309 |     alignment->seq2 = calloc((align_len + 1), sizeof(char));
+      |                                                           ^
+/usr/include/c++/13/bits/basic_string.h:936:8: note: candidate: ‘template<class _Tp> std::__cxx11::basic_string<_CharT, _Traits, _Alloc>::_If_sv<_Tp, std::__cxx11::basic_string<_CharT, _Traits, _Alloc>&> std::__cxx11::basic_string<_CharT, _Traits, _Alloc>::operator=(const _Tp&) [with _CharT = char; _Traits = std::char_traits<char>; _Alloc = std::allocator<char>]’
+  936 |        operator=(const _Tp& __svt)
+      |        ^~~~~~~~
+/usr/include/c++/13/bits/basic_string.h:936:8: note:   template argument deduction/substitution failed:
+/usr/include/c++/13/bits/basic_string.h:812:7: note: candidate: ‘std::__cxx11::basic_string<_CharT, _Traits, _Alloc>& std::__cxx11::basic_string<_CharT, _Traits, _Alloc>::operator=(const std::__cxx11::basic_string<_CharT, _Traits, _Alloc>&) [with _CharT = char; _Traits = std::char_traits<char>; _Alloc = std::allocator<char>]’
+  812 |       operator=(const basic_string& __str)
+      |       ^~~~~~~~
+/usr/include/c++/13/bits/basic_string.h:812:37: note:   no known conversion for argument 1 from ‘void*’ to ‘const std::__cxx11::basic_string<char>&’
+  812 |       operator=(const basic_string& __str)
+      |                 ~~~~~~~~~~~~~~~~~~~~^~~~~
+/usr/include/c++/13/bits/basic_string.h:823:7: note: candidate: ‘std::__cxx11::basic_string<_CharT, _Traits, _Alloc>& std::__cxx11::basic_string<_CharT, _Traits, _Alloc>::operator=(const _CharT*) [with _CharT = char; _Traits = std::char_traits<char>; _Alloc = std::allocator<char>]’ (near match)
+  823 |       operator=(const _CharT* __s)
+      |       ^~~~~~~~
+/usr/include/c++/13/bits/basic_string.h:823:7: note:   conversion of argument 1 would be ill-formed:
+src/pdb_cpp/sequence_align.cpp:309:29: error: invalid conversion from ‘void*’ to ‘const char*’ [-fpermissive]
+  309 |     alignment->seq2 = calloc((align_len + 1), sizeof(char));
+      |                       ~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      |                             |
+      |                             void*
+/usr/include/c++/13/bits/basic_string.h:835:7: note: candidate: ‘std::__cxx11::basic_string<_CharT, _Traits, _Alloc>& std::__cxx11::basic_string<_CharT, _Traits, _Alloc>::operator=(_CharT) [with _CharT = char; _Traits = std::char_traits<char>; _Alloc = std::allocator<char>]’ (near match)
+  835 |       operator=(_CharT __c)
+      |       ^~~~~~~~
+/usr/include/c++/13/bits/basic_string.h:835:7: note:   conversion of argument 1 would be ill-formed:
+src/pdb_cpp/sequence_align.cpp:309:29: error: invalid conversion from ‘void*’ to ‘char’ [-fpermissive]
+  309 |     alignment->seq2 = calloc((align_len + 1), sizeof(char));
+      |                       ~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      |                             |
+      |                             void*
+/usr/include/c++/13/bits/basic_string.h:853:7: note: candidate: ‘std::__cxx11::basic_string<_CharT, _Traits, _Alloc>& std::__cxx11::basic_string<_CharT, _Traits, _Alloc>::operator=(std::__cxx11::basic_string<_CharT, _Traits, _Alloc>&&) [with _CharT = char; _Traits = std::char_traits<char>; _Alloc = std::allocator<char>]’
+  853 |       operator=(basic_string&& __str)
+      |       ^~~~~~~~
+/usr/include/c++/13/bits/basic_string.h:853:32: note:   no known conversion for argument 1 from ‘void*’ to ‘std::__cxx11::basic_string<char>&&’
+  853 |       operator=(basic_string&& __str)
+      |                 ~~~~~~~~~~~~~~~^~~~~
+/usr/include/c++/13/bits/basic_string.h:921:7: note: candidate: ‘std::__cxx11::basic_string<_CharT, _Traits, _Alloc>& std::__cxx11::basic_string<_CharT, _Traits, _Alloc>::operator=(std::initializer_list<_Tp>) [with _CharT = char; _Traits = std::char_traits<char>; _Alloc = std::allocator<char>]’
+  921 |       operator=(initializer_list<_CharT> __l)
+      |       ^~~~~~~~
+/usr/include/c++/13/bits/basic_string.h:921:42: note:   no known conversion for argument 1 from ‘void*’ to ‘std::initializer_list<char>’
+  921 |       operator=(initializer_list<_CharT> __l)
+      |                 ~~~~~~~~~~~~~~~~~~~~~~~~~^~~
+In file included from src/pdb_cpp/sequence_align.cpp:4:
+src/pdb_cpp/sequence_align.cpp:310:28: error: no match for ‘operator!=’ (operand types are ‘std::string’ {aka ‘std::__cxx11::basic_string<char>’} and ‘long int’)
+  310 |     assert(alignment->seq1 != NULL);
+      |                            ^
+/usr/include/c++/13/bits/stl_pair.h:842:5: note: candidate: ‘template<class _T1, class _T2> constexpr bool std::operator!=(const pair<_T1, _T2>&, const pair<_T1, _T2>&)’
+  842 |     operator!=(const pair<_T1, _T2>& __x, const pair<_T1, _T2>& __y)
+      |     ^~~~~~~~
+/usr/include/c++/13/bits/stl_pair.h:842:5: note:   template argument deduction/substitution failed:
+src/pdb_cpp/sequence_align.cpp:310:31: note:   ‘std::string’ {aka ‘std::__cxx11::basic_string<char>’} is not derived from ‘const std::pair<_T1, _T2>’
+  310 |     assert(alignment->seq1 != NULL);
+      |                               ^~~~
+In file included from /usr/include/c++/13/bits/stl_algobase.h:67:
+/usr/include/c++/13/bits/stl_iterator.h:462:5: note: candidate: ‘template<class _Iterator> constexpr bool std::operator!=(const reverse_iterator<_Iterator>&, const reverse_iterator<_Iterator>&)’
+  462 |     operator!=(const reverse_iterator<_Iterator>& __x,
+      |     ^~~~~~~~
+/usr/include/c++/13/bits/stl_iterator.h:462:5: note:   template argument deduction/substitution failed:
+src/pdb_cpp/sequence_align.cpp:310:31: note:   ‘std::string’ {aka ‘std::__cxx11::basic_string<char>’} is not derived from ‘const std::reverse_iterator<_Iterator>’
+  310 |     assert(alignment->seq1 != NULL);
+      |                               ^~~~
+/usr/include/c++/13/bits/stl_iterator.h:507:5: note: candidate: ‘template<class _IteratorL, class _IteratorR> constexpr bool std::operator!=(const reverse_iterator<_Iterator>&, const reverse_iterator<_IteratorR>&)’
+  507 |     operator!=(const reverse_iterator<_IteratorL>& __x,
+      |     ^~~~~~~~
+/usr/include/c++/13/bits/stl_iterator.h:507:5: note:   template argument deduction/substitution failed:
+src/pdb_cpp/sequence_align.cpp:310:31: note:   ‘std::string’ {aka ‘std::__cxx11::basic_string<char>’} is not derived from ‘const std::reverse_iterator<_Iterator>’
+  310 |     assert(alignment->seq1 != NULL);
+      |                               ^~~~
+/usr/include/c++/13/bits/stl_iterator.h:1697:5: note: candidate: ‘template<class _IteratorL, class _IteratorR> constexpr bool std::operator!=(const move_iterator<_IteratorL>&, const move_iterator<_IteratorR>&)’
+ 1697 |     operator!=(const move_iterator<_IteratorL>& __x,
+      |     ^~~~~~~~
+/usr/include/c++/13/bits/stl_iterator.h:1697:5: note:   template argument deduction/substitution failed:
+src/pdb_cpp/sequence_align.cpp:310:31: note:   ‘std::string’ {aka ‘std::__cxx11::basic_string<char>’} is not derived from ‘const std::move_iterator<_IteratorL>’
+  310 |     assert(alignment->seq1 != NULL);
+      |                               ^~~~
+/usr/include/c++/13/bits/stl_iterator.h:1763:5: note: candidate: ‘template<class _Iterator> constexpr bool std::operator!=(const move_iterator<_IteratorL>&, const move_iterator<_IteratorL>&)’
+ 1763 |     operator!=(const move_iterator<_Iterator>& __x,
+      |     ^~~~~~~~
+/usr/include/c++/13/bits/stl_iterator.h:1763:5: note:   template argument deduction/substitution failed:
+src/pdb_cpp/sequence_align.cpp:310:31: note:   ‘std::string’ {aka ‘std::__cxx11::basic_string<char>’} is not derived from ‘const std::move_iterator<_IteratorL>’
+  310 |     assert(alignment->seq1 != NULL);
+      |                               ^~~~
+In file included from /usr/include/c++/13/vector:63:
+/usr/include/c++/13/bits/allocator.h:245:5: note: candidate: ‘template<class _T1, class _T2> bool std::operator!=(const allocator<_Tp1>&, const allocator<_T2>&)’
+  245 |     operator!=(const allocator<_T1>&, const allocator<_T2>&)
+      |     ^~~~~~~~
+/usr/include/c++/13/bits/allocator.h:245:5: note:   template argument deduction/substitution failed:
+src/pdb_cpp/sequence_align.cpp:310:31: note:   ‘std::string’ {aka ‘std::__cxx11::basic_string<char>’} is not derived from ‘const std::allocator<_Tp1>’
+  310 |     assert(alignment->seq1 != NULL);
+      |                               ^~~~
+In file included from /usr/include/c++/13/vector:66:
+/usr/include/c++/13/bits/stl_vector.h:2086:5: note: candidate: ‘template<class _Tp, class _Alloc> bool std::operator!=(const vector<_Tp, _Alloc>&, const vector<_Tp, _Alloc>&)’
+ 2086 |     operator!=(const vector<_Tp, _Alloc>& __x, const vector<_Tp, _Alloc>& __y)
+      |     ^~~~~~~~
+/usr/include/c++/13/bits/stl_vector.h:2086:5: note:   template argument deduction/substitution failed:
+src/pdb_cpp/sequence_align.cpp:310:31: note:   ‘std::string’ {aka ‘std::__cxx11::basic_string<char>’} is not derived from ‘const std::vector<_Tp, _Alloc>’
+  310 |     assert(alignment->seq1 != NULL);
+      |                               ^~~~
+In file included from /usr/include/c++/13/bits/memory_resource.h:47,
+                 from /usr/include/c++/13/vector:80:
+/usr/include/c++/13/tuple:1974:5: note: candidate: ‘template<class ... _TElements, class ... _UElements> constexpr bool std::operator!=(const tuple<_UTypes ...>&, const tuple<_UTypes ...>&)’
+ 1974 |     operator!=(const tuple<_TElements...>& __t,
+      |     ^~~~~~~~
+/usr/include/c++/13/tuple:1974:5: note:   template argument deduction/substitution failed:
+src/pdb_cpp/sequence_align.cpp:310:31: note:   ‘std::string’ {aka ‘std::__cxx11::basic_string<char>’} is not derived from ‘const std::tuple<_UTypes ...>’
+  310 |     assert(alignment->seq1 != NULL);
+      |                               ^~~~
+In file included from /usr/include/c++/13/bits/char_traits.h:42,
+                 from /usr/include/c++/13/string:42:
+/usr/include/c++/13/bits/postypes.h:197:5: note: candidate: ‘template<class _StateT> bool std::operator!=(const fpos<_StateT>&, const fpos<_StateT>&)’
+  197 |     operator!=(const fpos<_StateT>& __lhs, const fpos<_StateT>& __rhs)
+      |     ^~~~~~~~
+/usr/include/c++/13/bits/postypes.h:197:5: note:   template argument deduction/substitution failed:
+src/pdb_cpp/sequence_align.cpp:310:31: note:   ‘std::string’ {aka ‘std::__cxx11::basic_string<char>’} is not derived from ‘const std::fpos<_StateT>’
+  310 |     assert(alignment->seq1 != NULL);
+      |                               ^~~~
+In file included from /usr/include/c++/13/bits/basic_string.h:47:
+/usr/include/c++/13/string_view:649:5: note: candidate: ‘template<class _CharT, class _Traits> constexpr bool std::operator!=(basic_string_view<_CharT, _Traits>, basic_string_view<_CharT, _Traits>)’
+  649 |     operator!=(basic_string_view<_CharT, _Traits> __x,
+      |     ^~~~~~~~
+/usr/include/c++/13/string_view:649:5: note:   template argument deduction/substitution failed:
+src/pdb_cpp/sequence_align.cpp:310:31: note:   ‘std::__cxx11::basic_string<char>’ is not derived from ‘std::basic_string_view<_CharT, _Traits>’
+  310 |     assert(alignment->seq1 != NULL);
+      |                               ^~~~
+/usr/include/c++/13/string_view:656:5: note: candidate: ‘template<class _CharT, class _Traits> constexpr bool std::operator!=(basic_string_view<_CharT, _Traits>, __type_identity_t<basic_string_view<_CharT, _Traits> >)’
+  656 |     operator!=(basic_string_view<_CharT, _Traits> __x,
+      |     ^~~~~~~~
+/usr/include/c++/13/string_view:656:5: note:   template argument deduction/substitution failed:
+src/pdb_cpp/sequence_align.cpp:310:31: note:   ‘std::__cxx11::basic_string<char>’ is not derived from ‘std::basic_string_view<_CharT, _Traits>’
+  310 |     assert(alignment->seq1 != NULL);
+      |                               ^~~~
+/usr/include/c++/13/string_view:664:5: note: candidate: ‘template<class _CharT, class _Traits> constexpr bool std::operator!=(__type_identity_t<basic_string_view<_CharT, _Traits> >, basic_string_view<_CharT, _Traits>)’
+  664 |     operator!=(__type_identity_t<basic_string_view<_CharT, _Traits>> __x,
+      |     ^~~~~~~~
+/usr/include/c++/13/string_view:664:5: note:   template argument deduction/substitution failed:
+src/pdb_cpp/sequence_align.cpp:310:31: note:   mismatched types ‘std::basic_string_view<_CharT, _Traits>’ and ‘long int’
+  310 |     assert(alignment->seq1 != NULL);
+      |                               ^~~~
+/usr/include/c++/13/bits/basic_string.h:3788:5: note: candidate: ‘template<class _CharT, class _Traits, class _Alloc> bool std::operator!=(const __cxx11::basic_string<_CharT, _Traits, _Allocator>&, const __cxx11::basic_string<_CharT, _Traits, _Allocator>&)’
+ 3788 |     operator!=(const basic_string<_CharT, _Traits, _Alloc>& __lhs,
+      |     ^~~~~~~~
+/usr/include/c++/13/bits/basic_string.h:3788:5: note:   template argument deduction/substitution failed:
+src/pdb_cpp/sequence_align.cpp:310:31: note:   mismatched types ‘const std::__cxx11::basic_string<_CharT, _Traits, _Allocator>’ and ‘long int’
+  310 |     assert(alignment->seq1 != NULL);
+      |                               ^~~~
+/usr/include/c++/13/bits/basic_string.h:3802:5: note: candidate: ‘template<class _CharT, class _Traits, class _Alloc> bool std::operator!=(const _CharT*, const __cxx11::basic_string<_CharT, _Traits, _Allocator>&)’
+ 3802 |     operator!=(const _CharT* __lhs,
+      |     ^~~~~~~~
+/usr/include/c++/13/bits/basic_string.h:3802:5: note:   template argument deduction/substitution failed:
+src/pdb_cpp/sequence_align.cpp:310:31: note:   mismatched types ‘const _CharT*’ and ‘std::__cxx11::basic_string<char>’
+  310 |     assert(alignment->seq1 != NULL);
+      |                               ^~~~
+/usr/include/c++/13/bits/basic_string.h:3815:5: note: candidate: ‘template<class _CharT, class _Traits, class _Alloc> bool std::operator!=(const __cxx11::basic_string<_CharT, _Traits, _Allocator>&, const _CharT*)’
+ 3815 |     operator!=(const basic_string<_CharT, _Traits, _Alloc>& __lhs,
+      |     ^~~~~~~~
+/usr/include/c++/13/bits/basic_string.h:3815:5: note:   template argument deduction/substitution failed:
+src/pdb_cpp/sequence_align.cpp:310:31: note:   mismatched types ‘const _CharT*’ and ‘long int’
+  310 |     assert(alignment->seq1 != NULL);
+      |                               ^~~~
+In file included from /usr/include/c++/13/bits/locale_facets.h:48,
+                 from /usr/include/c++/13/bits/basic_ios.h:37,
+                 from /usr/include/c++/13/ios:46,
+                 from /usr/include/c++/13/ostream:40,
+                 from /usr/include/c++/13/iostream:41,
+                 from src/pdb_cpp/sequence_align.cpp:9:
+/usr/include/c++/13/bits/streambuf_iterator.h:242:5: note: candidate: ‘template<class _CharT, class _Traits> bool std::operator!=(const istreambuf_iterator<_CharT, _Traits>&, const istreambuf_iterator<_CharT, _Traits>&)’
+  242 |     operator!=(const istreambuf_iterator<_CharT, _Traits>& __a,
+      |     ^~~~~~~~
+/usr/include/c++/13/bits/streambuf_iterator.h:242:5: note:   template argument deduction/substitution failed:
+src/pdb_cpp/sequence_align.cpp:310:31: note:   ‘std::string’ {aka ‘std::__cxx11::basic_string<char>’} is not derived from ‘const std::istreambuf_iterator<_CharT, _Traits>’
+  310 |     assert(alignment->seq1 != NULL);
+      |                               ^~~~
+In file included from /usr/include/x86_64-linux-gnu/c++/13/bits/c++allocator.h:33,
+                 from /usr/include/c++/13/bits/allocator.h:46:
+/usr/include/c++/13/bits/new_allocator.h:222:9: note: candidate: ‘template<class _Up> bool std::operator!=(const __new_allocator<char>&, const __new_allocator<_Tp>&)’
+  222 |         operator!=(const __new_allocator&, const __new_allocator<_Up>&)
+      |         ^~~~~~~~
+/usr/include/c++/13/bits/new_allocator.h:222:9: note:   template argument deduction/substitution failed:
+src/pdb_cpp/sequence_align.cpp:310:31: note:   mismatched types ‘const std::__new_allocator<_Tp>’ and ‘long int’
+  310 |     assert(alignment->seq1 != NULL);
+      |                               ^~~~
+In file included from /usr/include/c++/13/bits/ios_base.h:46,
+                 from /usr/include/c++/13/ios:44:
+/usr/include/c++/13/system_error:525:3: note: candidate: ‘bool std::operator!=(const error_code&, const error_code&)’
+  525 |   operator!=(const error_code& __lhs, const error_code& __rhs) noexcept
+      |   ^~~~~~~~
+/usr/include/c++/13/system_error:525:32: note:   no known conversion for argument 1 from ‘std::string’ {aka ‘std::__cxx11::basic_string<char>’} to ‘const std::error_code&’
+  525 |   operator!=(const error_code& __lhs, const error_code& __rhs) noexcept
+      |              ~~~~~~~~~~~~~~~~~~^~~~~
+/usr/include/c++/13/system_error:530:3: note: candidate: ‘bool std::operator!=(const error_code&, const error_condition&)’
+  530 |   operator!=(const error_code& __lhs, const error_condition& __rhs) noexcept
+      |   ^~~~~~~~
+/usr/include/c++/13/system_error:530:32: note:   no known conversion for argument 1 from ‘std::string’ {aka ‘std::__cxx11::basic_string<char>’} to ‘const std::error_code&’
+  530 |   operator!=(const error_code& __lhs, const error_condition& __rhs) noexcept
+      |              ~~~~~~~~~~~~~~~~~~^~~~~
+/usr/include/c++/13/system_error:535:3: note: candidate: ‘bool std::operator!=(const error_condition&, const error_code&)’
+  535 |   operator!=(const error_condition& __lhs, const error_code& __rhs) noexcept
+      |   ^~~~~~~~
+/usr/include/c++/13/system_error:535:37: note:   no known conversion for argument 1 from ‘std::string’ {aka ‘std::__cxx11::basic_string<char>’} to ‘const std::error_condition&’
+  535 |   operator!=(const error_condition& __lhs, const error_code& __rhs) noexcept
+      |              ~~~~~~~~~~~~~~~~~~~~~~~^~~~~
+/usr/include/c++/13/system_error:540:3: note: candidate: ‘bool std::operator!=(const error_condition&, const error_condition&)’
+  540 |   operator!=(const error_condition& __lhs,
+      |   ^~~~~~~~
+/usr/include/c++/13/system_error:540:37: note:   no known conversion for argument 1 from ‘std::string’ {aka ‘std::__cxx11::basic_string<char>’} to ‘const std::error_condition&’
+  540 |   operator!=(const error_condition& __lhs,
+      |              ~~~~~~~~~~~~~~~~~~~~~~~^~~~~
+/usr/include/c++/13/bits/allocator.h:222:7: note: candidate: ‘bool std::operator!=(const allocator<char>&, const allocator<char>&)’
+  222 |       operator!=(const allocator&, const allocator&) _GLIBCXX_NOTHROW
+      |       ^~~~~~~~
+/usr/include/c++/13/bits/allocator.h:222:18: note:   no known conversion for argument 1 from ‘std::string’ {aka ‘std::__cxx11::basic_string<char>’} to ‘const std::allocator<char>&’
+  222 |       operator!=(const allocator&, const allocator&) _GLIBCXX_NOTHROW
+      |                  ^~~~~~~~~~~~~~~~
+src/pdb_cpp/sequence_align.cpp:311:28: error: no match for ‘operator!=’ (operand types are ‘std::string’ {aka ‘std::__cxx11::basic_string<char>’} and ‘long int’)
+  311 |     assert(alignment->seq2 != NULL);
+      |                            ^
+/usr/include/c++/13/bits/stl_pair.h:842:5: note: candidate: ‘template<class _T1, class _T2> constexpr bool std::operator!=(const pair<_T1, _T2>&, const pair<_T1, _T2>&)’
+  842 |     operator!=(const pair<_T1, _T2>& __x, const pair<_T1, _T2>& __y)
+      |     ^~~~~~~~
+/usr/include/c++/13/bits/stl_pair.h:842:5: note:   template argument deduction/substitution failed:
+src/pdb_cpp/sequence_align.cpp:311:31: note:   ‘std::string’ {aka ‘std::__cxx11::basic_string<char>’} is not derived from ‘const std::pair<_T1, _T2>’
+  311 |     assert(alignment->seq2 != NULL);
+      |                               ^~~~
+/usr/include/c++/13/bits/stl_iterator.h:462:5: note: candidate: ‘template<class _Iterator> constexpr bool std::operator!=(const reverse_iterator<_Iterator>&, const reverse_iterator<_Iterator>&)’
+  462 |     operator!=(const reverse_iterator<_Iterator>& __x,
+      |     ^~~~~~~~
+/usr/include/c++/13/bits/stl_iterator.h:462:5: note:   template argument deduction/substitution failed:
+src/pdb_cpp/sequence_align.cpp:311:31: note:   ‘std::string’ {aka ‘std::__cxx11::basic_string<char>’} is not derived from ‘const std::reverse_iterator<_Iterator>’
+  311 |     assert(alignment->seq2 != NULL);
+      |                               ^~~~
+/usr/include/c++/13/bits/stl_iterator.h:507:5: note: candidate: ‘template<class _IteratorL, class _IteratorR> constexpr bool std::operator!=(const reverse_iterator<_Iterator>&, const reverse_iterator<_IteratorR>&)’
+  507 |     operator!=(const reverse_iterator<_IteratorL>& __x,
+      |     ^~~~~~~~
+/usr/include/c++/13/bits/stl_iterator.h:507:5: note:   template argument deduction/substitution failed:
+src/pdb_cpp/sequence_align.cpp:311:31: note:   ‘std::string’ {aka ‘std::__cxx11::basic_string<char>’} is not derived from ‘const std::reverse_iterator<_Iterator>’
+  311 |     assert(alignment->seq2 != NULL);
+      |                               ^~~~
+/usr/include/c++/13/bits/stl_iterator.h:1697:5: note: candidate: ‘template<class _IteratorL, class _IteratorR> constexpr bool std::operator!=(const move_iterator<_IteratorL>&, const move_iterator<_IteratorR>&)’
+ 1697 |     operator!=(const move_iterator<_IteratorL>& __x,
+      |     ^~~~~~~~
+/usr/include/c++/13/bits/stl_iterator.h:1697:5: note:   template argument deduction/substitution failed:
+src/pdb_cpp/sequence_align.cpp:311:31: note:   ‘std::string’ {aka ‘std::__cxx11::basic_string<char>’} is not derived from ‘const std::move_iterator<_IteratorL>’
+  311 |     assert(alignment->seq2 != NULL);
+      |                               ^~~~
+/usr/include/c++/13/bits/stl_iterator.h:1763:5: note: candidate: ‘template<class _Iterator> constexpr bool std::operator!=(const move_iterator<_IteratorL>&, const move_iterator<_IteratorL>&)’
+ 1763 |     operator!=(const move_iterator<_Iterator>& __x,
+      |     ^~~~~~~~
+/usr/include/c++/13/bits/stl_iterator.h:1763:5: note:   template argument deduction/substitution failed:
+src/pdb_cpp/sequence_align.cpp:311:31: note:   ‘std::string’ {aka ‘std::__cxx11::basic_string<char>’} is not derived from ‘const std::move_iterator<_IteratorL>’
+  311 |     assert(alignment->seq2 != NULL);
+      |                               ^~~~
+/usr/include/c++/13/bits/allocator.h:245:5: note: candidate: ‘template<class _T1, class _T2> bool std::operator!=(const allocator<_Tp1>&, const allocator<_T2>&)’
+  245 |     operator!=(const allocator<_T1>&, const allocator<_T2>&)
+      |     ^~~~~~~~
+/usr/include/c++/13/bits/allocator.h:245:5: note:   template argument deduction/substitution failed:
+src/pdb_cpp/sequence_align.cpp:311:31: note:   ‘std::string’ {aka ‘std::__cxx11::basic_string<char>’} is not derived from ‘const std::allocator<_Tp1>’
+  311 |     assert(alignment->seq2 != NULL);
+      |                               ^~~~
+/usr/include/c++/13/bits/stl_vector.h:2086:5: note: candidate: ‘template<class _Tp, class _Alloc> bool std::operator!=(const vector<_Tp, _Alloc>&, const vector<_Tp, _Alloc>&)’
+ 2086 |     operator!=(const vector<_Tp, _Alloc>& __x, const vector<_Tp, _Alloc>& __y)
+      |     ^~~~~~~~
+/usr/include/c++/13/bits/stl_vector.h:2086:5: note:   template argument deduction/substitution failed:
+src/pdb_cpp/sequence_align.cpp:311:31: note:   ‘std::string’ {aka ‘std::__cxx11::basic_string<char>’} is not derived from ‘const std::vector<_Tp, _Alloc>’
+  311 |     assert(alignment->seq2 != NULL);
+      |                               ^~~~
+/usr/include/c++/13/tuple:1974:5: note: candidate: ‘template<class ... _TElements, class ... _UElements> constexpr bool std::operator!=(const tuple<_UTypes ...>&, const tuple<_UTypes ...>&)’
+ 1974 |     operator!=(const tuple<_TElements...>& __t,
+      |     ^~~~~~~~
+/usr/include/c++/13/tuple:1974:5: note:   template argument deduction/substitution failed:
+src/pdb_cpp/sequence_align.cpp:311:31: note:   ‘std::string’ {aka ‘std::__cxx11::basic_string<char>’} is not derived from ‘const std::tuple<_UTypes ...>’
+  311 |     assert(alignment->seq2 != NULL);
+      |                               ^~~~
+/usr/include/c++/13/bits/postypes.h:197:5: note: candidate: ‘template<class _StateT> bool std::operator!=(const fpos<_StateT>&, const fpos<_StateT>&)’
+  197 |     operator!=(const fpos<_StateT>& __lhs, const fpos<_StateT>& __rhs)
+      |     ^~~~~~~~
+/usr/include/c++/13/bits/postypes.h:197:5: note:   template argument deduction/substitution failed:
+src/pdb_cpp/sequence_align.cpp:311:31: note:   ‘std::string’ {aka ‘std::__cxx11::basic_string<char>’} is not derived from ‘const std::fpos<_StateT>’
+  311 |     assert(alignment->seq2 != NULL);
+      |                               ^~~~
+/usr/include/c++/13/string_view:649:5: note: candidate: ‘template<class _CharT, class _Traits> constexpr bool std::operator!=(basic_string_view<_CharT, _Traits>, basic_string_view<_CharT, _Traits>)’
+  649 |     operator!=(basic_string_view<_CharT, _Traits> __x,
+      |     ^~~~~~~~
+/usr/include/c++/13/string_view:649:5: note:   template argument deduction/substitution failed:
+src/pdb_cpp/sequence_align.cpp:311:31: note:   ‘std::__cxx11::basic_string<char>’ is not derived from ‘std::basic_string_view<_CharT, _Traits>’
+  311 |     assert(alignment->seq2 != NULL);
+      |                               ^~~~
+/usr/include/c++/13/string_view:656:5: note: candidate: ‘template<class _CharT, class _Traits> constexpr bool std::operator!=(basic_string_view<_CharT, _Traits>, __type_identity_t<basic_string_view<_CharT, _Traits> >)’
+  656 |     operator!=(basic_string_view<_CharT, _Traits> __x,
+      |     ^~~~~~~~
+/usr/include/c++/13/string_view:656:5: note:   template argument deduction/substitution failed:
+src/pdb_cpp/sequence_align.cpp:311:31: note:   ‘std::__cxx11::basic_string<char>’ is not derived from ‘std::basic_string_view<_CharT, _Traits>’
+  311 |     assert(alignment->seq2 != NULL);
+      |                               ^~~~
+/usr/include/c++/13/string_view:664:5: note: candidate: ‘template<class _CharT, class _Traits> constexpr bool std::operator!=(__type_identity_t<basic_string_view<_CharT, _Traits> >, basic_string_view<_CharT, _Traits>)’
+  664 |     operator!=(__type_identity_t<basic_string_view<_CharT, _Traits>> __x,
+      |     ^~~~~~~~
+/usr/include/c++/13/string_view:664:5: note:   template argument deduction/substitution failed:
+src/pdb_cpp/sequence_align.cpp:311:31: note:   mismatched types ‘std::basic_string_view<_CharT, _Traits>’ and ‘long int’
+  311 |     assert(alignment->seq2 != NULL);
+      |                               ^~~~
+/usr/include/c++/13/bits/basic_string.h:3788:5: note: candidate: ‘template<class _CharT, class _Traits, class _Alloc> bool std::operator!=(const __cxx11::basic_string<_CharT, _Traits, _Allocator>&, const __cxx11::basic_string<_CharT, _Traits, _Allocator>&)’
+ 3788 |     operator!=(const basic_string<_CharT, _Traits, _Alloc>& __lhs,
+      |     ^~~~~~~~
+/usr/include/c++/13/bits/basic_string.h:3788:5: note:   template argument deduction/substitution failed:
+src/pdb_cpp/sequence_align.cpp:311:31: note:   mismatched types ‘const std::__cxx11::basic_string<_CharT, _Traits, _Allocator>’ and ‘long int’
+  311 |     assert(alignment->seq2 != NULL);
+      |                               ^~~~
+/usr/include/c++/13/bits/basic_string.h:3802:5: note: candidate: ‘template<class _CharT, class _Traits, class _Alloc> bool std::operator!=(const _CharT*, const __cxx11::basic_string<_CharT, _Traits, _Allocator>&)’
+ 3802 |     operator!=(const _CharT* __lhs,
+      |     ^~~~~~~~
+/usr/include/c++/13/bits/basic_string.h:3802:5: note:   template argument deduction/substitution failed:
+src/pdb_cpp/sequence_align.cpp:311:31: note:   mismatched types ‘const _CharT*’ and ‘std::__cxx11::basic_string<char>’
+  311 |     assert(alignment->seq2 != NULL);
+      |                               ^~~~
+/usr/include/c++/13/bits/basic_string.h:3815:5: note: candidate: ‘template<class _CharT, class _Traits, class _Alloc> bool std::operator!=(const __cxx11::basic_string<_CharT, _Traits, _Allocator>&, const _CharT*)’
+ 3815 |     operator!=(const basic_string<_CharT, _Traits, _Alloc>& __lhs,
+      |     ^~~~~~~~
+/usr/include/c++/13/bits/basic_string.h:3815:5: note:   template argument deduction/substitution failed:
+src/pdb_cpp/sequence_align.cpp:311:31: note:   mismatched types ‘const _CharT*’ and ‘long int’
+  311 |     assert(alignment->seq2 != NULL);
+      |                               ^~~~
+/usr/include/c++/13/bits/streambuf_iterator.h:242:5: note: candidate: ‘template<class _CharT, class _Traits> bool std::operator!=(const istreambuf_iterator<_CharT, _Traits>&, const istreambuf_iterator<_CharT, _Traits>&)’
+  242 |     operator!=(const istreambuf_iterator<_CharT, _Traits>& __a,
+      |     ^~~~~~~~
+/usr/include/c++/13/bits/streambuf_iterator.h:242:5: note:   template argument deduction/substitution failed:
+src/pdb_cpp/sequence_align.cpp:311:31: note:   ‘std::string’ {aka ‘std::__cxx11::basic_string<char>’} is not derived from ‘const std::istreambuf_iterator<_CharT, _Traits>’
+  311 |     assert(alignment->seq2 != NULL);
+      |                               ^~~~
+/usr/include/c++/13/bits/new_allocator.h:222:9: note: candidate: ‘template<class _Up> bool std::operator!=(const __new_allocator<char>&, const __new_allocator<_Tp>&)’
+  222 |         operator!=(const __new_allocator&, const __new_allocator<_Up>&)
+      |         ^~~~~~~~
+/usr/include/c++/13/bits/new_allocator.h:222:9: note:   template argument deduction/substitution failed:
+src/pdb_cpp/sequence_align.cpp:311:31: note:   mismatched types ‘const std::__new_allocator<_Tp>’ and ‘long int’
+  311 |     assert(alignment->seq2 != NULL);
+      |                               ^~~~
+/usr/include/c++/13/system_error:525:3: note: candidate: ‘bool std::operator!=(const error_code&, const error_code&)’
+  525 |   operator!=(const error_code& __lhs, const error_code& __rhs) noexcept
+      |   ^~~~~~~~
+/usr/include/c++/13/system_error:525:32: note:   no known conversion for argument 1 from ‘std::string’ {aka ‘std::__cxx11::basic_string<char>’} to ‘const std::error_code&’
+  525 |   operator!=(const error_code& __lhs, const error_code& __rhs) noexcept
+      |              ~~~~~~~~~~~~~~~~~~^~~~~
+/usr/include/c++/13/system_error:530:3: note: candidate: ‘bool std::operator!=(const error_code&, const error_condition&)’
+  530 |   operator!=(const error_code& __lhs, const error_condition& __rhs) noexcept
+      |   ^~~~~~~~
+/usr/include/c++/13/system_error:530:32: note:   no known conversion for argument 1 from ‘std::string’ {aka ‘std::__cxx11::basic_string<char>’} to ‘const std::error_code&’
+  530 |   operator!=(const error_code& __lhs, const error_condition& __rhs) noexcept
+      |              ~~~~~~~~~~~~~~~~~~^~~~~
+/usr/include/c++/13/system_error:535:3: note: candidate: ‘bool std::operator!=(const error_condition&, const error_code&)’
+  535 |   operator!=(const error_condition& __lhs, const error_code& __rhs) noexcept
+      |   ^~~~~~~~
+/usr/include/c++/13/system_error:535:37: note:   no known conversion for argument 1 from ‘std::string’ {aka ‘std::__cxx11::basic_string<char>’} to ‘const std::error_condition&’
+  535 |   operator!=(const error_condition& __lhs, const error_code& __rhs) noexcept
+      |              ~~~~~~~~~~~~~~~~~~~~~~~^~~~~
+/usr/include/c++/13/system_error:540:3: note: candidate: ‘bool std::operator!=(const error_condition&, const error_condition&)’
+  540 |   operator!=(const error_condition& __lhs,
+      |   ^~~~~~~~
+/usr/include/c++/13/system_error:540:37: note:   no known conversion for argument 1 from ‘std::string’ {aka ‘std::__cxx11::basic_string<char>’} to ‘const std::error_condition&’
+  540 |   operator!=(const error_condition& __lhs,
+      |              ~~~~~~~~~~~~~~~~~~~~~~~^~~~~
+/usr/include/c++/13/bits/allocator.h:222:7: note: candidate: ‘bool std::operator!=(const allocator<char>&, const allocator<char>&)’
+  222 |       operator!=(const allocator&, const allocator&) _GLIBCXX_NOTHROW
+      |       ^~~~~~~~
+/usr/include/c++/13/bits/allocator.h:222:18: note:   no known conversion for argument 1 from ‘std::string’ {aka ‘std::__cxx11::basic_string<char>’} to ‘const std::allocator<char>&’
+  222 |       operator!=(const allocator&, const allocator&) _GLIBCXX_NOTHROW
+      |                  ^~~~~~~~~~~~~~~~
+src/pdb_cpp/sequence_align.cpp:331:26: error: cannot convert ‘std::string’ {aka ‘std::__cxx11::basic_string<char>’} to ‘const char*’
+  331 |     check_seq(alignment->seq1);
+      |               ~~~~~~~~~~~^~~~
+      |                          |
+      |                          std::string {aka std::__cxx11::basic_string<char>}
+src/pdb_cpp/sequence_align.cpp:107:28: note:   initializing argument 1 of ‘void check_seq(const char*)’
+  107 | void check_seq(const char *seq) {
+      |                ~~~~~~~~~~~~^~~
+src/pdb_cpp/sequence_align.cpp:332:26: error: cannot convert ‘std::string’ {aka ‘std::__cxx11::basic_string<char>’} to ‘const char*’
+  332 |     check_seq(alignment->seq2);
+      |               ~~~~~~~~~~~^~~~
+      |                          |
+      |                          std::string {aka std::__cxx11::basic_string<char>}
+src/pdb_cpp/sequence_align.cpp:107:28: note:   initializing argument 1 of ‘void check_seq(const char*)’
+  107 | void check_seq(const char *seq) {
+      |                ~~~~~~~~~~~~^~~
+src/pdb_cpp/sequence_align.cpp: In function ‘void free_align(Alignment*)’:
+src/pdb_cpp/sequence_align.cpp:347:21: error: no match for ‘operator!=’ (operand types are ‘std::string’ {aka ‘std::__cxx11::basic_string<char>’} and ‘long int’)
+  347 |     if (align->seq1 != NULL) {
+      |                     ^
+/usr/include/c++/13/bits/stl_pair.h:842:5: note: candidate: ‘template<class _T1, class _T2> constexpr bool std::operator!=(const pair<_T1, _T2>&, const pair<_T1, _T2>&)’
+  842 |     operator!=(const pair<_T1, _T2>& __x, const pair<_T1, _T2>& __y)
+      |     ^~~~~~~~
+/usr/include/c++/13/bits/stl_pair.h:842:5: note:   template argument deduction/substitution failed:
+In file included from /usr/include/time.h:29,
+                 from /usr/include/pthread.h:23,
+                 from /usr/include/x86_64-linux-gnu/c++/13/bits/gthr-default.h:35,
+                 from /usr/include/x86_64-linux-gnu/c++/13/bits/gthr.h:148,
+                 from /usr/include/c++/13/ext/atomicity.h:35,
+                 from /usr/include/c++/13/bits/ios_base.h:39:
+src/pdb_cpp/sequence_align.cpp:347:24: note:   ‘std::string’ {aka ‘std::__cxx11::basic_string<char>’} is not derived from ‘const std::pair<_T1, _T2>’
+  347 |     if (align->seq1 != NULL) {
+      |                        ^~~~
+/usr/include/c++/13/bits/stl_iterator.h:462:5: note: candidate: ‘template<class _Iterator> constexpr bool std::operator!=(const reverse_iterator<_Iterator>&, const reverse_iterator<_Iterator>&)’
+  462 |     operator!=(const reverse_iterator<_Iterator>& __x,
+      |     ^~~~~~~~
+/usr/include/c++/13/bits/stl_iterator.h:462:5: note:   template argument deduction/substitution failed:
+src/pdb_cpp/sequence_align.cpp:347:24: note:   ‘std::string’ {aka ‘std::__cxx11::basic_string<char>’} is not derived from ‘const std::reverse_iterator<_Iterator>’
+  347 |     if (align->seq1 != NULL) {
+      |                        ^~~~
+/usr/include/c++/13/bits/stl_iterator.h:507:5: note: candidate: ‘template<class _IteratorL, class _IteratorR> constexpr bool std::operator!=(const reverse_iterator<_Iterator>&, const reverse_iterator<_IteratorR>&)’
+  507 |     operator!=(const reverse_iterator<_IteratorL>& __x,
+      |     ^~~~~~~~
+/usr/include/c++/13/bits/stl_iterator.h:507:5: note:   template argument deduction/substitution failed:
+src/pdb_cpp/sequence_align.cpp:347:24: note:   ‘std::string’ {aka ‘std::__cxx11::basic_string<char>’} is not derived from ‘const std::reverse_iterator<_Iterator>’
+  347 |     if (align->seq1 != NULL) {
+      |                        ^~~~
+/usr/include/c++/13/bits/stl_iterator.h:1697:5: note: candidate: ‘template<class _IteratorL, class _IteratorR> constexpr bool std::operator!=(const move_iterator<_IteratorL>&, const move_iterator<_IteratorR>&)’
+ 1697 |     operator!=(const move_iterator<_IteratorL>& __x,
+      |     ^~~~~~~~
+/usr/include/c++/13/bits/stl_iterator.h:1697:5: note:   template argument deduction/substitution failed:
+src/pdb_cpp/sequence_align.cpp:347:24: note:   ‘std::string’ {aka ‘std::__cxx11::basic_string<char>’} is not derived from ‘const std::move_iterator<_IteratorL>’
+  347 |     if (align->seq1 != NULL) {
+      |                        ^~~~
+/usr/include/c++/13/bits/stl_iterator.h:1763:5: note: candidate: ‘template<class _Iterator> constexpr bool std::operator!=(const move_iterator<_IteratorL>&, const move_iterator<_IteratorL>&)’
+ 1763 |     operator!=(const move_iterator<_Iterator>& __x,
+      |     ^~~~~~~~
+/usr/include/c++/13/bits/stl_iterator.h:1763:5: note:   template argument deduction/substitution failed:
+src/pdb_cpp/sequence_align.cpp:347:24: note:   ‘std::string’ {aka ‘std::__cxx11::basic_string<char>’} is not derived from ‘const std::move_iterator<_IteratorL>’
+  347 |     if (align->seq1 != NULL) {
+      |                        ^~~~
+/usr/include/c++/13/bits/allocator.h:245:5: note: candidate: ‘template<class _T1, class _T2> bool std::operator!=(const allocator<_Tp1>&, const allocator<_T2>&)’
+  245 |     operator!=(const allocator<_T1>&, const allocator<_T2>&)
+      |     ^~~~~~~~
+/usr/include/c++/13/bits/allocator.h:245:5: note:   template argument deduction/substitution failed:
+src/pdb_cpp/sequence_align.cpp:347:24: note:   ‘std::string’ {aka ‘std::__cxx11::basic_string<char>’} is not derived from ‘const std::allocator<_Tp1>’
+  347 |     if (align->seq1 != NULL) {
+      |                        ^~~~
+/usr/include/c++/13/bits/stl_vector.h:2086:5: note: candidate: ‘template<class _Tp, class _Alloc> bool std::operator!=(const vector<_Tp, _Alloc>&, const vector<_Tp, _Alloc>&)’
+ 2086 |     operator!=(const vector<_Tp, _Alloc>& __x, const vector<_Tp, _Alloc>& __y)
+      |     ^~~~~~~~
+/usr/include/c++/13/bits/stl_vector.h:2086:5: note:   template argument deduction/substitution failed:
+src/pdb_cpp/sequence_align.cpp:347:24: note:   ‘std::string’ {aka ‘std::__cxx11::basic_string<char>’} is not derived from ‘const std::vector<_Tp, _Alloc>’
+  347 |     if (align->seq1 != NULL) {
+      |                        ^~~~
+/usr/include/c++/13/tuple:1974:5: note: candidate: ‘template<class ... _TElements, class ... _UElements> constexpr bool std::operator!=(const tuple<_UTypes ...>&, const tuple<_UTypes ...>&)’
+ 1974 |     operator!=(const tuple<_TElements...>& __t,
+      |     ^~~~~~~~
+/usr/include/c++/13/tuple:1974:5: note:   template argument deduction/substitution failed:
+src/pdb_cpp/sequence_align.cpp:347:24: note:   ‘std::string’ {aka ‘std::__cxx11::basic_string<char>’} is not derived from ‘const std::tuple<_UTypes ...>’
+  347 |     if (align->seq1 != NULL) {
+      |                        ^~~~
+/usr/include/c++/13/bits/postypes.h:197:5: note: candidate: ‘template<class _StateT> bool std::operator!=(const fpos<_StateT>&, const fpos<_StateT>&)’
+  197 |     operator!=(const fpos<_StateT>& __lhs, const fpos<_StateT>& __rhs)
+      |     ^~~~~~~~
+/usr/include/c++/13/bits/postypes.h:197:5: note:   template argument deduction/substitution failed:
+src/pdb_cpp/sequence_align.cpp:347:24: note:   ‘std::string’ {aka ‘std::__cxx11::basic_string<char>’} is not derived from ‘const std::fpos<_StateT>’
+  347 |     if (align->seq1 != NULL) {
+      |                        ^~~~
+/usr/include/c++/13/string_view:649:5: note: candidate: ‘template<class _CharT, class _Traits> constexpr bool std::operator!=(basic_string_view<_CharT, _Traits>, basic_string_view<_CharT, _Traits>)’
+  649 |     operator!=(basic_string_view<_CharT, _Traits> __x,
+      |     ^~~~~~~~
+/usr/include/c++/13/string_view:649:5: note:   template argument deduction/substitution failed:
+src/pdb_cpp/sequence_align.cpp:347:24: note:   ‘std::__cxx11::basic_string<char>’ is not derived from ‘std::basic_string_view<_CharT, _Traits>’
+  347 |     if (align->seq1 != NULL) {
+      |                        ^~~~
+/usr/include/c++/13/string_view:656:5: note: candidate: ‘template<class _CharT, class _Traits> constexpr bool std::operator!=(basic_string_view<_CharT, _Traits>, __type_identity_t<basic_string_view<_CharT, _Traits> >)’
+  656 |     operator!=(basic_string_view<_CharT, _Traits> __x,
+      |     ^~~~~~~~
+/usr/include/c++/13/string_view:656:5: note:   template argument deduction/substitution failed:
+src/pdb_cpp/sequence_align.cpp:347:24: note:   ‘std::__cxx11::basic_string<char>’ is not derived from ‘std::basic_string_view<_CharT, _Traits>’
+  347 |     if (align->seq1 != NULL) {
+      |                        ^~~~
+/usr/include/c++/13/string_view:664:5: note: candidate: ‘template<class _CharT, class _Traits> constexpr bool std::operator!=(__type_identity_t<basic_string_view<_CharT, _Traits> >, basic_string_view<_CharT, _Traits>)’
+  664 |     operator!=(__type_identity_t<basic_string_view<_CharT, _Traits>> __x,
+      |     ^~~~~~~~
+/usr/include/c++/13/string_view:664:5: note:   template argument deduction/substitution failed:
+src/pdb_cpp/sequence_align.cpp:347:24: note:   mismatched types ‘std::basic_string_view<_CharT, _Traits>’ and ‘long int’
+  347 |     if (align->seq1 != NULL) {
+      |                        ^~~~
+/usr/include/c++/13/bits/basic_string.h:3788:5: note: candidate: ‘template<class _CharT, class _Traits, class _Alloc> bool std::operator!=(const __cxx11::basic_string<_CharT, _Traits, _Allocator>&, const __cxx11::basic_string<_CharT, _Traits, _Allocator>&)’
+ 3788 |     operator!=(const basic_string<_CharT, _Traits, _Alloc>& __lhs,
+      |     ^~~~~~~~
+/usr/include/c++/13/bits/basic_string.h:3788:5: note:   template argument deduction/substitution failed:
+src/pdb_cpp/sequence_align.cpp:347:24: note:   mismatched types ‘const std::__cxx11::basic_string<_CharT, _Traits, _Allocator>’ and ‘long int’
+  347 |     if (align->seq1 != NULL) {
+      |                        ^~~~
+/usr/include/c++/13/bits/basic_string.h:3802:5: note: candidate: ‘template<class _CharT, class _Traits, class _Alloc> bool std::operator!=(const _CharT*, const __cxx11::basic_string<_CharT, _Traits, _Allocator>&)’
+ 3802 |     operator!=(const _CharT* __lhs,
+      |     ^~~~~~~~
+/usr/include/c++/13/bits/basic_string.h:3802:5: note:   template argument deduction/substitution failed:
+src/pdb_cpp/sequence_align.cpp:347:24: note:   mismatched types ‘const _CharT*’ and ‘std::__cxx11::basic_string<char>’
+  347 |     if (align->seq1 != NULL) {
+      |                        ^~~~
+/usr/include/c++/13/bits/basic_string.h:3815:5: note: candidate: ‘template<class _CharT, class _Traits, class _Alloc> bool std::operator!=(const __cxx11::basic_string<_CharT, _Traits, _Allocator>&, const _CharT*)’
+ 3815 |     operator!=(const basic_string<_CharT, _Traits, _Alloc>& __lhs,
+      |     ^~~~~~~~
+/usr/include/c++/13/bits/basic_string.h:3815:5: note:   template argument deduction/substitution failed:
+src/pdb_cpp/sequence_align.cpp:347:24: note:   mismatched types ‘const _CharT*’ and ‘long int’
+  347 |     if (align->seq1 != NULL) {
+      |                        ^~~~
+/usr/include/c++/13/bits/streambuf_iterator.h:242:5: note: candidate: ‘template<class _CharT, class _Traits> bool std::operator!=(const istreambuf_iterator<_CharT, _Traits>&, const istreambuf_iterator<_CharT, _Traits>&)’
+  242 |     operator!=(const istreambuf_iterator<_CharT, _Traits>& __a,
+      |     ^~~~~~~~
+/usr/include/c++/13/bits/streambuf_iterator.h:242:5: note:   template argument deduction/substitution failed:
+src/pdb_cpp/sequence_align.cpp:347:24: note:   ‘std::string’ {aka ‘std::__cxx11::basic_string<char>’} is not derived from ‘const std::istreambuf_iterator<_CharT, _Traits>’
+  347 |     if (align->seq1 != NULL) {
+      |                        ^~~~
+/usr/include/c++/13/bits/new_allocator.h:222:9: note: candidate: ‘template<class _Up> bool std::operator!=(const __new_allocator<char>&, const __new_allocator<_Tp>&)’
+  222 |         operator!=(const __new_allocator&, const __new_allocator<_Up>&)
+      |         ^~~~~~~~
+/usr/include/c++/13/bits/new_allocator.h:222:9: note:   template argument deduction/substitution failed:
+src/pdb_cpp/sequence_align.cpp:347:24: note:   mismatched types ‘const std::__new_allocator<_Tp>’ and ‘long int’
+  347 |     if (align->seq1 != NULL) {
+      |                        ^~~~
+/usr/include/c++/13/system_error:525:3: note: candidate: ‘bool std::operator!=(const error_code&, const error_code&)’
+  525 |   operator!=(const error_code& __lhs, const error_code& __rhs) noexcept
+      |   ^~~~~~~~
+/usr/include/c++/13/system_error:525:32: note:   no known conversion for argument 1 from ‘std::string’ {aka ‘std::__cxx11::basic_string<char>’} to ‘const std::error_code&’
+  525 |   operator!=(const error_code& __lhs, const error_code& __rhs) noexcept
+      |              ~~~~~~~~~~~~~~~~~~^~~~~
+/usr/include/c++/13/system_error:530:3: note: candidate: ‘bool std::operator!=(const error_code&, const error_condition&)’
+  530 |   operator!=(const error_code& __lhs, const error_condition& __rhs) noexcept
+      |   ^~~~~~~~
+/usr/include/c++/13/system_error:530:32: note:   no known conversion for argument 1 from ‘std::string’ {aka ‘std::__cxx11::basic_string<char>’} to ‘const std::error_code&’
+  530 |   operator!=(const error_code& __lhs, const error_condition& __rhs) noexcept
+      |              ~~~~~~~~~~~~~~~~~~^~~~~
+/usr/include/c++/13/system_error:535:3: note: candidate: ‘bool std::operator!=(const error_condition&, const error_code&)’
+  535 |   operator!=(const error_condition& __lhs, const error_code& __rhs) noexcept
+      |   ^~~~~~~~
+/usr/include/c++/13/system_error:535:37: note:   no known conversion for argument 1 from ‘std::string’ {aka ‘std::__cxx11::basic_string<char>’} to ‘const std::error_condition&’
+  535 |   operator!=(const error_condition& __lhs, const error_code& __rhs) noexcept
+      |              ~~~~~~~~~~~~~~~~~~~~~~~^~~~~
+/usr/include/c++/13/system_error:540:3: note: candidate: ‘bool std::operator!=(const error_condition&, const error_condition&)’
+  540 |   operator!=(const error_condition& __lhs,
+      |   ^~~~~~~~
+/usr/include/c++/13/system_error:540:37: note:   no known conversion for argument 1 from ‘std::string’ {aka ‘std::__cxx11::basic_string<char>’} to ‘const std::error_condition&’
+  540 |   operator!=(const error_condition& __lhs,
+      |              ~~~~~~~~~~~~~~~~~~~~~~~^~~~~
+/usr/include/c++/13/bits/allocator.h:222:7: note: candidate: ‘bool std::operator!=(const allocator<char>&, const allocator<char>&)’
+  222 |       operator!=(const allocator&, const allocator&) _GLIBCXX_NOTHROW
+      |       ^~~~~~~~
+/usr/include/c++/13/bits/allocator.h:222:18: note:   no known conversion for argument 1 from ‘std::string’ {aka ‘std::__cxx11::basic_string<char>’} to ‘const std::allocator<char>&’
+  222 |       operator!=(const allocator&, const allocator&) _GLIBCXX_NOTHROW
+      |                  ^~~~~~~~~~~~~~~~
+src/pdb_cpp/sequence_align.cpp:348:21: error: cannot convert ‘std::string’ {aka ‘std::__cxx11::basic_string<char>’} to ‘void*’
+  348 |         free(align->seq1);
+      |              ~~~~~~~^~~~
+      |                     |
+      |                     std::string {aka std::__cxx11::basic_string<char>}
+In file included from /usr/include/c++/13/cstdlib:79,
+                 from /usr/include/c++/13/stdlib.h:36,
+                 from src/pdb_cpp/sequence_align.cpp:3:
+/usr/include/stdlib.h:687:25: note:   initializing argument 1 of ‘void free(void*)’
+  687 | extern void free (void *__ptr) __THROW;
+      |                   ~~~~~~^~~~~
+src/pdb_cpp/sequence_align.cpp:349:23: error: ambiguous overload for ‘operator=’ (operand types are ‘std::string’ {aka ‘std::__cxx11::basic_string<char>’} and ‘long int’)
+  349 |         align->seq1 = NULL;
+      |                       ^~~~
+/usr/include/c++/13/bits/basic_string.h:812:7: note: candidate: ‘std::__cxx11::basic_string<_CharT, _Traits, _Alloc>& std::__cxx11::basic_string<_CharT, _Traits, _Alloc>::operator=(const std::__cxx11::basic_string<_CharT, _Traits, _Alloc>&) [with _CharT = char; _Traits = std::char_traits<char>; _Alloc = std::allocator<char>]’
+  812 |       operator=(const basic_string& __str)
+      |       ^~~~~~~~
+/usr/include/c++/13/bits/basic_string.h:823:7: note: candidate: ‘std::__cxx11::basic_string<_CharT, _Traits, _Alloc>& std::__cxx11::basic_string<_CharT, _Traits, _Alloc>::operator=(const _CharT*) [with _CharT = char; _Traits = std::char_traits<char>; _Alloc = std::allocator<char>]’
+  823 |       operator=(const _CharT* __s)
+      |       ^~~~~~~~
+/usr/include/c++/13/bits/basic_string.h:835:7: note: candidate: ‘std::__cxx11::basic_string<_CharT, _Traits, _Alloc>& std::__cxx11::basic_string<_CharT, _Traits, _Alloc>::operator=(_CharT) [with _CharT = char; _Traits = std::char_traits<char>; _Alloc = std::allocator<char>]’
+  835 |       operator=(_CharT __c)
+      |       ^~~~~~~~
+/usr/include/c++/13/bits/basic_string.h:853:7: note: candidate: ‘std::__cxx11::basic_string<_CharT, _Traits, _Alloc>& std::__cxx11::basic_string<_CharT, _Traits, _Alloc>::operator=(std::__cxx11::basic_string<_CharT, _Traits, _Alloc>&&) [with _CharT = char; _Traits = std::char_traits<char>; _Alloc = std::allocator<char>]’
+  853 |       operator=(basic_string&& __str)
+      |       ^~~~~~~~
+src/pdb_cpp/sequence_align.cpp:354:21: error: no match for ‘operator!=’ (operand types are ‘std::string’ {aka ‘std::__cxx11::basic_string<char>’} and ‘long int’)
+  354 |     if (align->seq2 != NULL) {
+      |                     ^
+/usr/include/c++/13/bits/stl_pair.h:842:5: note: candidate: ‘template<class _T1, class _T2> constexpr bool std::operator!=(const pair<_T1, _T2>&, const pair<_T1, _T2>&)’
+  842 |     operator!=(const pair<_T1, _T2>& __x, const pair<_T1, _T2>& __y)
+      |     ^~~~~~~~
+/usr/include/c++/13/bits/stl_pair.h:842:5: note:   template argument deduction/substitution failed:
+src/pdb_cpp/sequence_align.cpp:354:24: note:   ‘std::string’ {aka ‘std::__cxx11::basic_string<char>’} is not derived from ‘const std::pair<_T1, _T2>’
+  354 |     if (align->seq2 != NULL) {
+      |                        ^~~~
+/usr/include/c++/13/bits/stl_iterator.h:462:5: note: candidate: ‘template<class _Iterator> constexpr bool std::operator!=(const reverse_iterator<_Iterator>&, const reverse_iterator<_Iterator>&)’
+  462 |     operator!=(const reverse_iterator<_Iterator>& __x,
+      |     ^~~~~~~~
+/usr/include/c++/13/bits/stl_iterator.h:462:5: note:   template argument deduction/substitution failed:
+src/pdb_cpp/sequence_align.cpp:354:24: note:   ‘std::string’ {aka ‘std::__cxx11::basic_string<char>’} is not derived from ‘const std::reverse_iterator<_Iterator>’
+  354 |     if (align->seq2 != NULL) {
+      |                        ^~~~
+/usr/include/c++/13/bits/stl_iterator.h:507:5: note: candidate: ‘template<class _IteratorL, class _IteratorR> constexpr bool std::operator!=(const reverse_iterator<_Iterator>&, const reverse_iterator<_IteratorR>&)’
+  507 |     operator!=(const reverse_iterator<_IteratorL>& __x,
+      |     ^~~~~~~~
+/usr/include/c++/13/bits/stl_iterator.h:507:5: note:   template argument deduction/substitution failed:
+src/pdb_cpp/sequence_align.cpp:354:24: note:   ‘std::string’ {aka ‘std::__cxx11::basic_string<char>’} is not derived from ‘const std::reverse_iterator<_Iterator>’
+  354 |     if (align->seq2 != NULL) {
+      |                        ^~~~
+/usr/include/c++/13/bits/stl_iterator.h:1697:5: note: candidate: ‘template<class _IteratorL, class _IteratorR> constexpr bool std::operator!=(const move_iterator<_IteratorL>&, const move_iterator<_IteratorR>&)’
+ 1697 |     operator!=(const move_iterator<_IteratorL>& __x,
+      |     ^~~~~~~~
+/usr/include/c++/13/bits/stl_iterator.h:1697:5: note:   template argument deduction/substitution failed:
+src/pdb_cpp/sequence_align.cpp:354:24: note:   ‘std::string’ {aka ‘std::__cxx11::basic_string<char>’} is not derived from ‘const std::move_iterator<_IteratorL>’
+  354 |     if (align->seq2 != NULL) {
+      |                        ^~~~
+/usr/include/c++/13/bits/stl_iterator.h:1763:5: note: candidate: ‘template<class _Iterator> constexpr bool std::operator!=(const move_iterator<_IteratorL>&, const move_iterator<_IteratorL>&)’
+ 1763 |     operator!=(const move_iterator<_Iterator>& __x,
+      |     ^~~~~~~~
+/usr/include/c++/13/bits/stl_iterator.h:1763:5: note:   template argument deduction/substitution failed:
+src/pdb_cpp/sequence_align.cpp:354:24: note:   ‘std::string’ {aka ‘std::__cxx11::basic_string<char>’} is not derived from ‘const std::move_iterator<_IteratorL>’
+  354 |     if (align->seq2 != NULL) {
+      |                        ^~~~
+/usr/include/c++/13/bits/allocator.h:245:5: note: candidate: ‘template<class _T1, class _T2> bool std::operator!=(const allocator<_Tp1>&, const allocator<_T2>&)’
+  245 |     operator!=(const allocator<_T1>&, const allocator<_T2>&)
+      |     ^~~~~~~~
+/usr/include/c++/13/bits/allocator.h:245:5: note:   template argument deduction/substitution failed:
+src/pdb_cpp/sequence_align.cpp:354:24: note:   ‘std::string’ {aka ‘std::__cxx11::basic_string<char>’} is not derived from ‘const std::allocator<_Tp1>’
+  354 |     if (align->seq2 != NULL) {
+      |                        ^~~~
+/usr/include/c++/13/bits/stl_vector.h:2086:5: note: candidate: ‘template<class _Tp, class _Alloc> bool std::operator!=(const vector<_Tp, _Alloc>&, const vector<_Tp, _Alloc>&)’
+ 2086 |     operator!=(const vector<_Tp, _Alloc>& __x, const vector<_Tp, _Alloc>& __y)
+      |     ^~~~~~~~
+/usr/include/c++/13/bits/stl_vector.h:2086:5: note:   template argument deduction/substitution failed:
+src/pdb_cpp/sequence_align.cpp:354:24: note:   ‘std::string’ {aka ‘std::__cxx11::basic_string<char>’} is not derived from ‘const std::vector<_Tp, _Alloc>’
+  354 |     if (align->seq2 != NULL) {
+      |                        ^~~~
+/usr/include/c++/13/tuple:1974:5: note: candidate: ‘template<class ... _TElements, class ... _UElements> constexpr bool std::operator!=(const tuple<_UTypes ...>&, const tuple<_UTypes ...>&)’
+ 1974 |     operator!=(const tuple<_TElements...>& __t,
+      |     ^~~~~~~~
+/usr/include/c++/13/tuple:1974:5: note:   template argument deduction/substitution failed:
+src/pdb_cpp/sequence_align.cpp:354:24: note:   ‘std::string’ {aka ‘std::__cxx11::basic_string<char>’} is not derived from ‘const std::tuple<_UTypes ...>’
+  354 |     if (align->seq2 != NULL) {
+      |                        ^~~~
+/usr/include/c++/13/bits/postypes.h:197:5: note: candidate: ‘template<class _StateT> bool std::operator!=(const fpos<_StateT>&, const fpos<_StateT>&)’
+  197 |     operator!=(const fpos<_StateT>& __lhs, const fpos<_StateT>& __rhs)
+      |     ^~~~~~~~
+/usr/include/c++/13/bits/postypes.h:197:5: note:   template argument deduction/substitution failed:
+src/pdb_cpp/sequence_align.cpp:354:24: note:   ‘std::string’ {aka ‘std::__cxx11::basic_string<char>’} is not derived from ‘const std::fpos<_StateT>’
+  354 |     if (align->seq2 != NULL) {
+      |                        ^~~~
+/usr/include/c++/13/string_view:649:5: note: candidate: ‘template<class _CharT, class _Traits> constexpr bool std::operator!=(basic_string_view<_CharT, _Traits>, basic_string_view<_CharT, _Traits>)’
+  649 |     operator!=(basic_string_view<_CharT, _Traits> __x,
+      |     ^~~~~~~~
+/usr/include/c++/13/string_view:649:5: note:   template argument deduction/substitution failed:
+src/pdb_cpp/sequence_align.cpp:354:24: note:   ‘std::__cxx11::basic_string<char>’ is not derived from ‘std::basic_string_view<_CharT, _Traits>’
+  354 |     if (align->seq2 != NULL) {
+      |                        ^~~~
+/usr/include/c++/13/string_view:656:5: note: candidate: ‘template<class _CharT, class _Traits> constexpr bool std::operator!=(basic_string_view<_CharT, _Traits>, __type_identity_t<basic_string_view<_CharT, _Traits> >)’
+  656 |     operator!=(basic_string_view<_CharT, _Traits> __x,
+      |     ^~~~~~~~
+/usr/include/c++/13/string_view:656:5: note:   template argument deduction/substitution failed:
+src/pdb_cpp/sequence_align.cpp:354:24: note:   ‘std::__cxx11::basic_string<char>’ is not derived from ‘std::basic_string_view<_CharT, _Traits>’
+  354 |     if (align->seq2 != NULL) {
+      |                        ^~~~
+/usr/include/c++/13/string_view:664:5: note: candidate: ‘template<class _CharT, class _Traits> constexpr bool std::operator!=(__type_identity_t<basic_string_view<_CharT, _Traits> >, basic_string_view<_CharT, _Traits>)’
+  664 |     operator!=(__type_identity_t<basic_string_view<_CharT, _Traits>> __x,
+      |     ^~~~~~~~
+/usr/include/c++/13/string_view:664:5: note:   template argument deduction/substitution failed:
+src/pdb_cpp/sequence_align.cpp:354:24: note:   mismatched types ‘std::basic_string_view<_CharT, _Traits>’ and ‘long int’
+  354 |     if (align->seq2 != NULL) {
+      |                        ^~~~
+/usr/include/c++/13/bits/basic_string.h:3788:5: note: candidate: ‘template<class _CharT, class _Traits, class _Alloc> bool std::operator!=(const __cxx11::basic_string<_CharT, _Traits, _Allocator>&, const __cxx11::basic_string<_CharT, _Traits, _Allocator>&)’
+ 3788 |     operator!=(const basic_string<_CharT, _Traits, _Alloc>& __lhs,
+      |     ^~~~~~~~
+/usr/include/c++/13/bits/basic_string.h:3788:5: note:   template argument deduction/substitution failed:
+src/pdb_cpp/sequence_align.cpp:354:24: note:   mismatched types ‘const std::__cxx11::basic_string<_CharT, _Traits, _Allocator>’ and ‘long int’
+  354 |     if (align->seq2 != NULL) {
+      |                        ^~~~
+/usr/include/c++/13/bits/basic_string.h:3802:5: note: candidate: ‘template<class _CharT, class _Traits, class _Alloc> bool std::operator!=(const _CharT*, const __cxx11::basic_string<_CharT, _Traits, _Allocator>&)’
+ 3802 |     operator!=(const _CharT* __lhs,
+      |     ^~~~~~~~
+/usr/include/c++/13/bits/basic_string.h:3802:5: note:   template argument deduction/substitution failed:
+src/pdb_cpp/sequence_align.cpp:354:24: note:   mismatched types ‘const _CharT*’ and ‘std::__cxx11::basic_string<char>’
+  354 |     if (align->seq2 != NULL) {
+      |                        ^~~~
+/usr/include/c++/13/bits/basic_string.h:3815:5: note: candidate: ‘template<class _CharT, class _Traits, class _Alloc> bool std::operator!=(const __cxx11::basic_string<_CharT, _Traits, _Allocator>&, const _CharT*)’
+ 3815 |     operator!=(const basic_string<_CharT, _Traits, _Alloc>& __lhs,
+      |     ^~~~~~~~
+/usr/include/c++/13/bits/basic_string.h:3815:5: note:   template argument deduction/substitution failed:
+src/pdb_cpp/sequence_align.cpp:354:24: note:   mismatched types ‘const _CharT*’ and ‘long int’
+  354 |     if (align->seq2 != NULL) {
+      |                        ^~~~
+/usr/include/c++/13/bits/streambuf_iterator.h:242:5: note: candidate: ‘template<class _CharT, class _Traits> bool std::operator!=(const istreambuf_iterator<_CharT, _Traits>&, const istreambuf_iterator<_CharT, _Traits>&)’
+  242 |     operator!=(const istreambuf_iterator<_CharT, _Traits>& __a,
+      |     ^~~~~~~~
+/usr/include/c++/13/bits/streambuf_iterator.h:242:5: note:   template argument deduction/substitution failed:
+src/pdb_cpp/sequence_align.cpp:354:24: note:   ‘std::string’ {aka ‘std::__cxx11::basic_string<char>’} is not derived from ‘const std::istreambuf_iterator<_CharT, _Traits>’
+  354 |     if (align->seq2 != NULL) {
+      |                        ^~~~
+/usr/include/c++/13/bits/new_allocator.h:222:9: note: candidate: ‘template<class _Up> bool std::operator!=(const __new_allocator<char>&, const __new_allocator<_Tp>&)’
+  222 |         operator!=(const __new_allocator&, const __new_allocator<_Up>&)
+      |         ^~~~~~~~
+/usr/include/c++/13/bits/new_allocator.h:222:9: note:   template argument deduction/substitution failed:
+src/pdb_cpp/sequence_align.cpp:354:24: note:   mismatched types ‘const std::__new_allocator<_Tp>’ and ‘long int’
+  354 |     if (align->seq2 != NULL) {
+      |                        ^~~~
+/usr/include/c++/13/system_error:525:3: note: candidate: ‘bool std::operator!=(const error_code&, const error_code&)’
+  525 |   operator!=(const error_code& __lhs, const error_code& __rhs) noexcept
+      |   ^~~~~~~~
+/usr/include/c++/13/system_error:525:32: note:   no known conversion for argument 1 from ‘std::string’ {aka ‘std::__cxx11::basic_string<char>’} to ‘const std::error_code&’
+  525 |   operator!=(const error_code& __lhs, const error_code& __rhs) noexcept
+      |              ~~~~~~~~~~~~~~~~~~^~~~~
+/usr/include/c++/13/system_error:530:3: note: candidate: ‘bool std::operator!=(const error_code&, const error_condition&)’
+  530 |   operator!=(const error_code& __lhs, const error_condition& __rhs) noexcept
+      |   ^~~~~~~~
+/usr/include/c++/13/system_error:530:32: note:   no known conversion for argument 1 from ‘std::string’ {aka ‘std::__cxx11::basic_string<char>’} to ‘const std::error_code&’
+  530 |   operator!=(const error_code& __lhs, const error_condition& __rhs) noexcept
+      |              ~~~~~~~~~~~~~~~~~~^~~~~
+/usr/include/c++/13/system_error:535:3: note: candidate: ‘bool std::operator!=(const error_condition&, const error_code&)’
+  535 |   operator!=(const error_condition& __lhs, const error_code& __rhs) noexcept
+      |   ^~~~~~~~
+/usr/include/c++/13/system_error:535:37: note:   no known conversion for argument 1 from ‘std::string’ {aka ‘std::__cxx11::basic_string<char>’} to ‘const std::error_condition&’
+  535 |   operator!=(const error_condition& __lhs, const error_code& __rhs) noexcept
+      |              ~~~~~~~~~~~~~~~~~~~~~~~^~~~~
+/usr/include/c++/13/system_error:540:3: note: candidate: ‘bool std::operator!=(const error_condition&, const error_condition&)’
+  540 |   operator!=(const error_condition& __lhs,
+      |   ^~~~~~~~
+/usr/include/c++/13/system_error:540:37: note:   no known conversion for argument 1 from ‘std::string’ {aka ‘std::__cxx11::basic_string<char>’} to ‘const std::error_condition&’
+  540 |   operator!=(const error_condition& __lhs,
+      |              ~~~~~~~~~~~~~~~~~~~~~~~^~~~~
+/usr/include/c++/13/bits/allocator.h:222:7: note: candidate: ‘bool std::operator!=(const allocator<char>&, const allocator<char>&)’
+  222 |       operator!=(const allocator&, const allocator&) _GLIBCXX_NOTHROW
+      |       ^~~~~~~~
+/usr/include/c++/13/bits/allocator.h:222:18: note:   no known conversion for argument 1 from ‘std::string’ {aka ‘std::__cxx11::basic_string<char>’} to ‘const std::allocator<char>&’
+  222 |       operator!=(const allocator&, const allocator&) _GLIBCXX_NOTHROW
+      |                  ^~~~~~~~~~~~~~~~
+src/pdb_cpp/sequence_align.cpp:355:21: error: cannot convert ‘std::string’ {aka ‘std::__cxx11::basic_string<char>’} to ‘void*’
+  355 |         free(align->seq2);
+      |              ~~~~~~~^~~~
+      |                     |
+      |                     std::string {aka std::__cxx11::basic_string<char>}
+/usr/include/stdlib.h:687:25: note:   initializing argument 1 of ‘void free(void*)’
+  687 | extern void free (void *__ptr) __THROW;
+      |                   ~~~~~~^~~~~
+src/pdb_cpp/sequence_align.cpp:356:23: error: ambiguous overload for ‘operator=’ (operand types are ‘std::string’ {aka ‘std::__cxx11::basic_string<char>’} and ‘long int’)
+  356 |         align->seq2 = NULL;
+      |                       ^~~~
+/usr/include/c++/13/bits/basic_string.h:812:7: note: candidate: ‘std::__cxx11::basic_string<_CharT, _Traits, _Alloc>& std::__cxx11::basic_string<_CharT, _Traits, _Alloc>::operator=(const std::__cxx11::basic_string<_CharT, _Traits, _Alloc>&) [with _CharT = char; _Traits = std::char_traits<char>; _Alloc = std::allocator<char>]’
+  812 |       operator=(const basic_string& __str)
+      |       ^~~~~~~~
+/usr/include/c++/13/bits/basic_string.h:823:7: note: candidate: ‘std::__cxx11::basic_string<_CharT, _Traits, _Alloc>& std::__cxx11::basic_string<_CharT, _Traits, _Alloc>::operator=(const _CharT*) [with _CharT = char; _Traits = std::char_traits<char>; _Alloc = std::allocator<char>]’
+  823 |       operator=(const _CharT* __s)
+      |       ^~~~~~~~
+/usr/include/c++/13/bits/basic_string.h:835:7: note: candidate: ‘std::__cxx11::basic_string<_CharT, _Traits, _Alloc>& std::__cxx11::basic_string<_CharT, _Traits, _Alloc>::operator=(_CharT) [with _CharT = char; _Traits = std::char_traits<char>; _Alloc = std::allocator<char>]’
+  835 |       operator=(_CharT __c)
+      |       ^~~~~~~~
+/usr/include/c++/13/bits/basic_string.h:853:7: note: candidate: ‘std::__cxx11::basic_string<_CharT, _Traits, _Alloc>& std::__cxx11::basic_string<_CharT, _Traits, _Alloc>::operator=(std::__cxx11::basic_string<_CharT, _Traits, _Alloc>&&) [with _CharT = char; _Traits = std::char_traits<char>; _Alloc = std::allocator<char>]’
+  853 |       operator=(basic_string&& __str)
+      |       ^~~~~~~~
+src/pdb_cpp/sequence_align.cpp: In function ‘void test(char*, char*)’:
+src/pdb_cpp/sequence_align.cpp:373:27: warning: format ‘%s’ expects argument of type ‘char*’, but argument 2 has type ‘std::string’ {aka ‘std::__cxx11::basic_string<char>’} [-Wformat=]
+  373 |     printf ("Alignment:\n%s:\n%s:\n", alignment->seq1, alignment->seq2);
+      |                          ~^
+      |                           |
+      |                           char*
+src/pdb_cpp/sequence_align.cpp:373:32: warning: format ‘%s’ expects argument of type ‘char*’, but argument 3 has type ‘std::string’ {aka ‘std::__cxx11::basic_string<char>’} [-Wformat=]
+  373 |     printf ("Alignment:\n%s:\n%s:\n", alignment->seq1, alignment->seq2);
+      |                               ~^
+      |                                |
+      |                                char*
+src/pdb_cpp/sequence_align.cpp: In function ‘int main(int, char**)’:
+src/pdb_cpp/sequence_align.cpp:384:19: warning: ISO C++ forbids converting a string constant to ‘char*’ [-Wwrite-strings]
+  384 |     char *seq_1 = "AQDMVSPPPPIADEPLTVNTGIYLIECYSLDDKAETFKVNAFLSLSWKDRRLAFDPV\
+      |                   ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  385 | RSGVRVKTYEPEAIWIPEIRFVNVENARDADVVDISVSPDGTVQYLERFSARVLSPLDFRRYPFDSQTLHIYLIVR\
+      | ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  386 | SVDTRNIVLAVDLEKVGKNDDVFLTGWDIESFTAVVKPANFALEDRLESKLDYQLRISRQYFSYIPNIILPMLFIL\
+      | ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  387 | FISWTAFWSTSYEANVTLVVSTLIAHIAFNILVETNLPKTPYMTYTGAIIFMIYLFYFVAVIEVTVQHYLKVESQP\
+      | ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  388 | ARAASITRASRIAFPVVFLLANIILAFLFFGF";
+      | ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+src/pdb_cpp/sequence_align.cpp:389:19: warning: ISO C++ forbids converting a string constant to ‘char*’ [-Wwrite-strings]
+  389 |     char *seq_2 = "MFALGIYLWETIVFFSLAASQQAAARKAASPMPPSEFLDKLMGKVSGYDARIRPNFK\
+      |                   ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  390 | GPPVNVTCNIFINSFGSIAETTMDYRVNIFLRQQWNDPRLAYSEYPDDSLDLDPSMLDSIWKPDLFFANEKGANFH\
+      | ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  391 | EVTTDNKLLRISKNGNVLYSIRITLVLACPMDLKNFPMDVQTCIMQLESFGYTMNDLIFEWDEKGAVQVADGLTLP\
+      | ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  392 | QFILKEEKDLRYCTKHYNTGKFTCIEARFHLERQMGYYLIQMYIPSLLIVILSWVSFWINMDAAPARVGLGITTVL\
+      | ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  393 | TMTTQSSGSRASLPKVSYVKAIDIWMAVCLLFVFSALLEYAAVNFIARQHKELLRFQRRRRHLKEDEAGDGRFSFA\
+      | ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  394 | AYGMGPACLQAKDGMAIKGNNNNAPTSTNPPEKTVEEMRKLFISRAKRIDTVSRVAFPLVFLIFNIFYWITYKIIR\
+      | ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  395 | SEDIHKQ";
+      | ~~~~~~~~           
+src/pdb_cpp/sequence_align.cpp:382:14: warning: unused parameter ‘argc’ [-Wunused-parameter]
+  382 | int main(int argc, char *argv[])
+      |          ~~~~^~~~
+src/pdb_cpp/sequence_align.cpp:382:26: warning: unused parameter ‘argv’ [-Wunused-parameter]
+  382 | int main(int argc, char *argv[])
+      |                    ~~~~~~^~~~~~
