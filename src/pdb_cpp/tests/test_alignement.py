@@ -137,7 +137,48 @@ def test_get_aa_seq():
 #     assert captured[-1] == "Similarity seq2: 49.12%"
 
 
-def test_seq_align_cython_X(capsys):
+def test_seq_align_1(capsys):
+   """Test seq_align function."""
+
+
+   seq_1 = (
+       "AQDMVSPPPPIADEPLTVNTGIYLIECYSLDDKAETFKVNAFLSLSWKDRRLAFDPV"
+       "RSGVRVKTYEPEAIWIPEIRFVNVENARDADVVDISVSPDGTVQYLERFSARVLSPLDFRRYPFDSQTLHIYLIVRSV"
+       "DTRNIVLAVDLEKVGKNDDVFLTGWDIESFTAVVKPANFALEDRLESKLDYQLRISRQYFSYIPNIILPMLFILFISW"
+       "TAFWSTSYEANVTLVVSTLIAHIAFNILVETNLPKTPYMTYTGAIIFMIYLFYFVAVIEVTVQHYLKVESQPARAASI"
+       "TRASRIAFPVVFLLANIILAFLFFGF"
+   )
+   seq_2 = (
+       "APSEFLDKLMGKVSGYDARIRPNFKGPPVNVTCNIFINSFGSIAETTMDYRVNIFLR"
+       "QQWNDPRLAYSEYPDDSLDLDPSMLDSIWKPDLFFANEKGANFHEVTTDNKLLRISKNGNVLYSIRITLVLACPMDLK"
+       "NFPMDVQTCIMQLESFGYTMNDLIFEWDEKGAVQVADGLTLPQFILKEEKDLRYCTKHYNTGKFTCIEARFHLERQMG"
+       "YYLIQMYIPSLLIVILSWVSFWINMDAAPARVGLGITTVLTMTTQSSGSRASLPKVSYVKAIDIWMAVCLLFVFSALL"
+       "EYAAVNFIARAGTKLFISRAKRIDTVSRVAFPLVFLIFNIFYWITYKLVPR"
+   )
+
+   align_seq_1, align_seq_2 = alignement.align_seq(seq_1, seq_2)
+   alignement.print_align_seq(align_seq_1, align_seq_2, line_len=80)
+   captured = capsys.readouterr().out.split("\n")[:-1]
+
+   assert captured[-4] == "Identity seq1: 26.18%"
+   assert captured[-3] == "Identity seq2: 24.27%"
+   assert captured[-2] == "Similarity seq1: 40.69%"
+   assert captured[-1] == "Similarity seq2: 37.72%"
+
+   seq_1 = "AQDMVSPPPPIADEPLTVNSLSWKDRRL"
+   seq_2 = "AQDMVSPPPPIADEPLTVNTGIYLIECYSLDDKAETFKVNAFLSLSWKDRRLAFDPV"
+
+   align_seq_1, align_seq_2 = alignement.align_seq(seq_1, seq_2)
+   alignement.print_align_seq(align_seq_1, align_seq_2, line_len=80)
+   captured = capsys.readouterr().out.split("\n")[:-1]
+
+   assert captured[-4] == "Identity seq1: 100.00%"
+   assert captured[-3] == "Identity seq2: 49.12%"
+   assert captured[-2] == "Similarity seq1: 100.00%"
+   assert captured[-1] == "Similarity seq2: 49.12%"
+
+
+def test_seq_align_2(capsys):
     """Test seq_align function."""
 
 
@@ -151,64 +192,12 @@ def test_seq_align_cython_X(capsys):
     for line in captured:
         print(line)
 
-    assert captured[-4] == "Identity seq1: 78.57%"
-    assert captured[-3] == "Identity seq2: 38.60%"
-    assert captured[-2] == "Similarity seq1: 92.86%"
-    assert captured[-1] == "Similarity seq2: 45.61%"
-
-    align_seq_1, align_seq_2 = alignement.align_seq(seq_1, seq_2)
-    alignement.print_align_seq(align_seq_1, align_seq_2, line_len=80)
-    captured = capsys.readouterr().out.split("\n")[:-1]
-
-    for line in captured:
-        print(line)
-
-    assert captured[-4] == "Identity seq1: 75.00%"
-    assert captured[-3] == "Identity seq2: 36.84%"
+    assert captured[-4] == "Identity seq1: 92.86%"
+    assert captured[-3] == "Identity seq2: 45.61%"
     assert captured[-2] == "Similarity seq1: 92.86%"
     assert captured[-1] == "Similarity seq2: 45.61%"
 
 
-# #def test_seq_align_C(capsys):
-# #    """Test seq_align function."""
-# #
-# #    pdb_numpy.logger.setLevel(level=logging.INFO)
-# #
-# #    seq_1 = (
-# #        "AQDMVSPPPPIADEPLTVNTGIYLIECYSLDDKAETFKVNAFLSLSWKDRRLAFDPV"
-# #        "RSGVRVKTYEPEAIWIPEIRFVNVENARDADVVDISVSPDGTVQYLERFSARVLSPLDFRRYPFDSQTLHIYLIVRSV"
-# #        "DTRNIVLAVDLEKVGKNDDVFLTGWDIESFTAVVKPANFALEDRLESKLDYQLRISRQYFSYIPNIILPMLFILFISW"
-# #        "TAFWSTSYEANVTLVVSTLIAHIAFNILVETNLPKTPYMTYTGAIIFMIYLFYFVAVIEVTVQHYLKVESQPARAASI"
-# #        "TRASRIAFPVVFLLANIILAFLFFGF"
-# #    )
-# #    seq_2 = (
-# #        "APSEFLDKLMGKVSGYDARIRPNFKGPPVNVTCNIFINSFGSIAETTMDYRVNIFLR"
-# #        "QQWNDPRLAYSEYPDDSLDLDPSMLDSIWKPDLFFANEKGANFHEVTTDNKLLRISKNGNVLYSIRITLVLACPMDLK"
-# #        "NFPMDVQTCIMQLESFGYTMNDLIFEWDEKGAVQVADGLTLPQFILKEEKDLRYCTKHYNTGKFTCIEARFHLERQMG"
-# #        "YYLIQMYIPSLLIVILSWVSFWINMDAAPARVGLGITTVLTMTTQSSGSRASLPKVSYVKAIDIWMAVCLLFVFSALL"
-# #        "EYAAVNFIARAGTKLFISRAKRIDTVSRVAFPLVFLIFNIFYWITYKLVPR"
-# #    )
-# #
-# #    align_seq_1, align_seq_2 = alignement.align_seq_C(seq_1, seq_2)
-# #    alignement.print_align_seq(align_seq_1, align_seq_2, line_len=80)
-# #    captured = capsys.readouterr().out.split("\n")[:-1]
-# #
-# #    assert captured[-4] == "Identity seq1: 28.71%"
-# #    assert captured[-3] == "Identity seq2: 26.61%"
-# #    assert captured[-2] == "Similarity seq1: 63.41%"
-# #    assert captured[-1] == "Similarity seq2: 58.77%"
-# #
-# #    seq_1 = "AQDMVSPPPPIADEPLTVNSLSWKDRRL"
-# #    seq_2 = "AQDMVSPPPPIADEPLTVNTGIYLIECYSLDDKAETFKVNAFLSLSWKDRRLAFDPV"
-# #
-# #    align_seq_1, align_seq_2 = alignement.align_seq_C(seq_1, seq_2)
-# #    alignement.print_align_seq(align_seq_1, align_seq_2, line_len=80)
-# #    captured = capsys.readouterr().out.split("\n")[:-1]
-# #
-# #    assert captured[-4] == "Identity seq1: 100.00%"
-# #    assert captured[-3] == "Identity seq2: 49.12%"
-# #    assert captured[-2] == "Similarity seq1: 100.00%"
-# #    assert captured[-1] == "Similarity seq2: 49.12%"
 
 
 # def test_seq_align_cython(capsys):

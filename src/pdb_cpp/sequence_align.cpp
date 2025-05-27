@@ -145,7 +145,7 @@ Alignment sequence_align(const string seq1, const string seq2, const string matr
 
     for (i = 0; i < seq1_len + 1; i++) score_matrix[i][0] = 0;
     for (i = 0; i < seq2_len + 1; i++) score_matrix[0][i] = 0;
-    for (i = 0; i < seq2_len; i++) prev_score_line[i] = false;
+    for (i = 0; i < seq2_len    ; i++) prev_score_line[i] = false;
 
 
     vector<int> seq_1_num = seq_to_num(seq1);
@@ -153,13 +153,13 @@ Alignment sequence_align(const string seq1, const string seq2, const string matr
 
     int match_score, insert_score, delete_score;
 
-    cout << "Start filling the score matrix:\n";
-    cout << "Sequence 1: " << seq1 << endl;
-    cout << "Sequence 2: " << seq2 << endl;
-    cout << "Substitution matrix: " << matrix_file << endl;
-    cout << "GAP_COST: " << GAP_COST << ", GAP_EXT: " << GAP_EXT << endl;
-    cout << "Score matrix size: " << seq1_len + 1 << " x " << seq2_len + 1 << endl;
-    cout << "Filling the score matrix:\n";
+    // cout << "Start filling the score matrix:\n";
+    // cout << "Sequence 1: " << seq1 << endl;
+    // cout << "Sequence 2: " << seq2 << endl;
+    // cout << "Substitution matrix: " << matrix_file << endl;
+    // cout << "GAP_COST: " << GAP_COST << ", GAP_EXT: " << GAP_EXT << endl;
+    // cout << "Score matrix size: " << seq1_len + 1 << " x " << seq2_len + 1 << endl;
+    // cout << "Filling the score matrix:\n";
     // Fill the score matrix
 
     for (i = 1; i <= seq1_len; i++) {
@@ -186,13 +186,13 @@ Alignment sequence_align(const string seq1, const string seq2, const string matr
         //cout << endl;
     }
 
-    cout << "Score matrix DONE:\n";
-    for (i = 0; i <= seq1_len; i++) {
-        for (j = 0; j <= seq2_len; j++) {
-            printf("%3d ", score_matrix[i][j]);
-        }
-        printf("\n");
-    }
+    // cout << "Score matrix DONE:\n";
+    // for (i = 0; i <= seq1_len; i++) {
+    //     for (j = 0; j <= seq2_len; j++) {
+    //         printf("%3d ", score_matrix[i][j]);
+    //     }
+    //     printf("\n");
+    // }
 
     // Get max score index:
     int min_len = (seq1_len < seq2_len) ? seq1_len : seq2_len;
@@ -200,56 +200,58 @@ Alignment sequence_align(const string seq1, const string seq2, const string matr
 
     for (size_t i = min_len; i <= seq1_len; i++) {
         for (size_t j = min_len; j <= seq2_len; j++) {
-            //printf ("%3d ", score_matrix[i][j]);
             if (score_matrix[i][j] > max_score) {
                 max_score = score_matrix[i][j];
                 min_i = i;
                 min_j = j;
             }
         }
-        //printf("\n");
     }
 
-    printf ("Max score: %d at %d, %d\n", max_score, min_i, min_j);
+    //printf ("Max score: %d at %d, %d\n", max_score, min_i, min_j);
 
     alignment.score = max_score;
 
     // Traceback and compute the alignment
 
     string align_seq_1="", align_seq_2="";
-
-    for (i = seq1_len - 1; i >= min_i; i--) {
+    //cout << "1) Start matrix backtrack i=" << min_i << ", j=" << min_j << endl;
+    for (i = seq1_len - 1; i > min_i; i--) {
+        cout << "i=" << i << ", j=" << min_j << endl;
         align_seq_1 += seq1[i];
         align_seq_2 += '-';
     }
+    //cout << "2) Start matrix backtrack i=" << i << ", j=" << min_j << endl;
 
-    for (j = seq2_len - 1; j >= min_j; j--) {
+    for (j = seq2_len - 1; j > min_j; j--) {
+        cout << "i=" << min_i << ", j=" << j << endl;
         align_seq_2 += seq2[j];
         align_seq_1 += '-';
     }
 
 
-    printf ("Start matrix backtrack i=%d, j=%d, \n", i, j);
-    cout << align_seq_1 << endl;
-    cout << align_seq_2 << endl;
+    // cout << "3) Start matrix backtrack i=" << i << ", j=" << j << endl;
+
+    // cout << align_seq_1 << endl;
+    // cout << align_seq_2 << endl;
 
     do {
         //cout << "Backtrack i=" << i << ", j=" << j << endl;
         if (score_matrix[i+1][j+1] == score_matrix[i][j] + subs_matrix[seq_1_num[i]][seq_2_num[j]]) {
             align_seq_1 += seq1[i--];
             align_seq_2 += seq2[j--];
-            //printf ("Match: %c, %c at i=%d, j=%d counter=%d\n", align_seq_1[counter], align_seq_2[counter], i, j, counter);
+            //printf ("Match: %c, %c at i=%d, j=%d \n", align_seq_1.back(), align_seq_2.back(), i, j);
         }
         else if ((score_matrix[i+1][j+1] == score_matrix[i][j+1] + GAP_COST) ||
                  (score_matrix[i+1][j+1] == score_matrix[i][j+1] + GAP_EXT)) {
             align_seq_1 += seq1[i--];
             align_seq_2 += '-';
-            //printf ("Insert: %c, %c at i=%d, j=%d counter=%d\n", align_seq_1[counter], align_seq_2[counter], i, j, counter);
+            //printf ("Insert: %c, %c at i=%d, j=%d \n", align_seq_1.back(), align_seq_2.back(), i, j);
         }
         else {
             align_seq_1 += '-';
             align_seq_2 += seq2[j--];
-            //printf ("Delete: %c, %c at i=%d, j=%d counter=%d\n", align_seq_1[counter], align_seq_2[counter], i, j, counter);
+            //printf ("Delete: %c, %c at i=%d, j=%d \n", align_seq_1.back(), align_seq_2.back(), i, j);
         }
     } while (i >= 0 && j >= 0);
 
