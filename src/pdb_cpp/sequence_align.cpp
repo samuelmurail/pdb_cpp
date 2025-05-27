@@ -151,7 +151,7 @@ Alignment sequence_align(const string seq1, const string seq2, const string matr
     vector<int> seq_1_num = seq_to_num(seq1);
     vector<int> seq_2_num = seq_to_num(seq2);
 
-    int match, insert, del_flag;
+    int match_score, insert_score, delete_score;
 
     cout << "Start filling the score matrix:\n";
     cout << "Sequence 1: " << seq1 << endl;
@@ -167,34 +167,32 @@ Alignment sequence_align(const string seq1, const string seq2, const string matr
         //cout << i << ": " << endl;
         for (j = 1; j <= seq2_len; j++) {
             //cout << j << ": ";
-            match = score_matrix[i - 1][j - 1] + subs_matrix[seq_1_num[i-1]][seq_2_num[j-1]];
-            del_flag = score_matrix[i - 1][j] + (prev_score ? GAP_EXT : GAP_COST);
-            insert = score_matrix[i][j - 1] + (prev_score_line[j] ? GAP_EXT : GAP_COST);
+            match_score = score_matrix[i - 1][j - 1] + subs_matrix[seq_1_num[i-1]][seq_2_num[j-1]];
+            delete_score = score_matrix[i - 1][j] + (prev_score ? GAP_EXT : GAP_COST);
+            insert_score = score_matrix[i][j - 1] + (prev_score_line[j] ? GAP_EXT : GAP_COST);
+            prev_score_line[j] = false;
+            prev_score = false;
 
-            if (match > insert && match > del_flag) {
-                score_matrix[i][j] = match;
-                prev_score_line[j] = false;
-                prev_score = false;
-            } else if (del_flag > insert) {
-                score_matrix[i][j] = del_flag;
-                prev_score_line[j] = false;
+            if (match_score > insert_score && match_score > delete_score) {
+                score_matrix[i][j] = match_score;
+            } else if (delete_score > insert_score) {
+                score_matrix[i][j] = delete_score;
                 prev_score = true;
             } else {
-                score_matrix[i][j] = insert;
+                score_matrix[i][j] = insert_score;
                 prev_score_line[j] = true;
-                prev_score = false;
             }
         }
         //cout << endl;
     }
 
-    // cout << "Score matrix DONE:\n";
-    // for (int i = 0; i <= seq1_len; i++) {
-    //     for (int j = 0; j <= seq2_len; j++) {
-    //         printf("%3d ", score_matrix[i][j]);
-    //     }
-    //     printf("\n");
-    // }
+    cout << "Score matrix DONE:\n";
+    for (i = 0; i <= seq1_len; i++) {
+        for (j = 0; j <= seq2_len; j++) {
+            printf("%3d ", score_matrix[i][j]);
+        }
+        printf("\n");
+    }
 
     // Get max score index:
     int min_len = (seq1_len < seq2_len) ? seq1_len : seq2_len;
