@@ -5,6 +5,7 @@
 #include "select.h"
 #include "Model.h"
 #include "TMAlign.h"
+#include "sequence_align.h"
 
 using namespace std;
 
@@ -178,5 +179,22 @@ int main() {
         }
         cout << endl;
     }
+
+    Coor coor_1, coor_2;
+    coor_1.read("3eam_gap.pdb");
+    coor_2.read("3eam.pdb");
+
+
+    // auto test = get_common_atoms(
+    //     coor_1,
+    //     coor_2);
+
+    std::vector<std::string> chain_1 = {"A"};
+    std::vector<std::string> chain_2 = {"A"};
+    std::vector<std::string> back_names = {"C", "N", "O", "CA"};
+    std::string matrix_file = "";
+    
+    auto test = get_common_atoms(coor_1, coor_2, chain_1, chain_2, back_names, matrix_file);
+
     return 0;
 }

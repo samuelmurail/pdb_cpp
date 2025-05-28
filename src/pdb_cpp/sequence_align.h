@@ -3,6 +3,9 @@
 
 #include <vector>
 #include <string>
+#include <utility>
+
+#include "Coor.h"
 
 struct Alignment {
     std::string seq1;
@@ -14,8 +17,16 @@ struct Alignment {
 Alignment sequence_align(
     const std::string seq1,
     const std::string seq2,
-    const std::string matrix_file,
+    const std::string matrix_file ="",
     int GAP_COST=-11,
     int GAP_EXT=+1);
+
+std::pair<std::vector<int>, std::vector<int>> get_common_atoms(
+    const Coor &coor_1,
+    const Coor &coor_2,
+    const std::vector<std::string> &chain_1 = {"A"},
+    const std::vector<std::string> &chain_2 = {"A"},
+    const std::vector<std::string> &back_names = {"C", "N", "O", "CA"},
+    const std::string matrix_file ="");
 
 #endif // SEQ_ALIGN_H

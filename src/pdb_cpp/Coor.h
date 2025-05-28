@@ -12,8 +12,6 @@ using namespace std;
 
 class Coor {
 public:
-
-
     // === Constructors ===
     Coor() = default;
     Coor(const string& filename) {

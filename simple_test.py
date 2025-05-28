@@ -59,3 +59,13 @@ print('pdb_cpp alignement')
 align_seq_1, align_seq_2 = alignement.align_seq(seq_1, seq_2)
 alignement.print_align_seq(align_seq_1, align_seq_2, line_len=80)
 
+file_name = "3eam.pdb"
+coor1 = Coor(file_name)
+
+file_name = "3eam_gap.pdb"
+coor2 = Coor(file_name)
+
+
+test = alignement.get_common_atoms(
+    coor_1,
+    coor_2);

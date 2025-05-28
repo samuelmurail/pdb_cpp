@@ -79,6 +79,17 @@ PYBIND11_MODULE(core, m) {
         py::arg("GAP_COST") = -11,
         py::arg("GAP_EXT") = -1,
         "Align two sequences using a substitution matrix and gap penalties");
+
+    // Bind the get_common_atoms function
+    m.def("get_common_atoms",
+        &get_common_atoms,
+        py::arg("coor_1"),
+        py::arg("coor_2"),
+        py::arg("chain_1") = std::vector<std::string>{"A"},
+        py::arg("chain_2") = std::vector<std::string>{"A"},
+        py::arg("back_names") = std::vector<std::string>{"C", "N", "O", "CA"},
+        py::arg("matrix_file") = "src/pdb_cpp/data/blosum62.txt",
+        "Get common atoms between two Coor objects based on sequence alignment");
 }
 
 // // Alignment align(
