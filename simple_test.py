@@ -24,8 +24,38 @@ seq_2 = "AQDMVSPPPPIADEPLTVNTGIYLIECYSLDDKAETFKVNAFLSLSWKDRRLAFDPV"
 import pdb_numpy
 import pdb_numpy.alignement
 align = pdb_numpy.alignement.align_seq_cython(seq_1, seq_2)
-print(align)
+print('pdb_numpy alignement')
+alignement.print_align_seq(align[0], align[1], line_len=80)
+
+print('pdb_cpp alignement')
 
 align_seq_1, align_seq_2 = alignement.align_seq(seq_1, seq_2)
-print(align_seq_1, align_seq_2)
 alignement.print_align_seq(align_seq_1, align_seq_2, line_len=80)
+
+
+seq_1 = (
+    "AQDMVSPPPPIADEPLTVNTGIYLIECYSLDDKAETFKVNAFLSLSWKDRRLAFDPV"
+    "RSGVRVKTYEPEAIWIPEIRFVNVENARDADVVDISVSPDGTVQYLERFSARVLSPLDFRRYPFDSQTLHIYLIVRSV"
+    "DTRNIVLAVDLEKVGKNDDVFLTGWDIESFTAVVKPANFALEDRLESKLDYQLRISRQYFSYIPNIILPMLFILFISW"
+    "TAFWSTSYEANVTLVVSTLIAHIAFNILVETNLPKTPYMTYTGAIIFMIYLFYFVAVIEVTVQHYLKVESQPARAASI"
+    "TRASRIAFPVVFLLANIILAFLFFGF"
+)
+seq_2 = (
+    "APSEFLDKLMGKVSGYDARIRPNFKGPPVNVTCNIFINSFGSIAETTMDYRVNIFLR"
+    "QQWNDPRLAYSEYPDDSLDLDPSMLDSIWKPDLFFANEKGANFHEVTTDNKLLRISKNGNVLYSIRITLVLACPMDLK"
+    "NFPMDVQTCIMQLESFGYTMNDLIFEWDEKGAVQVADGLTLPQFILKEEKDLRYCTKHYNTGKFTCIEARFHLERQMG"
+    "YYLIQMYIPSLLIVILSWVSFWINMDAAPARVGLGITTVLTMTTQSSGSRASLPKVSYVKAIDIWMAVCLLFVFSALL"
+    "EYAAVNFIARAGTKLFISRAKRIDTVSRVAFPLVFLIFNIFYWITYKLVPR"
+)
+
+import pdb_numpy
+import pdb_numpy.alignement
+align = pdb_numpy.alignement.align_seq_cython(seq_1, seq_2)
+print('pdb_numpy alignement')
+alignement.print_align_seq(align[0], align[1], line_len=80)
+
+print('pdb_cpp alignement')
+
+align_seq_1, align_seq_2 = alignement.align_seq(seq_1, seq_2)
+alignement.print_align_seq(align_seq_1, align_seq_2, line_len=80)
+

@@ -4,7 +4,7 @@
 from .core import Alignment, sequence_align
 from .data.blosum import BLOSUM62
 
-def align_seq(seq1, seq2, gap_cost=-11, gap_ext=1, matrix_file='src/pdb_cpp/data/blosum62.txt'):
+def align_seq(seq1, seq2, gap_cost=-11, gap_ext=-1, matrix_file='src/pdb_cpp/data/blosum62.txt'):
     """
     Align two sequences using a simple scoring system.
 
