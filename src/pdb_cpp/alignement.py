@@ -34,7 +34,7 @@ def align_seq(seq1, seq2, gap_cost=-11, gap_ext=-1, matrix_file='src/pdb_cpp/dat
         GAP_COST=gap_cost,
         GAP_EXT=gap_ext)
 
-    return alignement.seq1, alignement.seq2
+    return alignement.seq1, alignement.seq2, alignement.score
 
 
 def print_align_seq(seq_1, seq_2, line_len=80):

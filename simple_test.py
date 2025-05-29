@@ -29,7 +29,7 @@ alignement.print_align_seq(align[0], align[1], line_len=80)
 
 print('pdb_cpp alignement')
 
-align_seq_1, align_seq_2 = alignement.align_seq(seq_1, seq_2)
+align_seq_1, align_seq_2, _ = alignement.align_seq(seq_1, seq_2)
 alignement.print_align_seq(align_seq_1, align_seq_2, line_len=80)
 
 
@@ -48,23 +48,35 @@ seq_2 = (
     "EYAAVNFIARAGTKLFISRAKRIDTVSRVAFPLVFLIFNIFYWITYKLVPR"
 )
 
+seq_3 = "VSPPPPIADEPLTVNTGIYLIECYSLDDKAETFKVNAFLSLSWKDRRLAFDPVRSGVRVKTYEPEAIWIPEIRFVNVENARDADVVDISVSPDGTVQYLERFSARVLSPLDFRRYPFDSQTLHIYLIVRSVDTRNIVLAVDLEKVGKNDDVFLTGWDIESFTAVVKPANFALEDRLESKLDYQLRISRQYFSYIPNIILPMLFILFISWTAFWSTSYEANVTLVVSTLIAHIAFNILVETNLPKTPYMTYTGAIIFMIYLFYFVAVIEVTVQHYLKVESQPARAASITRASRIAFPVVFLLANIILAFLFF"
+seq_4 = "LSPSDFLDKLMGRTSGYDARIRPNFKGPPVNVTCNIFINSFGSVTETTMDYRVNIFLRQQWNDSRLAYSEYPDDSLDLDPSMLDSIWKPDLFFANEKGANFHDVTTDNKLLRISKNGKVLYSIRLTLTLSCPMDLKNFPMDVQTCTMQLESFGYTMNDLIFEWLSDGPVQVAEGLTLPQFILKEEKELGYCTKHYNTGKFTCIEVKFHLERQMGYYLIQMYIPSLLIVILSWVSFWINMDAAPARVALGITTVLTMTTQSSGSRASLPKVSYVKAIDIWMAVCLLFVFAALLEYAAVNFVSRKFVDRAKRIDTISRAAFPLAFLIFNIFYWITYKIIRG"
+
 import pdb_numpy
 import pdb_numpy.alignement
-align = pdb_numpy.alignement.align_seq_cython(seq_1, seq_2)
+align = pdb_numpy.alignement.align_seq_cython(seq_3, seq_4)
 print('pdb_numpy alignement')
 alignement.print_align_seq(align[0], align[1], line_len=80)
 
 print('pdb_cpp alignement')
 
-align_seq_1, align_seq_2 = alignement.align_seq(seq_1, seq_2)
+align_seq_1, align_seq_2, score = alignement.align_seq(seq_3, seq_4)
+print(f"Score: {score}")
 alignement.print_align_seq(align_seq_1, align_seq_2, line_len=80)
 
 file_name = "3eam.pdb"
 coor1 = Coor(file_name)
 
-file_name = "3eam_gap.pdb"
+file_name = "5bkg.pdb"
 coor2 = Coor(file_name)
 
+seq_1 = coor1.get_aa_seq()
+seq_2 = coor2.get_aa_seq()
+
+align_seq_3, align_seq_4, score = alignement.align_seq(seq_1['A'], seq_2['A'])
+print(f"Score: {score}")
+alignement.print_align_seq(align_seq_3, align_seq_4, line_len=80)
+
+print()
 
 test = alignement.get_common_atoms(
     coor_1,

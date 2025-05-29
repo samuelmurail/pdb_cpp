@@ -12,7 +12,6 @@
 #include <stdexcept>
 #include <memory>
 #include <algorithm>
-#include <cassert>
 #include <unordered_map>
 #include <utility>
 
@@ -276,13 +275,19 @@ Alignment sequence_align(const string seq1, const string seq2, const string matr
             align2 = seq2_nogap[j - 1] + align2;
             i--;
             j--;
-        } else if (matrix[i][j] == matrix[i - 1][j] + gapCost ||
-                 matrix[i][j] == matrix[i - 1][j] + gapExtension) {
+        } else if (matrix[i][j] == matrix[i - 1][j] + gapCost) {
             align1 = seq1_nogap[i - 1] + align1;
             align2 = "-" + align2;
             i--;
-        } else if (matrix[i][j] == matrix[i][j - 1] + gapCost ||
-                 matrix[i][j] == matrix[i][j - 1] + gapExtension) {
+        } else if (matrix[i][j] == matrix[i][j - 1] + gapCost) {
+            align1 = "-" + align1;
+            align2 = seq2_nogap[j - 1] + align2;
+            j--;
+        } else if (matrix[i][j] == matrix[i - 1][j] + gapExtension) {
+            align1 = seq1_nogap[i - 1] + align1;
+            align2 = "-" + align2;
+            i--;
+        } else if (matrix[i][j] == matrix[i][j - 1] + gapExtension) {
             align1 = "-" + align1;
             align2 = seq2_nogap[j - 1] + align2;
             j--;
@@ -314,6 +319,7 @@ Alignment sequence_align(const string seq1, const string seq2, const string matr
     return alignment;
 }
 
+
 void test(string seq_1, string seq_2)
 {
 
@@ -327,13 +333,15 @@ void test(string seq_1, string seq_2)
     print_alignment(alignment);
 }
 
+
 pair<vector<int>, vector<int>> get_common_atoms(
     const Coor &coor_1,
     const Coor &coor_2,
     const vector<string> &chain_1,
     const vector<string> &chain_2,
     const vector<string> &back_names,
-    const string &matrix_file) {
+    const string &matrix_file
+) {
     /**
      * Get atom selection in common for two Coor objects based on sequence alignment.
      *
@@ -347,6 +355,12 @@ pair<vector<int>, vector<int>> get_common_atoms(
      * Returns:
      * - pair of vectors containing indices for coor_1 and coor_2 respectively
      */
+
+    //const vector<string> chain_1= {"A"};
+    // const vector<string> chain_2= {"A"};
+    // const vector<string> back_names= {"C", "N", "O", "CA"};
+    //const string matrix_file="";
+
 
     // Helper function to join strings with spaces
     auto join_strings = [](const vector<string> &strings) -> string {
@@ -378,8 +392,17 @@ pair<vector<int>, vector<int>> get_common_atoms(
     Coor coor_2_back = coor_2.select_atoms(selection_2);
 
     // Get sequences (assuming get_aa_sequences returns map<string, string>)
-    auto sel_1_seq = coor_1_back.get_aa_sequences();
-    auto sel_2_seq = coor_2_back.get_aa_sequences();
+    auto sel_1_seq = coor_1_back.get_aa_sequences(false);
+    auto sel_2_seq = coor_2_back.get_aa_sequences(false);
+
+    cout << "Selected sequences for Coor 1: " << endl;
+    for (const auto &seq : sel_1_seq) {
+        cout << seq << endl;
+    }
+    cout << "Selected sequences for Coor 2: " << endl;
+    for (const auto &seq : sel_2_seq) {
+        cout << seq << endl;
+    }
 
     // Get indices
     vector<int> sel_index_1 = coor_1.get_index_select(selection_1);
@@ -414,6 +437,8 @@ pair<vector<int>, vector<int>> get_common_atoms(
     string align_seq_1 = alignment.seq1;
     string align_seq_2 = alignment.seq2;
 
+    print_alignment(alignment);
+    cout << "Alignment score: " << alignment.score << endl;
     // Build aligned selections
     vector<int> align_sel_1;
     vector<int> align_sel_2;
@@ -443,7 +468,9 @@ pair<vector<int>, vector<int>> get_common_atoms(
     assert(align_sel_1.size() == align_sel_2.size() &&
            "Two selections don't have the same atom number");
 
+    
     return make_pair(align_sel_1, align_sel_2);
+
 }
 
 /*
@@ -488,3 +515,6 @@ int main() {
 
 }
 */
+
+// AQDMVSPPPPIADEPLTVNTGIYLIECYSLDDKAETFKVNAFLSLSWKDRRLAFDPVRSGVRVKTYEPEAIWIPEIRFVNVENARDADVVDISVSPDGTVQYLERFSARVLSPLDFRRYPFDSQTLHIYLIVRSVDTRNIVLAVDLEKVGKNDDVFLTGWDIESFTAVVKPANFALEDRLESKLDYQLRISRQYFSYIPNIILPMLFILFISWTAFWSTSYEANVTLVVSTLIAHIAFNILVETNLPKTPYMTYTGAIIFMIYLFYFVAVIEVTVQHYLKVESQPARAASITRASRIAFPVVFLLANIILAFLFFGF
+// MFALGIYLWETIVFFSLAASQQAAARKAASPMPPSEFLDKLMGKVSGYDARIRPNFKGPPVNVTCNIFINSFGSIAETTMDYRVNIFLRQQWNDPRLAYSEYPDDSLDLDPSMLDSIWKPDLFFANEKGANFHEVTTDNKLLRISKNGNVLYSIRITLVLACPMDLKNFPMDVQTCIMQLESFGYTMNDLIFEWDEKGAVQVADGLTLPQFILKEEKDLRYCTKHYNTGKFTCIEARFHLERQMGYYLIQMYIPSLLIVILSWVSFWINMDAAPARVGLGITTVLTMTTQSSGSRASLPKVSYVKAIDIWMAVCLLFVFSALLEYAAVNFIARQHKELLRFQRRRRHLKEDEAGDGRFSFAAYGMGPACLQAKDGMAIKGNNNNAPTSTNPPEKTVEEMRKLFISRAKRIDTVSRVAFPLVFLIFNIFYWITYKIIRSEDIHKQ

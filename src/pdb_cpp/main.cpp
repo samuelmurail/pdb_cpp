@@ -181,20 +181,31 @@ int main() {
     }
 
     Coor coor_1, coor_2;
-    coor_1.read("3eam_gap.pdb");
-    coor_2.read("3eam.pdb");
-
-
-    // auto test = get_common_atoms(
-    //     coor_1,
-    //     coor_2);
+    coor_1.read("3eam.pdb");
+    coor_2.read("5bkg.pdb");
 
     std::vector<std::string> chain_1 = {"A"};
     std::vector<std::string> chain_2 = {"A"};
     std::vector<std::string> back_names = {"C", "N", "O", "CA"};
     std::string matrix_file = "";
     
-    auto test = get_common_atoms(coor_1, coor_2, chain_1, chain_2, back_names, matrix_file);
+    vector<int> test1, test2;
+    auto result = get_common_atoms(coor_1, coor_2, {"A", "B", "C"}, {"A", "B", "C"});
+    test1 = result.first;
+    test2 = result.second;
+
+    cout << "Number of common atoms in coor_1: " << test1.size() << endl;
+    cout << "Number of common atoms in coor_2: " << test2.size() << endl;
+    cout << "First common atom in coor_1: " << test1[0] << endl;
+    cout << "First common atom in coor_2: " << test2[0] << endl;
+    cout << "Last common atom in coor_1: " << test1[test1.size() - 1] << endl;
+    cout << "Last common atom in coor_2: " << test2[test2.size() - 1] << endl;
+
+    // string test_seq_1 = "AAGCTGAC";
+    // string test_seq_2 = "AAGCTGACG";
+    // Alignment align_test = sequence_align(test_seq_1, test_seq_2);
+    // print_alignment(align_test);
+
 
     return 0;
 }
