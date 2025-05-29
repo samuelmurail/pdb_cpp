@@ -104,7 +104,7 @@ std::vector<std::string> compute_SS(const Model &model, bool gap_in_seq=false) {
                 // New residue
                 if (gap_in_seq) {
                     gap_num = resid_array[CA_indexes[i]] - old_resid;
-                    std::cout << "gap_num: " << gap_num << std::endl;
+                    //std::cout << "gap_num: " << gap_num << std::endl;
                     for (size_t j = 0; j < gap_num; ++j) {
                         seq_vec[chain_index] += "-"; 
                     }

@@ -34,7 +34,6 @@ Alignment sequence_align(
 
 
 //pair<vector<int>, vector<int>> get_common_atoms(
-
 std::pair<std::vector<int>, std::vector<int>> get_common_atoms(
     const Coor &coor_1,
     const Coor &coor_2,
@@ -43,6 +42,12 @@ std::pair<std::vector<int>, std::vector<int>> get_common_atoms(
     const std::vector<std::string> &back_names= {"C", "N", "O", "CA"},
     const std::string &matrix_file=""
 );
+
+// Function to align two coordinate structures
+void coor_align(Coor& coor_1, Coor& coor_2, 
+               const std::vector<int>& index_1, 
+               const std::vector<int>& index_2, 
+               int frame_ref = 0);
 
     
 #endif // SEQ_ALIGN_H

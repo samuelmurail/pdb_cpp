@@ -4,7 +4,8 @@
 #include "Model.h"
 #include "Coor.h"
 #include "TMAlign.h"
-#include "sequence_align.h"
+#include "align.h"
+#include "geom.h"
 
 namespace py = pybind11;
 
@@ -32,6 +33,10 @@ PYBIND11_MODULE(core, m) {
         .def("get_num", &Model::get_num)
         .def("get_field", &Model::get_field)
         .def("get_uniqresid", &Model::get_uniqresid)
+        .def("get_centroid", static_cast<std::array<float, 3> (Model::*)() const>(&Model::get_centroid),
+             "Calculate centroid of all atoms in the model")
+        .def("get_centroid", static_cast<std::array<float, 3> (Model::*)(const std::vector<int>&) const>(&Model::get_centroid),
+             py::arg("indices"), "Calculate centroid of atoms at specified indices")
         // Add more methods as needed
         ;
     py::class_<Coor>(m, "Coor")
@@ -49,6 +54,9 @@ PYBIND11_MODULE(core, m) {
         .def("select_atoms", &Coor::select_atoms, 
             py::arg("selection"), py::arg("frame") = 0, // Specify default value for `frame`
             "Select atoms based on a selection string and an optional frame index")
+        .def("get_index_select", &Coor::get_index_select,
+            py::arg("selection"), py::arg("frame") = 0, // Specify default value for `frame`
+            "Get indices of atoms based on a selection string and an optional frame index")
         .def("select_bool_index", &Coor::select_bool_index)
         .def("get_uniq_chain", &Coor::get_uniq_chain)
         .def("get_aa_sequences", &Coor::get_aa_sequences, 
@@ -90,6 +98,49 @@ PYBIND11_MODULE(core, m) {
         py::arg("back_names") = std::vector<std::string>{"C", "N", "O", "CA"},
         py::arg("matrix_file") = "src/pdb_cpp/data/blosum62.txt",
         "Get common atoms between two Coor objects based on sequence alignment");
+
+    // Bind the coor_align function
+    m.def("coor_align",
+        &coor_align,
+        py::arg("coor_1"),
+        py::arg("coor_2"),
+        py::arg("index_1"),
+        py::arg("index_2"),
+        py::arg("frame_ref") = 0,
+        "Align two coordinate structures using quaternion-based rotation");
+/*
+    // Bind the Quaternion struct
+    py::class_<Quaternion>(m, "Quaternion")
+        .def(py::init<>())
+        .def(py::init<float, float, float, float>())
+        .def_readwrite("w", &Quaternion::w)
+        .def_readwrite("x", &Quaternion::x)
+        .def_readwrite("y", &Quaternion::y)
+        .def_readwrite("z", &Quaternion::z)
+        .def("normalize", &Quaternion::normalize)
+        .def("conjugate", &Quaternion::conjugate)
+        .def("__mul__", &Quaternion::operator*);
+
+    // Bind quaternion functions
+    m.def("makeQ", &makeQ, py::arg("angle"), py::arg("ax"), py::arg("ay"), py::arg("az"),
+          "Create a quaternion from axis-angle representation");
+    
+    m.def("makeW", &makeW, py::arg("x"), py::arg("y"), py::arg("z"),
+          "Create a quaternion from x,y,z components, calculating w");
+    
+    m.def("quaternion_transform", &quaternion_transform, py::arg("q"), py::arg("x"), py::arg("y"), py::arg("z"),
+          "Transform a 3D point using quaternion rotation");
+    
+    m.def("quaternion_rotate", &quaternion_rotate, 
+          py::arg("X"), py::arg("Y"),
+          "Calculate optimal rotation matrix between two sets of 3D points using quaternion method");
+    
+    m.def("quaternion_to_matrix", &quaternion_to_matrix, py::arg("q"),
+          "Convert quaternion to 3x3 rotation matrix");
+    
+    m.def("matrix_to_quaternion", &matrix_to_quaternion, py::arg("matrix"),
+          "Convert 3x3 rotation matrix to quaternion");
+          */
 }
 
 // // Alignment align(

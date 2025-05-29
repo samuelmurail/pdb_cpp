@@ -209,3 +209,40 @@ vector<array<char, 2>> Model::get_uniq_chain() const{
 float Model::distance(size_t i, size_t j) const{
     return calculate_distance(x_[i], y_[i], z_[i], x_[j], y_[j], z_[j]);
 }
+
+std::array<float, 3> Model::get_centroid() const {
+    if (x_.empty()) {
+        throw std::runtime_error("Cannot calculate centroid of empty model");
+    }
+    
+    float sum_x = 0.0f, sum_y = 0.0f, sum_z = 0.0f;
+    
+    for (size_t i = 0; i < x_.size(); ++i) {
+        sum_x += x_[i];
+        sum_y += y_[i];
+        sum_z += z_[i];
+    }
+    
+    float n = static_cast<float>(x_.size());
+    return {sum_x / n, sum_y / n, sum_z / n};
+}
+
+std::array<float, 3> Model::get_centroid(const std::vector<int>& indices) const {
+    if (indices.empty()) {
+        throw std::runtime_error("Cannot calculate centroid of empty selection");
+    }
+    
+    float sum_x = 0.0f, sum_y = 0.0f, sum_z = 0.0f;
+    
+    for (int idx : indices) {
+        if (idx < 0 || static_cast<size_t>(idx) >= x_.size()) {
+            throw std::runtime_error("Index out of bounds in centroid calculation");
+        }
+        sum_x += x_[idx];
+        sum_y += y_[idx];
+        sum_z += z_[idx];
+    }
+    
+    float n = static_cast<float>(indices.size());
+    return {sum_x / n, sum_y / n, sum_z / n};
+}

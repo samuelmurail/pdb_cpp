@@ -11,7 +11,7 @@ ext_modules = [
          "src/pdb_cpp/format/pdb.cpp",
          "src/pdb_cpp/select.cpp",
          "src/pdb_cpp/sequence.cpp",
-         "src/pdb_cpp/sequence_align.cpp",
+         "src/pdb_cpp/align.cpp",
          "src/pdb_cpp/data/residue.cpp",],
         include_dirs=[
             pybind11.get_include(),

@@ -5,7 +5,7 @@
 #include "select.h"
 #include "Model.h"
 #include "TMAlign.h"
-#include "sequence_align.h"
+#include "align.h"
 
 using namespace std;
 

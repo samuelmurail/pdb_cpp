@@ -54,6 +54,15 @@ public:
     std::vector<std::array<char, 2>> get_uniq_chain() const;
 
     float distance(size_t i, size_t j) const;
+    
+    // Calculate centroid of all atoms or specific indices
+    std::array<float, 3> get_centroid() const;
+    std::array<float, 3> get_centroid(const std::vector<int>& indices) const;
+
+    // Coordinate setters
+    void set_x(size_t index, float value) { if (index < x_.size()) x_[index] = value; }
+    void set_y(size_t index, float value) { if (index < y_.size()) y_[index] = value; }
+    void set_z(size_t index, float value) { if (index < z_.size()) z_[index] = value; }
 
 private:
     // === Storage (Structure of Arrays) ===

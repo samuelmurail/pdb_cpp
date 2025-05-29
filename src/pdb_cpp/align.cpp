@@ -15,8 +15,9 @@
 #include <unordered_map>
 #include <utility>
 
-#include "sequence_align.h"
+#include "align.h"
 #include "Coor.h"
+#include "geom.h"
 
 using namespace std;
 
@@ -518,3 +519,145 @@ int main() {
 
 // AQDMVSPPPPIADEPLTVNTGIYLIECYSLDDKAETFKVNAFLSLSWKDRRLAFDPVRSGVRVKTYEPEAIWIPEIRFVNVENARDADVVDISVSPDGTVQYLERFSARVLSPLDFRRYPFDSQTLHIYLIVRSVDTRNIVLAVDLEKVGKNDDVFLTGWDIESFTAVVKPANFALEDRLESKLDYQLRISRQYFSYIPNIILPMLFILFISWTAFWSTSYEANVTLVVSTLIAHIAFNILVETNLPKTPYMTYTGAIIFMIYLFYFVAVIEVTVQHYLKVESQPARAASITRASRIAFPVVFLLANIILAFLFFGF
 // MFALGIYLWETIVFFSLAASQQAAARKAASPMPPSEFLDKLMGKVSGYDARIRPNFKGPPVNVTCNIFINSFGSIAETTMDYRVNIFLRQQWNDPRLAYSEYPDDSLDLDPSMLDSIWKPDLFFANEKGANFHEVTTDNKLLRISKNGNVLYSIRITLVLACPMDLKNFPMDVQTCIMQLESFGYTMNDLIFEWDEKGAVQVADGLTLPQFILKEEKDLRYCTKHYNTGKFTCIEARFHLERQMGYYLIQMYIPSLLIVILSWVSFWINMDAAPARVGLGITTVLTMTTQSSGSRASLPKVSYVKAIDIWMAVCLLFVFSALLEYAAVNFIARQHKELLRFQRRRRHLKEDEAGDGRFSFAAYGMGPACLQAKDGMAIKGNNNNAPTSTNPPEKTVEEMRKLFISRAKRIDTVSRVAFPLVFLIFNIFYWITYKIIRSEDIHKQ
+
+// coor_align function implementation
+// Convert from Python function in pdb_numpy
+void coor_align(Coor& coor_1, Coor& coor_2, 
+               const std::vector<int>& index_1, 
+               const std::vector<int>& index_2, 
+               int frame_ref) {
+    /**
+     * Align two coordinate structures.
+     *
+     * Parameters:
+     * - coor_1: First coordinate object (mobile)
+     * - coor_2: Second coordinate object (reference)
+     * - index_1: List of atom indices to align in the first coordinates
+     * - index_2: List of atom indices to align in the second coordinates
+     * - frame_ref: Frame to use as reference for coor_2, by default 0
+     */
+    
+    // Assertions for input validation
+    if (index_1.empty()) {
+        throw std::runtime_error("No atom selected in the first structure");
+    }
+    
+    if (index_1.size() != index_2.size()) {
+        throw std::runtime_error("Two structures don't have the same atom number");
+    }
+    
+    if (frame_ref < 0 || static_cast<size_t>(frame_ref) >= coor_2.model_size()) {
+        throw std::runtime_error("Reference frame index is larger than the number of frames in the reference structure");
+    }
+    
+    // Check if it's a self-alignment
+    bool self_align = (&coor_1 == &coor_2);
+    if (self_align) {
+        std::cout << "Same Coor object, self alignment" << std::endl;
+    }
+    
+    // Get reference model and calculate centroid for reference coordinates
+    Model ref_model = coor_2.get_Models(frame_ref);
+    std::array<float, 3> centroid_2 = ref_model.get_centroid(index_2);
+    
+    // Extract reference coordinates for index_2 after centering
+    std::vector<std::array<float, 3>> ref_coor;
+    ref_coor.reserve(index_2.size());
+    
+    const auto& ref_x = ref_model.get_x();
+    const auto& ref_y = ref_model.get_y();
+    const auto& ref_z = ref_model.get_z();
+    
+    for (int idx : index_2) {
+        ref_coor.push_back({{
+            ref_x[idx] - centroid_2[0],
+            ref_y[idx] - centroid_2[1], 
+            ref_z[idx] - centroid_2[2]
+        }});
+    }
+    
+    // Center the reference structure
+    std::vector<Model> models_2 = coor_2.get_all_Models();
+    for (size_t i = 0; i < models_2[frame_ref].size(); ++i) {
+        models_2[frame_ref].set_x(i, models_2[frame_ref].get_x()[i] - centroid_2[0]);
+        models_2[frame_ref].set_y(i, models_2[frame_ref].get_y()[i] - centroid_2[1]);
+        models_2[frame_ref].set_z(i, models_2[frame_ref].get_z()[i] - centroid_2[2]);
+    }
+    
+    // Process each model in coor_1
+    std::vector<Model> models_1 = coor_1.get_all_Models();
+    for (size_t i = 0; i < models_1.size(); ++i) {
+        Model& current_model = models_1[i];
+        
+        // Calculate centroid for mobile coordinates
+        std::array<float, 3> centroid_1 = current_model.get_centroid(index_1);
+        
+        // Center the mobile structure (unless it's self-alignment on reference frame)
+        if (!(self_align && (static_cast<int>(i) == frame_ref))) {
+            for (size_t j = 0; j < current_model.size(); ++j) {
+                current_model.set_x(j, current_model.get_x()[j] - centroid_1[0]);
+                current_model.set_y(j, current_model.get_y()[j] - centroid_1[1]);
+                current_model.set_z(j, current_model.get_z()[j] - centroid_1[2]);
+            }
+        }
+        
+        // Extract mobile coordinates for alignment
+        std::vector<std::array<float, 3>> mobile_coor;
+        mobile_coor.reserve(index_1.size());
+        
+        const auto& mob_x = current_model.get_x();
+        const auto& mob_y = current_model.get_y();
+        const auto& mob_z = current_model.get_z();
+        
+        for (int idx : index_1) {
+            mobile_coor.push_back({{mob_x[idx], mob_y[idx], mob_z[idx]}});
+        }
+        
+        // Calculate rotation matrix using quaternion method
+        auto rot_mat = quaternion_rotate(mobile_coor, ref_coor);
+        
+        // Apply rotation to all atoms in the model
+        for (size_t j = 0; j < current_model.size(); ++j) {
+            float x = mob_x[j];
+            float y = mob_y[j];
+            float z = mob_z[j];
+            
+            // Apply rotation: new_coords = rot_mat * old_coords
+            float new_x = rot_mat[0][0] * x + rot_mat[0][1] * y + rot_mat[0][2] * z;
+            float new_y = rot_mat[1][0] * x + rot_mat[1][1] * y + rot_mat[1][2] * z;
+            float new_z = rot_mat[2][0] * x + rot_mat[2][1] * y + rot_mat[2][2] * z;
+            
+            current_model.set_x(j, new_x);
+            current_model.set_y(j, new_y);
+            current_model.set_z(j, new_z);
+        }
+        
+        // Translate back to reference centroid (unless it's self-alignment on reference frame)
+        if (!(self_align && (static_cast<int>(i) == frame_ref))) {
+            for (size_t j = 0; j < current_model.size(); ++j) {
+                current_model.set_x(j, current_model.get_x()[j] + centroid_2[0]);
+                current_model.set_y(j, current_model.get_y()[j] + centroid_2[1]);
+                current_model.set_z(j, current_model.get_z()[j] + centroid_2[2]);
+            }
+        }
+    }
+    
+    // Update coor_1 with modified models
+    coor_1.clear();
+    for (const auto& model : models_1) {
+        coor_1.add_Model(model);
+    }
+    
+    // Restore reference structure coordinates
+    for (size_t i = 0; i < models_2[frame_ref].size(); ++i) {
+        models_2[frame_ref].set_x(i, models_2[frame_ref].get_x()[i] + centroid_2[0]);
+        models_2[frame_ref].set_y(i, models_2[frame_ref].get_y()[i] + centroid_2[1]);
+        models_2[frame_ref].set_z(i, models_2[frame_ref].get_z()[i] + centroid_2[2]);
+    }
+    
+    // Update coor_2 with modified models
+    coor_2.clear();
+    for (const auto& model : models_2) {
+        coor_2.add_Model(model);
+    }
+}
