@@ -35,13 +35,13 @@ Alignment sequence_align(
 
 //pair<vector<int>, vector<int>> get_common_atoms(
 
-pair<vector<int>, vector<int>> get_common_atoms(
+std::pair<std::vector<int>, std::vector<int>> get_common_atoms(
     const Coor &coor_1,
     const Coor &coor_2,
-    const vector<string> &chain_1= {"A"},
-    const vector<string> &chain_2= {"A"},
-    const vector<string> &back_names= {"C", "N", "O", "CA"},
-    const string &matrix_file=""
+    const std::vector<std::string> &chain_1= {"A"},
+    const std::vector<std::string> &chain_2= {"A"},
+    const std::vector<std::string> &back_names= {"C", "N", "O", "CA"},
+    const std::string &matrix_file=""
 );
 
     

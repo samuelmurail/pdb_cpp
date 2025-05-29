@@ -41,26 +41,26 @@ char sec_str(double dis13, double dis14, double dis15,
 
 /* secondary structure assignment for protein:
  * 1->coil, 2->helix, 3->turn, 4->strand */
-vector<string> compute_SS(const Model &model, bool gap_in_seq=false) {
+std::vector<std::string> compute_SS(const Model &model, bool gap_in_seq=false) {
     size_t j1, j2, j3, j4, j5, gap_num;
     double d13, d14, d15, d24, d25, d35;
 
-    vector<int> CA_indexes = model.get_index_select("name CA");    
+    std::vector<int> CA_indexes = model.get_index_select("name CA");    
     size_t res_num = CA_indexes.size();
 
-    vector<array<char, 2>> uniq_chains= model.get_uniq_chain();
-    vector<array<char, 2>> chain_array = model.get_chain();
-    vector<int> resid_array = model.get_resid();
+    std::vector<std::array<char, 2>> uniq_chains= model.get_uniq_chain();
+    std::vector<std::array<char, 2>> chain_array = model.get_chain();
+    std::vector<int> resid_array = model.get_resid();
 
-    array<char, 2> old_chain = chain_array[CA_indexes[2]];
+    std::array<char, 2> old_chain = chain_array[CA_indexes[2]];
     // Get the index of the old chain in the unique chains
-    auto it = find(uniq_chains.begin(), uniq_chains.end(), old_chain);
+    auto it = std::find(uniq_chains.begin(), uniq_chains.end(), old_chain);
     if (it == uniq_chains.end()) {
-        throw runtime_error("Chain not found in unique chains");
+        throw std::runtime_error("Chain not found in unique chains");
     }
     int chain_index = distance(uniq_chains.begin(), it);
 
-    vector<string> seq_vec;
+    std::vector<std::string> seq_vec;
     int old_resid = resid_array[CA_indexes[2]];
     seq_vec.emplace_back("CC"); // Start with 'CC' to handle the first two residues
 
@@ -76,9 +76,9 @@ vector<string> compute_SS(const Model &model, bool gap_in_seq=false) {
             old_chain = chain_array[CA_indexes[i]];
             old_resid = resid_array[CA_indexes[i]];
             // Get the index of the old chain in the unique chains
-            it = find(uniq_chains.begin(), uniq_chains.end(), old_chain);
+            it = std::find(uniq_chains.begin(), uniq_chains.end(), old_chain);
             if (it == uniq_chains.end()) {
-                throw runtime_error("Chain not found in unique chains");
+                throw std::runtime_error("Chain not found in unique chains");
             }
             chain_index = distance(uniq_chains.begin(), it);
             seq_vec.emplace_back("CC");
@@ -104,7 +104,7 @@ vector<string> compute_SS(const Model &model, bool gap_in_seq=false) {
                 // New residue
                 if (gap_in_seq) {
                     gap_num = resid_array[CA_indexes[i]] - old_resid;
-                    cout << "gap_num: " << gap_num << endl;
+                    std::cout << "gap_num: " << gap_num << std::endl;
                     for (size_t j = 0; j < gap_num; ++j) {
                         seq_vec[chain_index] += "-"; 
                     }
@@ -120,9 +120,9 @@ vector<string> compute_SS(const Model &model, bool gap_in_seq=false) {
     return seq_vec;
 }
 
-vector<vector<string>> compute_SS(const Coor &coor, bool gap_in_seq=false) {
+std::vector<std::vector<std::string>> compute_SS(const Coor &coor, bool gap_in_seq=false) {
 
-    vector<vector<string>> ss_vec;
+    std::vector<std::vector<std::string>> ss_vec;
     
     for (size_t i = 0; i < coor.model_size(); ++i) {
         ss_vec.push_back(compute_SS(coor.get_Models(i), gap_in_seq));

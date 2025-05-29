@@ -6,64 +6,62 @@
 #include <string>
 #include <array>
 
-using namespace std;
-
 struct Token;
 
 class Model
 {
 public:
     // === Public interface ===
-    // bool loadPDB(const string& filename);
+    // bool loadPDB(const std::string& filename);
     bool addAtom(
         int num,
-        const array<char, 5> &name_array,
-        const array<char, 5> &resname_array,
+        const std::array<char, 5> &name_array,
+        const std::array<char, 5> &resname_array,
         int res_id,
-        const array<char, 2> &chain_array,
+        const std::array<char, 2> &chain_array,
         float x, float y, float z, float occ, float beta,
-        const array<char, 2> &alterloc,
-        const array<char, 5> &elem,
-        const array<char, 2> &insertres,
+        const std::array<char, 2> &alterloc,
+        const std::array<char, 5> &elem,
+        const std::array<char, 2> &insertres,
         bool field,
         int uniqresid);
 
     void clear();
     size_t size() const;
-    vector<bool> simple_select_atoms(const string &column, const vector<string> &values, const string &op) const;
-    vector<bool> select_tokens(const Token &tokens) const;
-    vector<bool> select_atoms(const string selection) const;
-    Model select_index(const vector<bool> &indexes) const;
-    vector<int> get_index_select(const string selection) const;
+    std::vector<bool> simple_select_atoms(const std::string &column, const std::vector<std::string> &values, const std::string &op) const;
+    std::vector<bool> select_tokens(const Token &tokens) const;
+    std::vector<bool> select_atoms(const std::string selection) const;
+    Model select_index(const std::vector<bool> &indexes) const;
+    std::vector<int> get_index_select(const std::string selection) const;
 
     // Accessors
-    const vector<float> &get_x() const { return x_; }
-    const vector<float> &get_y() const { return y_; }
-    const vector<float> &get_z() const { return z_; }
-    const vector<array<char, 5>> &get_name() const { return name_; }
-    const vector<array<char, 5>> &get_resname() const { return resname_; }
-    const vector<int> &get_resid() const { return resid_; }
-    const vector<array<char, 2>> &get_chain() const { return chain_; }
-    const vector<float> &get_occ() const { return occ_; }
-    const vector<float> &get_beta() const { return beta_; }
-    const vector<array<char, 2>> &get_alterloc() const { return alterloc_; }
-    const vector<array<char, 2>> &get_insertres() const { return insertres_; }
-    const vector<array<char, 5>> &get_elem() const { return elem_; }
-    const vector<int> &get_num() const { return num_; }
-    const vector<bool> &get_field() const { return field_; }
-    const vector<int> &get_uniqresid() const { return uniqresid_; }
+    const std::vector<float> &get_x() const { return x_; }
+    const std::vector<float> &get_y() const { return y_; }
+    const std::vector<float> &get_z() const { return z_; }
+    const std::vector<std::array<char, 5>> &get_name() const { return name_; }
+    const std::vector<std::array<char, 5>> &get_resname() const { return resname_; }
+    const std::vector<int> &get_resid() const { return resid_; }
+    const std::vector<std::array<char, 2>> &get_chain() const { return chain_; }
+    const std::vector<float> &get_occ() const { return occ_; }
+    const std::vector<float> &get_beta() const { return beta_; }
+    const std::vector<std::array<char, 2>> &get_alterloc() const { return alterloc_; }
+    const std::vector<std::array<char, 2>> &get_insertres() const { return insertres_; }
+    const std::vector<std::array<char, 5>> &get_elem() const { return elem_; }
+    const std::vector<int> &get_num() const { return num_; }
+    const std::vector<bool> &get_field() const { return field_; }
+    const std::vector<int> &get_uniqresid() const { return uniqresid_; }
 
-    vector<array<char, 2>> get_uniq_chain() const;
+    std::vector<std::array<char, 2>> get_uniq_chain() const;
 
     float distance(size_t i, size_t j) const;
 
 private:
     // === Storage (Structure of Arrays) ===
-    vector<float> x_, y_, z_, occ_, beta_;
-    vector<array<char, 5>> name_, resname_, elem_;
-    vector<array<char, 2>> chain_, alterloc_, insertres_;
-    vector<int> num_, resid_, uniqresid_;
-    vector<bool> field_;
+    std::vector<float> x_, y_, z_, occ_, beta_;
+    std::vector<std::array<char, 5>> name_, resname_, elem_;
+    std::vector<std::array<char, 2>> chain_, alterloc_, insertres_;
+    std::vector<int> num_, resid_, uniqresid_;
+    std::vector<bool> field_;
 };
 
 #endif // MODEL_H

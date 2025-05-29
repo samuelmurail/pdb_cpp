@@ -6,7 +6,7 @@
 
 class Coor;
 
-Coor PDB_parse(const string& filename);
-bool PDB_write(const Coor& coor, const string& filename);
+Coor PDB_parse(const std::string& filename);
+bool PDB_write(const Coor& coor, const std::string& filename);
 
 #endif // PDB_CPP_FORMAT_PDB_H

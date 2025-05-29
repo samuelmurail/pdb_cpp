@@ -8,13 +8,11 @@
 #include "Model.h"
 #include "geom.h"
 
-using namespace std;
-
 class Coor {
 public:
     // === Constructors ===
     Coor() = default;
-    Coor(const string& filename) {
+    Coor(const std::string& filename) {
         read(filename);
     }
     // === Public values ===
@@ -25,8 +23,8 @@ public:
 
     // === Public interface ===
 
-    bool read(const string& filename);
-    bool write(const string & filename) const;
+    bool read(const std::string& filename);
+    bool write(const std::string & filename) const;
     //bool loadPDB(const string& filename);
     void clear();
     void add_Model(const Model& model) { models_.push_back(model); };
@@ -34,14 +32,14 @@ public:
     void set_active_model(size_t model) { active_model = model; };
     size_t size() const { return models_[active_model].size(); };
     size_t model_size() const { return models_.size(); };
-    Coor select_atoms(const string &selection, size_t frame=0) const;
-    Coor select_bool_index(const vector<bool> &indexes) const;
-    vector<int> get_index_select(const string selection, size_t frame=0) const;
-    vector<array<char, 2>> get_uniq_chain() const;
-    vector<string> get_aa_sequences(bool gap_in_seq=true, size_t frame=0) const;
+    Coor select_atoms(const std::string &selection, size_t frame=0) const;
+    Coor select_bool_index(const std::vector<bool> &indexes) const;
+    std::vector<int> get_index_select(const std::string selection, size_t frame=0) const;
+    std::vector<std::array<char, 2>> get_uniq_chain() const;
+    std::vector<std::string> get_aa_sequences(bool gap_in_seq=true, size_t frame=0) const;
 
     Model get_Models(int i) const { return models_[i]; }
-    vector<Model> get_all_Models() const { return models_; }
+    std::vector<Model> get_all_Models() const { return models_; }
 
     // void set_crystal(float a, float b, float c, float alpha, float beta, float gamma) {
     //     crystal_pack_.set_unit_cell(alpha, beta, gamma, a, b, c);
@@ -51,7 +49,7 @@ public:
 
 private:
     // === Storage (Structure of Arrays) ===
-    vector<Model> models_;
+    std::vector<Model> models_;
 
 };
 
