@@ -1,11 +1,11 @@
 import time
 import pdb_numpy
-from pdb_numpy import DSSP
+from pdb_numpy import DSSP, alignement
 import sys
 
 sys.path.insert(0, "./src")
 
-from pdb_cpp import Coor
+from pdb_cpp import Coor, core
 from pdb_cpp import TMalign
 
 def avg_std(arr):
@@ -16,20 +16,25 @@ def avg_std(arr):
     std = (sum((x - avg) ** 2 for x in arr) / len(arr)) ** 0.5
     return avg, std
 
-N = 10
+N = 1
 
 file_name = "3eam.pdb"
+file_name_2 = "5bkg.pdb"
 pdb_id = file_name.split(".")[0]
 read_times = []
 write_times = []
 select_times = []
 get_seq_times = []
 ss_times = []
+align_times = []
 read_cpp_times = []
 write_cpp_times = []
 select_cpp_times = []
 get_seq_cpp_times = []
 ss_cpp_times = []
+align_cpp_times = []
+
+chains = ["A"]
 
 print(f"- Testing with {file_name} file")
 
@@ -57,8 +62,20 @@ for i in range(N):
     DSSP.compute_DSSP(coor)
     pdb_numpy_ss_time = time.time() - start_time
     ss_times.append(pdb_numpy_ss_time)
+    coor2 = pdb_numpy.Coor(file_name_2)
+    start_time = time.time()
+    rmsd, _ = alignement.align_seq_based(
+        coor,
+        coor2,
+    chain_1=chains,
+    chain_2=chains,)
+    #print(rmsd)
+    pdb_numpy_align_time = time.time() - start_time
+    align_times.append(pdb_numpy_align_time)
+
 
     # cpp
+    print("Start CPP:")
     start_time = time.time()
     coor = Coor(file_name)
     pdb_numpy_read_time = time.time() - start_time 
@@ -83,6 +100,18 @@ for i in range(N):
     ss_cpp_time = time.time() - start_time
     ss_cpp_times.append(ss_cpp_time)
 
+    coor2 = Coor(file_name_2)
+
+    rmsd, _ = core.align_seq_based(
+        coor,
+        coor2,
+    chain_1=chains,
+    chain_2=chains,)
+    # print(rmsd)
+    align_time = time.time() - start_time
+    align_cpp_times.append(align_time)
+
+
 
 avg_read, std_read = avg_std(read_times)
 print(f"-pdb_numpy Time taken to get coordinates:   {avg_read:.4f} +- {std_read:.4f} seconds")
@@ -94,6 +123,8 @@ avg_seq, std_seq = avg_std(get_seq_times)
 print(f"-pdb_numpy Time taken to get sequence:      {avg_seq:.4f} +- {std_seq:.4f} seconds")
 avg_ss, std_ss = avg_std(ss_times)
 print(f"-pdb_numpy Time taken to get DSSP:          {avg_ss:.4f} +- {std_ss:.4f} seconds")
+avg_align, std_align = avg_std(align_times)
+print(f"-pdb_numpy Time taken to align   :          {avg_align:.4f} +- {std_align:.4f} seconds")
 
 avg_cpp_read, std_cpp_read = avg_std(read_cpp_times)
 print(f"-pdb_cpp   Time taken to get coordinates:   {avg_cpp_read:.4f} +- {std_cpp_read:.4f} seconds, speed-up:  {avg_read/avg_cpp_read:.2f}")
@@ -105,6 +136,8 @@ avg_cpp_seq, std_cpp_seq = avg_std(get_seq_cpp_times)
 print(f"-pdb_cpp   Time taken to get sequence:      {avg_cpp_seq:.4f} +- {std_cpp_seq:.4f} seconds, speed-up:  {avg_seq/avg_cpp_seq:.2f}")
 avg_cpp_ss, std_cpp_ss = avg_std(ss_cpp_times)
 print(f"-pdb_cpp   Time taken to get DSSP:          {avg_cpp_ss:.4f} +- {std_cpp_ss:.4f} seconds, speed-up:  {avg_ss/avg_cpp_ss:.2f}")
+avg_cpp_align, std_cpp_align = avg_std(align_cpp_times)
+print(f"-pdb_cpp   Time taken to align   :          {avg_cpp_align:.4f} +- {std_cpp_align:.4f} seconds, speed-up:  {avg_align/avg_cpp_align:.2f}")
 
 read_times = []
 write_times = []

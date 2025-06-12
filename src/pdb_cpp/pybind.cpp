@@ -6,6 +6,7 @@
 #include "TMAlign.h"
 #include "align.h"
 #include "geom.h"
+#include "seq_align.h"
 
 namespace py = pybind11;
 
@@ -79,14 +80,14 @@ PYBIND11_MODULE(core, m) {
         .def_readwrite("score", &Alignment::score, "Alignment score");
 
     // Bind the align function
-    m.def("sequence_align",
-        &sequence_align,  // Directly bind the align function
-        py::arg("seq1"),
-        py::arg("seq2"),
-        py::arg("matrix_file") = "src/pdb_cpp/data/blosum62.txt",
-        py::arg("GAP_COST") = -11,
-        py::arg("GAP_EXT") = -1,
-        "Align two sequences using a substitution matrix and gap penalties");
+    // m.def("seq_align",
+    //     &seq_align,  // Directly bind the align function
+    //     py::arg("seq1"),
+    //     py::arg("seq2"),
+    //     py::arg("matrix_file") = "src/pdb_cpp/data/blosum62.txt",
+    //     py::arg("GAP_COST") = -11,
+    //     py::arg("GAP_EXT") = -1,
+    //     "Align two sequences using a substitution matrix and gap penalties");
 
     // Bind the get_common_atoms function
     m.def("get_common_atoms",
@@ -108,6 +109,18 @@ PYBIND11_MODULE(core, m) {
         py::arg("index_2"),
         py::arg("frame_ref") = 0,
         "Align two coordinate structures using quaternion-based rotation");
+    
+    m.def("align_seq_based",
+        &align_seq_based,
+        py::arg("coor_1"),
+        py::arg("coor_2"),
+        py::arg("chain_1") = std::vector<std::string>{"A"},
+        py::arg("chain_2") = std::vector<std::string>{"A"},
+        py::arg("back_names") = std::vector<std::string>{"C", "N", "O", "CA"},
+        py::arg("matrix_file") = "src/pdb_cpp/data/blosum62.txt",
+        py::arg("frame_ref") = 0,
+        py::arg("compute_rmsd") = true,
+        "Align two coordinate structures using sequence based alignement");
 /*
     // Bind the Quaternion struct
     py::class_<Quaternion>(m, "Quaternion")

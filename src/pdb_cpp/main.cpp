@@ -207,5 +207,11 @@ int main() {
     // print_alignment(align_test);
 
 
+    auto indexes2 = align_seq_based(
+        coor_1,
+        coor_2);//,
+        //{"A", "B", "C", "D", "E"},
+        //{"A", "B", "C", "D", "E"});
+
     return 0;
 }

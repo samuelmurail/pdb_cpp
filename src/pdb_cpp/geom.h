@@ -172,8 +172,7 @@ u    - u(i,j) is   rotation  matrix for best superposition  (output)
 t    - t(i)   is translation vector for best superposition  (output)
 **************************************************************************/
 inline bool Kabsch(double **x, double **y, int n, int mode, double *rms,
-    double t[3], double u[3][3])
-{
+    double t[3], double u[3][3]) {
     int i, j, m, m1, l, k;
     double e0, rms1, d, h, g;
     double cth, sth, sqrth, p, det, sigma;
@@ -193,8 +192,7 @@ inline bool Kabsch(double **x, double **y, int n, int mode, double *rms,
     double c1[3], c2[3];
     double s1[3], s2[3];
     double sx[3], sy[3], sz[3];
-    for (i = 0; i < 3; i++)
-    {
+    for (i = 0; i < 3; i++) {
         s1[i] = 0.0;
         s2[i] = 0.0;
 
@@ -203,18 +201,15 @@ inline bool Kabsch(double **x, double **y, int n, int mode, double *rms,
         sz[i] = 0.0;
     }
 
-    for (i = 0; i<3; i++)
-    {
+    for (i = 0; i<3; i++) {
         xc[i] = 0.0;
         yc[i] = 0.0;
         t[i] = 0.0;
-        for (j = 0; j<3; j++)
-        {
+        for (j = 0; j<3; j++) {
             u[i][j] = 0.0;
             r[i][j] = 0.0;
             a[i][j] = 0.0;
-            if (i == j)
-            {
+            if (i == j) {
                 u[i][j] = 1.0;
                 a[i][j] = 1.0;
             }
@@ -224,10 +219,8 @@ inline bool Kabsch(double **x, double **y, int n, int mode, double *rms,
     if (n<1) return false;
 
     //compute centers for vector sets x, y
-    for (i = 0; i<n; i++)
-    {
-        for (j = 0; j < 3; j++)
-        {
+    for (i = 0; i<n; i++) {
+        for (j = 0; j < 3; j++) {
             c1[j] = x[i][j];
             c2[j] = y[i][j];
 
@@ -235,15 +228,13 @@ inline bool Kabsch(double **x, double **y, int n, int mode, double *rms,
             s2[j] += c2[j];
         }
 
-        for (j = 0; j < 3; j++)
-        {
+        for (j = 0; j < 3; j++) {
             sx[j] += c1[0] * c2[j];
             sy[j] += c1[1] * c2[j];
             sz[j] += c1[2] * c2[j];
         }
     }
-    for (i = 0; i < 3; i++)
-    {
+    for (i = 0; i < 3; i++) {
         xc[i] = s1[i] / n;
         yc[i] = s2[i] / n;
     }
@@ -252,8 +243,7 @@ inline bool Kabsch(double **x, double **y, int n, int mode, double *rms,
             for (int nn = 0; nn < 3; nn++)
                 e0 += (x[mm][nn] - xc[nn]) * (x[mm][nn] - xc[nn]) + 
                       (y[mm][nn] - yc[nn]) * (y[mm][nn] - yc[nn]);
-    for (j = 0; j < 3; j++)
-    {
+    for (j = 0; j < 3; j++){
         r[j][0] = sx[j] - s1[0] * s2[j] / n;
         r[j][1] = sy[j] - s1[1] * s2[j] / n;
         r[j][2] = sz[j] - s1[2] * s2[j] / n;
@@ -267,10 +257,8 @@ inline bool Kabsch(double **x, double **y, int n, int mode, double *rms,
 
     //compute tras(r)*r
     m = 0;
-    for (j = 0; j<3; j++)
-    {
-        for (i = 0; i <= j; i++)
-        {
+    for (j = 0; j<3; j++){
+        for (i = 0; i <= j; i++){
             rr[m] = r[0][i] * r[0][j] + r[1][i] * r[1][j] + r[2][i] * r[2][j];
             m++;
         }
@@ -283,14 +271,12 @@ inline bool Kabsch(double **x, double **y, int n, int mode, double *rms,
 
     for (i = 0; i<3; i++) e[i] = spur;
 
-    if (spur>0)
-    {
+    if (spur>0){
         d = spur*spur;
         h = d - cof;
         g = (spur*cof - det) / 2.0 - spur*h;
 
-        if (h>0)
-        {
+        if (h>0) {
             sqrth = sqrt(h);
             d = h*h*h - g*g;
             if (d<0.0) d = 0.0;
@@ -301,10 +287,8 @@ inline bool Kabsch(double **x, double **y, int n, int mode, double *rms,
             e[1] = (spur - cth) + sth;
             e[2] = (spur - cth) - sth;
 
-            if (mode != 0)
-            {//compute a                
-                for (l = 0; l<3; l = l + 2)
-                {
+            if (mode != 0) {//compute a                
+                for (l = 0; l<3; l = l + 2) {
                     d = e[l];
                     ss[0] = (d - rr[2]) * (d - rr[5]) - rr[4] * rr[4];
                     ss[1] = (d - rr[5]) * rr[1] + rr[3] * rr[4];
@@ -320,8 +304,7 @@ inline bool Kabsch(double **x, double **y, int n, int mode, double *rms,
                     if (fabs(ss[4]) <= epsilon) ss[4] = 0.0;
                     if (fabs(ss[5]) <= epsilon) ss[5] = 0.0;
 
-                    if (fabs(ss[0]) >= fabs(ss[2]))
-                    {
+                    if (fabs(ss[0]) >= fabs(ss[2])) {
                         j = 0;
                         if (fabs(ss[0]) < fabs(ss[5])) j = 2;
                     }
@@ -330,8 +313,7 @@ inline bool Kabsch(double **x, double **y, int n, int mode, double *rms,
 
                     d = 0.0;
                     j = 3 * j;
-                    for (i = 0; i<3; i++)
-                    {
+                    for (i = 0; i<3; i++) {
                         k = ip[i + j];
                         a[i][l] = ss[k];
                         d = d + ss[k] * ss[k];
@@ -345,27 +327,21 @@ inline bool Kabsch(double **x, double **y, int n, int mode, double *rms,
                 }//for l
 
                 d = a[0][0] * a[0][2] + a[1][0] * a[1][2] + a[2][0] * a[2][2];
-                if ((e[0] - e[1]) >(e[1] - e[2]))
-                {
+                if ((e[0] - e[1]) >(e[1] - e[2])) {
                     m1 = 2;
                     m = 0;
-                }
-                else
-                {
+                } else {
                     m1 = 0;
                     m = 2;
                 }
                 p = 0;
-                for (i = 0; i<3; i++)
-                {
+                for (i = 0; i<3; i++) {
                     a[i][m1] = a[i][m1] - d*a[i][m];
                     p = p + a[i][m1] * a[i][m1];
                 }
-                if (p <= tol)
-                {
+                if (p <= tol) {
                     p = 1.0;
-                    for (i = 0; i<3; i++)
-                    {
+                    for (i = 0; i<3; i++) {
                         if (p < fabs(a[i][m])) continue;
                         p = fabs(a[i][m]);
                         j = i;
@@ -373,21 +349,18 @@ inline bool Kabsch(double **x, double **y, int n, int mode, double *rms,
                     k = ip2312[j];
                     l = ip2312[j + 1];
                     p = sqrt(a[k][m] * a[k][m] + a[l][m] * a[l][m]);
-                    if (p > tol)
-                    {
+                    if (p > tol) {
                         a[j][m1] = 0.0;
                         a[k][m1] = -a[l][m] / p;
                         a[l][m1] = a[k][m] / p;
                     }
                     else a_failed = 1;
                 }//if p<=tol
-                else
-                {
+                else {
                     p = 1.0 / sqrt(p);
                     for (i = 0; i<3; i++) a[i][m1] = a[i][m1] * p;
                 }//else p<=tol  
-                if (a_failed != 1)
-                {
+                if (a_failed != 1) {
                     a[0][1] = a[1][2] * a[2][0] - a[1][0] * a[2][2];
                     a[1][1] = a[2][2] * a[0][0] - a[2][0] * a[0][2];
                     a[2][1] = a[0][2] * a[1][0] - a[0][0] * a[1][2];
@@ -399,11 +372,9 @@ inline bool Kabsch(double **x, double **y, int n, int mode, double *rms,
         if (mode != 0 && a_failed != 1)//a is computed correctly
         {
             //compute b
-            for (l = 0; l<2; l++)
-            {
+            for (l = 0; l<2; l++) {
                 d = 0.0;
-                for (i = 0; i<3; i++)
-                {
+                for (i = 0; i<3; i++) {
                     b[i][l] = r[i][0] * a[0][l] + 
                               r[i][1] * a[1][l] + r[i][2] * a[2][l];
                     d = d + b[i][l] * b[i][l];
@@ -416,17 +387,14 @@ inline bool Kabsch(double **x, double **y, int n, int mode, double *rms,
             d = b[0][0] * b[0][1] + b[1][0] * b[1][1] + b[2][0] * b[2][1];
             p = 0.0;
 
-            for (i = 0; i<3; i++)
-            {
+            for (i = 0; i<3; i++) {
                 b[i][1] = b[i][1] - d*b[i][0];
                 p += b[i][1] * b[i][1];
             }
 
-            if (p <= tol)
-            {
+            if (p <= tol) {
                 p = 1.0;
-                for (i = 0; i<3; i++)
-                {
+                for (i = 0; i<3; i++) {
                     if (p<fabs(b[i][0])) continue;
                     p = fabs(b[i][0]);
                     j = i;
@@ -434,21 +402,18 @@ inline bool Kabsch(double **x, double **y, int n, int mode, double *rms,
                 k = ip2312[j];
                 l = ip2312[j + 1];
                 p = sqrt(b[k][0] * b[k][0] + b[l][0] * b[l][0]);
-                if (p > tol)
-                {
+                if (p > tol) {
                     b[j][1] = 0.0;
                     b[k][1] = -b[l][0] / p;
                     b[l][1] = b[k][0] / p;
                 }
                 else b_failed = 1;
             }//if( p <= tol )
-            else
-            {
+            else {
                 p = 1.0 / sqrt(p);
                 for (i = 0; i<3; i++) b[i][1] = b[i][1] * p;
             }
-            if (b_failed != 1)
-            {
+            if (b_failed != 1) {
                 b[0][2] = b[1][0] * b[2][1] - b[1][1] * b[2][0];
                 b[1][2] = b[2][0] * b[0][1] - b[2][1] * b[0][0];
                 b[2][2] = b[0][0] * b[1][1] - b[0][1] * b[1][0];
@@ -474,8 +439,7 @@ inline bool Kabsch(double **x, double **y, int n, int mode, double *rms,
     }//else spur>0 
 
     //compute rms
-    for (i = 0; i<3; i++)
-    {
+    for (i = 0; i<3; i++) {
         if (e[i] < 0) e[i] = 0;
         e[i] = sqrt(e[i]);
     }
@@ -483,8 +447,7 @@ inline bool Kabsch(double **x, double **y, int n, int mode, double *rms,
     if (sigma < 0.0) d = -d;
     d = (d + e[1]) + e[0];
 
-    if (mode == 2 || mode == 0)
-    {
+    if (mode == 2 || mode == 0) {
         rms1 = (e0 - d) - d;
         if (rms1 < 0.0) rms1 = 0.0;
     }
