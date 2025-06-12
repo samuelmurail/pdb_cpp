@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # coding: utf-8
 
-from .core import Alignment, sequence_align
+from .core import sequence_align
 from .data.blosum import BLOSUM62
 
 def align_seq(seq1, seq2, gap_cost=-11, gap_ext=-1, matrix_file='src/pdb_cpp/data/blosum62.txt'):

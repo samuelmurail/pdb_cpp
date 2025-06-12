@@ -440,10 +440,11 @@ pair<vector<int>, vector<int>> get_common_atoms(
 
     // Perform sequence alignment
     auto start = high_resolution_clock::now();
+    // cout << "Aligning sequences..." << endl;
     Alignment *alignment = seq_align(seq_1.c_str(), seq_2.c_str(), matrix_file.c_str());
     auto stop = high_resolution_clock::now();
     auto duration = duration_cast<microseconds>(stop - start);
-    cout << "Alignement duration :" << duration.count()/1e6 << endl;
+    // cout << "Alignement duration :" << duration.count()/1e6 << endl;
     string align_seq_1(alignment->seq1);
     string align_seq_2(alignment->seq2);
 
@@ -496,6 +497,7 @@ pair<vector<int>, vector<int>> align_seq_based(
 ) {
     vector<float> rmsd_vec;
     vector<int> index_1, index_2;
+
     tie(index_1, index_2) =  get_common_atoms(
         coor_1,
         coor_2,

@@ -73,21 +73,22 @@ PYBIND11_MODULE(core, m) {
         "Compute secondary structure for all models in a Coor object");
 
     // Bind the Alignment structure
-    py::class_<Alignment>(m, "Alignment")
+    py::class_<Alignment_cpp>(m, "Alignment_cpp")
         .def(py::init<>())  // Default constructor
-        .def_readwrite("seq1", &Alignment::seq1, "Aligned sequence 1")
-        .def_readwrite("seq2", &Alignment::seq2, "Aligned sequence 2")
-        .def_readwrite("score", &Alignment::score, "Alignment score");
+        .def_readwrite("seq1", &Alignment_cpp::seq1, "Aligned sequence 1")
+        .def_readwrite("seq2", &Alignment_cpp::seq2, "Aligned sequence 2")
+        .def_readwrite("score", &Alignment_cpp::score, "Alignment score");
 
     // Bind the align function
-    // m.def("seq_align",
-    //     &seq_align,  // Directly bind the align function
-    //     py::arg("seq1"),
-    //     py::arg("seq2"),
-    //     py::arg("matrix_file") = "src/pdb_cpp/data/blosum62.txt",
-    //     py::arg("GAP_COST") = -11,
-    //     py::arg("GAP_EXT") = -1,
-    //     "Align two sequences using a substitution matrix and gap penalties");
+    m.def("sequence_align",
+        &sequence_align,  // Directly bind the align function
+        py::arg("seq1"),
+        py::arg("seq2"),
+        py::arg("matrix_file") = "src/pdb_cpp/data/blosum62.txt",
+        py::arg("GAP_COST") = -11,
+        py::arg("GAP_EXT") = -1,
+        py::return_value_policy::take_ownership,  // Python takes ownership of the returned pointer
+        "Align two sequences using a substitution matrix and gap penalties");
 
     // Bind the get_common_atoms function
     m.def("get_common_atoms",

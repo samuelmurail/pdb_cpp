@@ -16,10 +16,13 @@ def avg_std(arr):
     std = (sum((x - avg) ** 2 for x in arr) / len(arr)) ** 0.5
     return avg, std
 
-N = 1
+N = 2
 
 file_name = "3eam.pdb"
 file_name_2 = "5bkg.pdb"
+align_chains = ["A", "B", "C", "D", "E"]
+#align_chains = ["A", "B", "C", "D"]
+
 pdb_id = file_name.split(".")[0]
 read_times = []
 write_times = []
@@ -34,7 +37,6 @@ get_seq_cpp_times = []
 ss_cpp_times = []
 align_cpp_times = []
 
-chains = ["A"]
 
 print(f"- Testing with {file_name} file")
 
@@ -67,15 +69,14 @@ for i in range(N):
     rmsd, _ = alignement.align_seq_based(
         coor,
         coor2,
-    chain_1=chains,
-    chain_2=chains,)
-    #print(rmsd)
+    chain_1=align_chains,
+    chain_2=align_chains,)
+    print(rmsd)
     pdb_numpy_align_time = time.time() - start_time
     align_times.append(pdb_numpy_align_time)
 
 
     # cpp
-    print("Start CPP:")
     start_time = time.time()
     coor = Coor(file_name)
     pdb_numpy_read_time = time.time() - start_time 
@@ -102,11 +103,15 @@ for i in range(N):
 
     coor2 = Coor(file_name_2)
 
-    rmsd, _ = core.align_seq_based(
+    print("Start CPP align:")
+
+    rmsd = core.align_seq_based(
         coor,
         coor2,
-    chain_1=chains,
-    chain_2=chains,)
+    chain_1=align_chains,
+    chain_2=align_chains,)
+
+
     # print(rmsd)
     align_time = time.time() - start_time
     align_cpp_times.append(align_time)
@@ -147,6 +152,7 @@ pdb_id = file_name.split(".")[0]
 read_times = []
 write_times = []
 select_times = []
+align_times = []
 read_cpp_times = []
 write_cpp_times = []
 select_cpp_times = []
@@ -170,6 +176,16 @@ for i in range(N):
     pdb_numpy_select_time = time.time() - start_time
     select_times.append(pdb_numpy_select_time)
 
+    start_time = time.time()
+    index_back = coor.get_index_select("name CA C N O")
+    rmsd = alignement.coor_align(
+        coor,
+        coor,
+        index_back,
+        index_back,)
+    pdb_numpy_align_time = time.time() - start_time
+    align_times.append(pdb_numpy_align_time)
+
     # cpp
     start_time = time.time()
     coor = Coor(file_name)
@@ -185,6 +201,16 @@ for i in range(N):
     pdb_numpy_select_time = time.time() - start_time
     select_cpp_times.append(pdb_numpy_select_time)
 
+    start_time = time.time()
+    index_back = coor.get_index_select("name CA C N O")
+    rmsd = core.coor_align(
+        coor,
+        coor,
+        index_back,
+        index_back,)
+    pdb_cpp_align_time = time.time() - start_time
+    align_cpp_times.append(pdb_cpp_align_time)
+
 
 avg_read, std_read = avg_std(read_times)
 print(f"-pdb_numpy Time taken to get coordinates:   {avg_read:.4f} +- {std_read:.4f} seconds")
@@ -192,12 +218,19 @@ avg_write, std_write = avg_std(write_times)
 print(f"-pdb_numpy Time taken to write coordinates: {avg_write:.4f} +- {std_write:.4f} seconds")
 avg_select, std_select = avg_std(select_times)
 print(f"-pdb_numpy Time taken to select atoms:      {avg_select:.4f} +- {std_select:.4f} seconds")
+avg_align, std_align = avg_std(align_times)
+print(f"-pdb_numpy Time taken to align coor  :      {avg_align:.4f} +- {std_align:.4f} seconds")
+
+
+
 avg_cpp_read, std_cpp_read = avg_std(read_cpp_times)
 print(f"-pdb_cpp   Time taken to get coordinates:   {avg_cpp_read:.4f} +- {std_cpp_read:.4f} seconds, speed-up:  {avg_read/avg_cpp_read:.2f}")
 avg_cpp_write, std_cpp_write = avg_std(write_cpp_times)
 print(f"-pdb_cpp   Time taken to write coordinates: {avg_cpp_write:.4f} +- {std_cpp_write:.4f} seconds, speed-up:  {avg_write/avg_cpp_write:.2f} ")
 avg_cpp_select, std_select = avg_std(select_cpp_times)
 print(f"-pdb_cpp   Time taken to select atoms:      {avg_cpp_select:.4f} +- {std_select:.4f} seconds, speed-up:  {avg_select/avg_cpp_select:.2f}")
+avg_cpp_align, std_cpp_align = avg_std(align_cpp_times)
+print(f"-pdb_cpp   Time taken to align coor  :      {avg_cpp_align:.4f} +- {std_cpp_align:.4f} seconds, speed-up:  {avg_align/avg_cpp_align:.2f}")
 
 print("3eam:")
 file_name = "3eam.pdb"

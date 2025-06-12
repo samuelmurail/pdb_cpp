@@ -1,4 +1,8 @@
 #include "seq_align.h"
+#include <string>
+#include <iostream>
+#include <vector>
+
 
 
 int* seq_to_num (const char *seq)
@@ -151,22 +155,22 @@ void read_matrix(const char *matrix_file, short int matrix[MATRIX_SIZE][MATRIX_S
     fclose(fp);
 }
 
-Alignment *align_test(const char *seq1, const char *seq2, const char *matrix_file, int GAP_COST, int GAP_EXT)
-{
-    // Alignment *alignment = malloc(sizeof(Alignment));
-    Alignment *alignment = new Alignment;
-    assert(alignment != NULL);
-    //alignment->seq1 = malloc((strlen(seq1) + 1) * sizeof(char));
-    alignment->seq1 = new char[strlen(seq1) + 1];
-    assert(alignment->seq1 != NULL);
-    //alignment->seq2 = malloc((strlen(seq2) + 1) * sizeof(char));
-    alignment->seq2 = new char[strlen(seq2) + 1];
-    assert(alignment->seq2 != NULL);
-    strcpy(alignment->seq1, seq1);
-    strcpy(alignment->seq2, seq2);
-    alignment->score = 0;
-    return alignment;
-}
+// Alignment *align_test(const char *seq1, const char *seq2, const char *matrix_file, int GAP_COST, int GAP_EXT)
+// {
+//     // Alignment *alignment = malloc(sizeof(Alignment));
+//     Alignment *alignment = new Alignment;
+//     assert(alignment != NULL);
+//     //alignment->seq1 = malloc((strlen(seq1) + 1) * sizeof(char));
+//     alignment->seq1 = new char[strlen(seq1) + 1];
+//     assert(alignment->seq1 != NULL);
+//     //alignment->seq2 = malloc((strlen(seq2) + 1) * sizeof(char));
+//     alignment->seq2 = new char[strlen(seq2) + 1];
+//     assert(alignment->seq2 != NULL);
+//     strcpy(alignment->seq1, seq1);
+//     strcpy(alignment->seq2, seq2);
+//     alignment->score = 0;
+//     return alignment;
+// }
 
 void check_seq(const char *seq)
 {
@@ -187,14 +191,22 @@ void check_seq(const char *seq)
 
 Alignment *seq_align(const char *seq1, const char *seq2, const char *matrix_file, int GAP_COST, int GAP_EXT)
 {
+    // std::cout << "Start seq_align "  << std::endl;
     short int subs_matrix[MATRIX_SIZE][MATRIX_SIZE];
     int seq1_len = strlen(seq1), seq2_len = strlen(seq2);
-    int score_matrix [seq1_len + 1][seq2_len + 1];
+    // std::cout << "Start score matrix memory assignation"  << std::endl;
+    // int score_matrix[seq1_len + 1][seq2_len + 1];
+    // Allocate score matrix dynamically to avoid stack overflow with large sequences
+    std::vector<std::vector<int>> score_matrix(seq1_len + 1, std::vector<int>(seq2_len + 1, 0));
+    
+    // std::cout << "End score matrix memory assignation"  << std::endl;
     int prev_score_line [seq2_len];
     int prev_score = FALSE;
     int i, j, counter;
     // Alignment *alignment = malloc(sizeof(Alignment));
     Alignment *alignment = new Alignment;
+
+
 
     assert(alignment != NULL);
 
@@ -202,7 +214,10 @@ Alignment *seq_align(const char *seq1, const char *seq2, const char *matrix_file
     check_seq(seq1);
     check_seq(seq2);
 
+    // std::cout << "Reading substitution matrix from: " << matrix_file << std::endl;
     read_matrix(matrix_file, subs_matrix);
+
+    // std::cout << "Substitution matrix loaded successfully." << std::endl;
 
     for (i = 0; i < seq1_len + 1; i++) score_matrix[i][0] = 0;
     for (i = 0; i < seq2_len + 1; i++) score_matrix[0][i] = 0;
@@ -214,6 +229,7 @@ Alignment *seq_align(const char *seq1, const char *seq2, const char *matrix_file
 
     int match_score, insert_score, delete_score;
 
+    // std::cout << "Starting matrix filling..." << std::endl;
 
     for (int i = 1; i <= seq1_len; i++)
     {
@@ -239,6 +255,8 @@ Alignment *seq_align(const char *seq1, const char *seq2, const char *matrix_file
             }
         }
     }
+
+    // std::cout << "Matrix filled successfully." << std::endl;
 
     // Get max score index:
     int min_len = (seq1_len < seq2_len) ? seq1_len : seq2_len;
@@ -407,6 +425,38 @@ Alignment *seq_align(const char *seq1, const char *seq2, const char *matrix_file
     return alignment;
 }
 
+    // alignement = sequence_align(
+    //     seq1=seq1,
+    //     seq2=seq2,
+    //     matrix_file='src/pdb_cpp/data/blosum62.txt',
+    //     GAP_COST=gap_cost,
+    //     GAP_EXT=gap_ext)
+
+Alignment_cpp *sequence_align(
+    const std::string &seq1, 
+    const std::string &seq2, 
+    const std::string &matrix_file, 
+    int GAP_COST, int GAP_EXT) {
+    // Convert C-style strings to C++ strings
+    const char *c_seq1 = seq1.c_str();
+    const char *c_seq2 = seq2.c_str();
+
+    // Call the C function for sequence alignment
+    Alignment *alignment = seq_align(c_seq1, c_seq2, matrix_file.c_str(), GAP_COST, GAP_EXT);
+
+    // Create a C++ wrapper for the alignment result
+    Alignment_cpp *alignment_cpp = new Alignment_cpp;
+    alignment_cpp->seq1 = alignment->seq1;
+    alignment_cpp->seq2 = alignment->seq2;
+    alignment_cpp->score = alignment->score;
+
+    // Free the C-style alignment structure
+    free_align(alignment);
+
+    return alignment_cpp;
+}
+
+
 void free_align(Alignment *align)
 {
     if (align == NULL) {
@@ -434,19 +484,19 @@ void free_align(Alignment *align)
 
 }
 
-void test(char *seq_1, char *seq_2) {
+// void test(char *seq_1, char *seq_2) {
 
-    printf("Test\n");
+//     printf("Test\n");
 
-    Alignment *alignment = NULL;
+//     Alignment *alignment = NULL;
     
-    alignment = seq_align(seq_1, seq_2, "./src/pdb_cpp/data/blosum62.txt", -11, -1);
-    printf ("Alignment:\n%s:\n%s:\n", alignment->seq1, alignment->seq2);
+//     alignment = seq_align(seq_1, seq_2, "./src/pdb_cpp/data/blosum62.txt", -11, -1);
+//     printf ("Alignment:\n%s:\n%s:\n", alignment->seq1, alignment->seq2);
 
-    //print_alignment(alignment);
+//     //print_alignment(alignment);
 
-    free_align(alignment);
-}
+//     free_align(alignment);
+// }
 
 /*
 int main(int argc, char *argv[])

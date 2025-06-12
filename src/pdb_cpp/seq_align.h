@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
+#include <string>
 
 // Constants
 #define MATRIX_SIZE 20
@@ -18,6 +19,13 @@ typedef struct {
     char *seq2;
     int score;
 } Alignment;
+
+
+typedef struct {
+    std::string seq1;
+    std::string seq2;
+    int score;
+}Alignment_cpp;
 
 // Function declarations
 
@@ -62,6 +70,14 @@ Alignment *align_test(const char *seq1, const char *seq2, const char *matrix_fil
  * @return Pointer to Alignment structure containing aligned sequences
  */
 Alignment *seq_align(const char *seq1, const char *seq2, const char *matrix_file, int GAP_COST=-11, int GAP_EXT=-1);
+
+Alignment_cpp *sequence_align(
+    const std::string &seq1,
+    const std::string &seq2,
+    const std::string &matrix_file = "src/pdb_cpp/data/blosum62.txt",
+    int GAP_COST = -11,
+    int GAP_EXT = -1
+);
 
 /**
  * Validate sequence contains only valid amino acid characters
