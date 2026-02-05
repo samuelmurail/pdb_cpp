@@ -91,6 +91,7 @@ PYBIND11_MODULE(core, m) {
         py::arg("coor_2"),
         py::arg("chain_1") = std::vector<std::string>{"A"},
         py::arg("chain_2") = std::vector<std::string>{"A"},
+        py::arg("mm") = 0,
         "Align CA atoms of selected chains using the TM-align core from USalign");
 
     // Bind the Alignment structure

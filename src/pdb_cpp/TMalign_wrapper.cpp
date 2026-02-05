@@ -17,12 +17,16 @@
 
 // Use the vendored USalign implementation of TM-align
 #include "usalign/TMalign.h"
+// Multimer alignment helpers from USalign
+#include "usalign/MMalign.h"
 
 #include <stdexcept>
+#include <cstdio>
 #include <sstream>
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <map>
 
 using std::string;
 using std::vector;
@@ -49,6 +53,526 @@ string build_ca_selection(const vector<string> &chains)
     // Keep this consistent with other selections in the project
     return "chain " + chain_str +
            " and protein and name CA and not altloc B C D E F";
+}
+
+struct TempPdbFile {
+    string path;
+    ~TempPdbFile() {
+        if (!path.empty()) {
+            std::remove(path.c_str());
+        }
+    }
+};
+
+string make_temp_pdb_path()
+{
+    char buffer[L_tmpnam];
+    if (!std::tmpnam(buffer)) {
+        throw std::runtime_error("Failed to create temporary PDB filename");
+    }
+    return string(buffer) + ".pdb";
+}
+
+TempPdbFile write_temp_pdb(const Coor &coor)
+{
+    TempPdbFile temp{make_temp_pdb_path()};
+    if (!coor.write(temp.path)) {
+        throw std::runtime_error("Failed to write temporary PDB file: " + temp.path);
+    }
+    return temp;
+}
+
+TMalignResult mmalign_collect_result(
+    const vector<vector<vector<double> > > &xa_vec,
+    const vector<vector<vector<double> > > &ya_vec,
+    const vector<vector<char> > &seqx_vec,
+    const vector<vector<char> > &seqy_vec,
+    const vector<vector<char> > &secx_vec,
+    const vector<vector<char> > &secy_vec,
+    const vector<int> &mol_vec1,
+    const vector<int> &mol_vec2,
+    const vector<int> &xlen_vec,
+    const vector<int> &ylen_vec,
+    int len_aa,
+    int len_na,
+    int chain1_num,
+    int chain2_num,
+    vector<vector<string> > &seqxA_mat,
+    vector<vector<string> > &seqyA_mat,
+    int *assign1_list,
+    int *assign2_list,
+    vector<string> &sequence,
+    double d0_scale,
+    bool fast_opt)
+{
+    int xlen = 0;
+    int ylen = 0;
+    for (int i = 0; i < chain1_num; ++i) xlen += xlen_vec[i];
+    for (int j = 0; j < chain2_num; ++j) ylen += ylen_vec[j];
+
+    if (xlen <= 3 || ylen <= 3) {
+        throw std::runtime_error("MMalign requires at least 3 CA atoms per complex");
+    }
+
+    char *seqx = new char[xlen + 1];
+    char *seqy = new char[ylen + 1];
+    char *secx = new char[xlen + 1];
+    char *secy = new char[ylen + 1];
+    double **xa;
+    double **ya;
+    NewArray(&xa, xlen, 3);
+    NewArray(&ya, ylen, 3);
+
+    int mol_type = copy_chain_pair_data(
+        xa_vec, ya_vec, seqx_vec, seqy_vec, secx_vec, secy_vec,
+        mol_vec1, mol_vec2, xlen_vec, ylen_vec,
+        xa, ya, seqx, seqy, secx, secy,
+        chain1_num, chain2_num,
+        seqxA_mat, seqyA_mat, assign1_list, assign2_list, sequence);
+
+    double t0[3] = {0.0, 0.0, 0.0};
+    double u0[3][3] = {{1.0, 0.0, 0.0}, {0.0, 1.0, 0.0}, {0.0, 0.0, 1.0}};
+    double TM1 = 0.0, TM2 = 0.0, TM3 = 0.0, TM4 = 0.0, TM5 = 0.0;
+    double d0_0 = 0.0, TM_0 = 0.0;
+    double d0A = 0.0, d0B = 0.0, d0u = 0.0, d0a = 0.0, d0_out = 5.0;
+    string seqM;
+    string seqxA;
+    string seqyA;
+    vector<double> do_vec;
+    double rmsd0 = 0.0;
+    int L_ali = 0;
+    double Liden = 0.0;
+    double TM_ali = 0.0;
+    double rmsd_ali = 0.0;
+    int n_ali = 0;
+    int n_ali8 = 0;
+    double Lnorm_ass = len_aa + len_na;
+
+    TMalign_main(
+        xa, ya, seqx, seqy, secx, secy,
+        t0, u0, TM1, TM2, TM3, TM4, TM5, d0_0, TM_0,
+        d0A, d0B, d0u, d0a, d0_out,
+        seqM, seqxA, seqyA, do_vec,
+        rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
+        xlen, ylen, sequence, Lnorm_ass, d0_scale,
+        3, 0, false, false, fast_opt, mol_type, -1);
+
+    TMalignResult result;
+    result.TM1 = TM1;
+    result.TM2 = TM2;
+    result.TM_ali = TM_0;
+    result.rmsd = rmsd0;
+    result.L_ali = n_ali8;
+    result.Liden = Liden;
+    result.seqM = seqM;
+    result.seqxA = seqxA;
+    result.seqyA = seqyA;
+
+    delete[] seqx;
+    delete[] seqy;
+    delete[] secx;
+    delete[] secy;
+    DeleteArray(&xa, xlen);
+    DeleteArray(&ya, ylen);
+    do_vec.clear();
+
+    return result;
+}
+
+TMalignResult mmalign_from_files(
+    const string &xname,
+    const string &yname,
+    const vector<string> &chain2parse1,
+    const vector<string> &chain2parse2)
+{
+    vector<vector<vector<double> > > xa_vec;
+    vector<vector<vector<double> > > ya_vec;
+    vector<vector<char> > seqx_vec;
+    vector<vector<char> > seqy_vec;
+    vector<vector<char> > secx_vec;
+    vector<vector<char> > secy_vec;
+    vector<int> mol_vec1;
+    vector<int> mol_vec2;
+    vector<string> chainID_list1;
+    vector<string> chainID_list2;
+    vector<int> xlen_vec;
+    vector<int> ylen_vec;
+    int xlen_aa = 0;
+    int xlen_na = 0;
+    int ylen_aa = 0;
+    int ylen_na = 0;
+    vector<string> resi_vec1;
+    vector<string> resi_vec2;
+
+    vector<string> chain1_list = {xname};
+    vector<string> chain2_list = {yname};
+    vector<string> model2parse1;
+    vector<string> model2parse2;
+    vector<string> sequence;
+
+    const double d0_scale = 0.0;
+    const bool a_opt = false;
+    const bool d_opt = false;
+    const double TMcut = -1.0;
+    const int infmt1_opt = -1;
+    const int infmt2_opt = -1;
+    const int ter_opt = 1;
+    const int split_opt = 2;
+    bool fast_opt = false;
+    const int mirror_opt = 0;
+    const int het_opt = 0;
+    const bool autojustify = true;
+    const string atom_opt = "auto";
+    const string mol_opt = "auto";
+    const int byresi_opt = 0;
+    const bool se_opt = false;
+
+    parse_chain_list(chain1_list, xa_vec, seqx_vec, secx_vec, mol_vec1,
+        xlen_vec, chainID_list1, ter_opt, split_opt, mol_opt, infmt1_opt,
+        atom_opt, autojustify, mirror_opt, het_opt, xlen_aa, xlen_na, 0,
+        resi_vec1, chain2parse1, model2parse1);
+    if (xa_vec.empty()) {
+        throw std::runtime_error("No chains parsed from complex 1");
+    }
+    parse_chain_list(chain2_list, ya_vec, seqy_vec, secy_vec, mol_vec2,
+        ylen_vec, chainID_list2, ter_opt, split_opt, mol_opt, infmt2_opt,
+        atom_opt, autojustify, 0, het_opt, ylen_aa, ylen_na, 0,
+        resi_vec2, chain2parse2, model2parse2);
+    if (ya_vec.empty()) {
+        throw std::runtime_error("No chains parsed from complex 2");
+    }
+
+    int len_aa = getmin(xlen_aa, ylen_aa);
+    int len_na = getmin(xlen_na, ylen_na);
+    if (a_opt) {
+        len_aa = (xlen_aa + ylen_aa) / 2;
+        len_na = (xlen_na + ylen_na) / 2;
+    }
+
+    const int chain1_num = xa_vec.size();
+    const int chain2_num = ya_vec.size();
+
+    if (chain1_num == 1 && chain2_num == 1) {
+        int xlen = xlen_vec[0];
+        int ylen = ylen_vec[0];
+        char *seqx = new char[xlen + 1];
+        char *seqy = new char[ylen + 1];
+        char *secx = new char[xlen + 1];
+        char *secy = new char[ylen + 1];
+        double **xa;
+        double **ya;
+        NewArray(&xa, xlen, 3);
+        NewArray(&ya, ylen, 3);
+        copy_chain_data(xa_vec[0], seqx_vec[0], secx_vec[0], xlen, xa, seqx, secx);
+        copy_chain_data(ya_vec[0], seqy_vec[0], secy_vec[0], ylen, ya, seqy, secy);
+
+        double t0[3] = {0.0, 0.0, 0.0};
+        double u0[3][3] = {{1.0, 0.0, 0.0}, {0.0, 1.0, 0.0}, {0.0, 0.0, 1.0}};
+        double TM1 = 0.0, TM2 = 0.0, TM3 = 0.0, TM4 = 0.0, TM5 = 0.0;
+        double d0_0 = 0.0, TM_0 = 0.0;
+        double d0A = 0.0, d0B = 0.0, d0u = 0.0, d0a = 0.0, d0_out = 5.0;
+        string seqM;
+        string seqxA;
+        string seqyA;
+        vector<double> do_vec;
+        double rmsd0 = 0.0;
+        int L_ali = 0;
+        double Liden = 0.0;
+        double TM_ali = 0.0;
+        double rmsd_ali = 0.0;
+        int n_ali = 0;
+        int n_ali8 = 0;
+
+        TMalign_main(xa, ya, seqx, seqy, secx, secy,
+            t0, u0, TM1, TM2, TM3, TM4, TM5,
+            d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
+            seqM, seqxA, seqyA, do_vec,
+            rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
+            xlen, ylen, sequence, 0, d0_scale,
+            0, a_opt, false, d_opt, fast_opt,
+            mol_vec1[0] + mol_vec2[0], TMcut);
+
+        TMalignResult result;
+        result.TM1 = TM1;
+        result.TM2 = TM2;
+        result.TM_ali = TM_0;
+        result.rmsd = rmsd0;
+        result.L_ali = n_ali8;
+        result.Liden = Liden;
+        result.seqM = seqM;
+        result.seqxA = seqxA;
+        result.seqyA = seqyA;
+
+        delete[] seqx;
+        delete[] seqy;
+        delete[] secx;
+        delete[] secy;
+        DeleteArray(&xa, xlen);
+        DeleteArray(&ya, ylen);
+        do_vec.clear();
+
+        return result;
+    }
+
+    vector<string> tmp_str_vec(chain2_num, "");
+    double **TMave_mat;
+    double **ut_mat;
+    NewArray(&TMave_mat, chain1_num, chain2_num);
+    NewArray(&ut_mat, chain1_num * chain2_num, 4 * 3);
+    vector<vector<string> > seqxA_mat(chain1_num, tmp_str_vec);
+    vector<vector<string> > seqM_mat(chain1_num, tmp_str_vec);
+    vector<vector<string> > seqyA_mat(chain1_num, tmp_str_vec);
+
+    double maxTMmono = -1.0;
+    int maxTMmono_i = 0;
+    int maxTMmono_j = 0;
+
+    if (len_aa + len_na > 500) fast_opt = true;
+
+    for (int i = 0; i < chain1_num; ++i)
+    {
+        int xlen = xlen_vec[i];
+        if (xlen < 3)
+        {
+            for (int j = 0; j < chain2_num; ++j) TMave_mat[i][j] = -1;
+            continue;
+        }
+
+        char *seqx = new char[xlen + 1];
+        char *secx = new char[xlen + 1];
+        double **xa;
+        NewArray(&xa, xlen, 3);
+        copy_chain_data(xa_vec[i], seqx_vec[i], secx_vec[i], xlen, xa, seqx, secx);
+
+        for (int j = 0; j < chain2_num; ++j)
+        {
+            int ut_idx = i * chain2_num + j;
+            for (int ui = 0; ui < 4; ++ui)
+                for (int uj = 0; uj < 3; ++uj)
+                    ut_mat[ut_idx][ui * 3 + uj] = 0;
+            ut_mat[ut_idx][0] = 1;
+            ut_mat[ut_idx][4] = 1;
+            ut_mat[ut_idx][8] = 1;
+
+            if (mol_vec1[i] * mol_vec2[j] < 0)
+            {
+                TMave_mat[i][j] = -1;
+                continue;
+            }
+
+            int ylen = ylen_vec[j];
+            if (ylen < 3)
+            {
+                TMave_mat[i][j] = -1;
+                continue;
+            }
+
+            char *seqy = new char[ylen + 1];
+            char *secy = new char[ylen + 1];
+            double **ya;
+            NewArray(&ya, ylen, 3);
+            copy_chain_data(ya_vec[j], seqy_vec[j], secy_vec[j], ylen, ya, seqy, secy);
+
+            double t0[3], u0[3][3];
+            double TM1 = 0.0, TM2 = 0.0, TM3 = 0.0, TM4 = 0.0, TM5 = 0.0;
+            double d0_0 = 0.0, TM_0 = 0.0;
+            double d0A = 0.0, d0B = 0.0, d0u = 0.0, d0a = 0.0;
+            double d0_out = 5.0;
+            string seqM;
+            string seqxA;
+            string seqyA;
+            double rmsd0 = 0.0;
+            int L_ali = 0;
+            double Liden = 0.0;
+            double TM_ali = 0.0;
+            double rmsd_ali = 0.0;
+            int n_ali = 0;
+            int n_ali8 = 0;
+            vector<double> do_vec;
+
+            int Lnorm_tmp = len_aa;
+            if (mol_vec1[i] + mol_vec2[j] > 0) Lnorm_tmp = len_na;
+
+            TMalign_main(xa, ya, seqx, seqy, secx, secy,
+                t0, u0, TM1, TM2, TM3, TM4, TM5,
+                d0_0, TM_0, d0A, d0B, d0u, d0a, d0_out,
+                seqM, seqxA, seqyA, do_vec,
+                rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
+                xlen, ylen, sequence, Lnorm_tmp, d0_scale,
+                0, false, true, false, fast_opt,
+                mol_vec1[i] + mol_vec2[j], TMcut);
+
+            for (int ui = 0; ui < 3; ++ui)
+                for (int uj = 0; uj < 3; ++uj)
+                    ut_mat[ut_idx][ui * 3 + uj] = u0[ui][uj];
+            for (int uj = 0; uj < 3; ++uj) ut_mat[ut_idx][9 + uj] = t0[uj];
+            seqxA_mat[i][j] = seqxA;
+            seqyA_mat[i][j] = seqyA;
+            TMave_mat[i][j] = TM4 * Lnorm_tmp;
+            if (TMave_mat[i][j] > maxTMmono)
+            {
+                maxTMmono = TMave_mat[i][j];
+                maxTMmono_i = i;
+                maxTMmono_j = j;
+            }
+
+            delete[] seqy;
+            delete[] secy;
+            DeleteArray(&ya, ylen);
+            do_vec.clear();
+        }
+
+        delete[] seqx;
+        delete[] secx;
+        DeleteArray(&xa, xlen);
+    }
+
+    int *assign1_list = new int[chain1_num];
+    int *assign2_list = new int[chain2_num];
+    double total_score = enhanced_greedy_search(TMave_mat, assign1_list,
+        assign2_list, chain1_num, chain2_num);
+    if (total_score <= 0) {
+        throw std::runtime_error("No assignable chain mapping found");
+    }
+
+    int aln_chain_num = count_assign_pair(assign1_list, chain1_num);
+    bool is_oligomer = (aln_chain_num >= 3);
+    if (aln_chain_num == 2 && !se_opt)
+    {
+        int na_chain_num1, na_chain_num2, aa_chain_num1, aa_chain_num2;
+        count_na_aa_chain_num(na_chain_num1, aa_chain_num1, mol_vec1);
+        count_na_aa_chain_num(na_chain_num2, aa_chain_num2, mol_vec2);
+
+        if (na_chain_num1 == 1 && na_chain_num2 == 1 &&
+            aa_chain_num1 == 1 && aa_chain_num2 == 1)
+        {
+            is_oligomer = false;
+        }
+        else if ((getmin(na_chain_num1, na_chain_num2) == 0 &&
+                    aa_chain_num1 == 2 && aa_chain_num2 == 2) ||
+                 (getmin(aa_chain_num1, aa_chain_num2) == 0 &&
+                    na_chain_num1 == 2 && na_chain_num2 == 2))
+        {
+            adjust_dimer_assignment(xa_vec, ya_vec, xlen_vec, ylen_vec, mol_vec1,
+                mol_vec2, assign1_list, assign2_list, seqxA_mat, seqyA_mat);
+            is_oligomer = false;
+        }
+        else
+        {
+            is_oligomer = true;
+        }
+    }
+
+    if ((aln_chain_num >= 3 || is_oligomer) && !se_opt)
+    {
+        double **xcentroids;
+        double **ycentroids;
+        NewArray(&xcentroids, chain1_num, 3);
+        NewArray(&ycentroids, chain2_num, 3);
+        double d0MM = getmin(
+            calculate_centroids(xa_vec, chain1_num, xcentroids),
+            calculate_centroids(ya_vec, chain2_num, ycentroids));
+
+        homo_refined_greedy_search(TMave_mat, assign1_list,
+            assign2_list, chain1_num, chain2_num, xcentroids,
+            ycentroids, d0MM, len_aa + len_na, ut_mat);
+        hetero_refined_greedy_search(TMave_mat, assign1_list,
+            assign2_list, chain1_num, chain2_num, xcentroids,
+            ycentroids, d0MM, len_aa + len_na);
+
+        DeleteArray(&xcentroids, chain1_num);
+        DeleteArray(&ycentroids, chain2_num);
+    }
+
+    int init_pair_num = count_assign_pair(assign1_list, chain1_num);
+    int *assign1_init = new int[chain1_num];
+    int *assign2_init = new int[chain2_num];
+    double **TMave_init;
+    NewArray(&TMave_init, chain1_num, chain2_num);
+    vector<vector<string> > seqxA_init(chain1_num, tmp_str_vec);
+    vector<vector<string> > seqyA_init(chain1_num, tmp_str_vec);
+    vector<string> sequence_init;
+    copy_chain_assign_data(chain1_num, chain2_num, sequence_init,
+        seqxA_mat, seqyA_mat, assign1_list, assign2_list, TMave_mat,
+        seqxA_init, seqyA_init, assign1_init, assign2_init, TMave_init);
+
+    double max_total_score = 0.0;
+    int max_iter = 5 - static_cast<int>((len_aa + len_na) / 200);
+    if (max_iter < 2) max_iter = 2;
+    if (!se_opt)
+    {
+        double **xa;
+        double **ya;
+        char *seqx;
+        char *seqy;
+        char *secx;
+        char *secy;
+        std::map<int, int> chainmap;
+        MMalign_iter(max_total_score, max_iter, xa_vec, ya_vec,
+            seqx_vec, seqy_vec, secx_vec, secy_vec, mol_vec1, mol_vec2, xlen_vec,
+            ylen_vec, xa, ya, seqx, seqy, secx, secy, len_aa, len_na, chain1_num,
+            chain2_num, TMave_mat, seqxA_mat, seqyA_mat, assign1_list, assign2_list,
+            sequence, d0_scale, fast_opt, chainmap, byresi_opt);
+    }
+
+    if (byresi_opt == 0 && max_total_score < maxTMmono)
+    {
+        copy_chain_assign_data(chain1_num, chain2_num, sequence,
+            seqxA_init, seqyA_init, assign1_init, assign2_init, TMave_init,
+            seqxA_mat, seqyA_mat, assign1_list, assign2_list, TMave_mat);
+        for (int i = 0; i < chain1_num; ++i)
+        {
+            if (i != maxTMmono_i) assign1_list[i] = -1;
+            else assign1_list[i] = maxTMmono_j;
+        }
+        for (int j = 0; j < chain2_num; ++j)
+        {
+            if (j != maxTMmono_j) assign2_list[j] = -1;
+            else assign2_list[j] = maxTMmono_i;
+        }
+        sequence.clear();
+        sequence.push_back(seqxA_mat[maxTMmono_i][maxTMmono_j]);
+        sequence.push_back(seqyA_mat[maxTMmono_i][maxTMmono_j]);
+    }
+
+    double max_total_score_cross = max_total_score;
+    if (byresi_opt == 0 && len_aa + len_na < 10000)
+    {
+        double **xa;
+        double **ya;
+        char *seqx;
+        char *seqy;
+        char *secx;
+        char *secy;
+        MMalign_dimer(max_total_score_cross, xa_vec, ya_vec, seqx_vec, seqy_vec,
+            secx_vec, secy_vec, mol_vec1, mol_vec2, xlen_vec, ylen_vec,
+            xa, ya, seqx, seqy, secx, secy, len_aa, len_na, chain1_num, chain2_num,
+            TMave_init, seqxA_init, seqyA_init, assign1_init, assign2_init,
+            sequence_init, d0_scale, fast_opt);
+        if (max_total_score_cross > max_total_score)
+        {
+            max_total_score = max_total_score_cross;
+            copy_chain_assign_data(chain1_num, chain2_num, sequence,
+                seqxA_init, seqyA_init, assign1_init, assign2_init, TMave_init,
+                seqxA_mat, seqyA_mat, assign1_list, assign2_list, TMave_mat);
+        }
+    }
+
+    TMalignResult result = mmalign_collect_result(
+        xa_vec, ya_vec, seqx_vec, seqy_vec, secx_vec, secy_vec,
+        mol_vec1, mol_vec2, xlen_vec, ylen_vec, len_aa, len_na,
+        chain1_num, chain2_num, seqxA_mat, seqyA_mat,
+        assign1_list, assign2_list, sequence, d0_scale, fast_opt);
+
+    delete [] assign1_list;
+    delete [] assign2_list;
+    DeleteArray(&TMave_mat, chain1_num);
+    DeleteArray(&ut_mat, chain1_num * chain2_num);
+    delete [] assign1_init;
+    delete [] assign2_init;
+    DeleteArray(&TMave_init, chain1_num);
+
+    return result;
 }
 
 } // namespace
@@ -147,8 +671,15 @@ TMalignResult tmalign_CA(
     const Coor &coor_1,
     const Coor &coor_2,
     const std::vector<std::string> &chain_1,
-    const std::vector<std::string> &chain_2)
+    const std::vector<std::string> &chain_2,
+    int mm)
 {
+    if (mm == 1) {
+        TempPdbFile tmp_1 = write_temp_pdb(coor_1);
+        TempPdbFile tmp_2 = write_temp_pdb(coor_2);
+        return mmalign_from_files(tmp_1.path, tmp_2.path, chain_1, chain_2);
+    }
+
     // Select CA atoms for the requested chains in each structure
     const string sel_1 = build_ca_selection(chain_1);
     const string sel_2 = build_ca_selection(chain_2);

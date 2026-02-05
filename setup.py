@@ -19,6 +19,7 @@ ext_modules = [
             pybind11.get_include(),
             "src/pdb_cpp",
         ],
+        extra_compile_args=["-O3", "-ffast-math"],
         language="c++"
     ),
 ]

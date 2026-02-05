@@ -28,7 +28,8 @@ TMalignResult tmalign_CA(
     const Coor &coor_1,
     const Coor &coor_2,
     const std::vector<std::string> &chain_1 = {"A"},
-    const std::vector<std::string> &chain_2 = {"A"});
+    const std::vector<std::string> &chain_2 = {"A"},
+    int mm = 0);
 
 // Secondary structure assignment helpers (implemented in TMalign_wrapper.cpp)
 std::vector<std::string> compute_SS(const Model &model, bool gap_in_seq = false);
