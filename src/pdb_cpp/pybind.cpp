@@ -3,7 +3,7 @@
 #include <pybind11/stl_bind.h>
 #include "Model.h"
 #include "Coor.h"
-#include "TMAlign.h"
+#include "TMalign_iface.h"
 #include "align.h"
 #include "geom.h"
 #include "seq_align.h"
@@ -65,12 +65,33 @@ PYBIND11_MODULE(core, m) {
             "Get the amino acid sequence, optionally including gaps and specifying a frame index")
         // Add more methods as needed
         ;
-    // Bind the TMAlign function
+    // Bind the TMAlign secondary-structure function
     m.def("compute_SS",
         static_cast<std::vector<std::vector<std::string>>(*)(const Coor&, bool)>(&compute_SS),
         py::arg("coor"),
         py::arg("gap_in_seq") = false,
         "Compute secondary structure for all models in a Coor object");
+
+    // Bind the TM-align structural alignment result
+    py::class_<TMalignResult>(m, "TMalignResult")
+        .def_readonly("TM1", &TMalignResult::TM1)
+        .def_readonly("TM2", &TMalignResult::TM2)
+        .def_readonly("TM_ali", &TMalignResult::TM_ali)
+        .def_readonly("rmsd", &TMalignResult::rmsd)
+        .def_readonly("L_ali", &TMalignResult::L_ali)
+        .def_readonly("Liden", &TMalignResult::Liden)
+        .def_readonly("seqM", &TMalignResult::seqM)
+        .def_readonly("seqxA", &TMalignResult::seqxA)
+        .def_readonly("seqyA", &TMalignResult::seqyA);
+
+    // Bind the TM-align based CA alignment helper
+    m.def("tmalign_ca",
+        &tmalign_CA,
+        py::arg("coor_1"),
+        py::arg("coor_2"),
+        py::arg("chain_1") = std::vector<std::string>{"A"},
+        py::arg("chain_2") = std::vector<std::string>{"A"},
+        "Align CA atoms of selected chains using the TM-align core from USalign");
 
     // Bind the Alignment structure
     py::class_<Alignment_cpp>(m, "Alignment_cpp")
@@ -120,7 +141,6 @@ PYBIND11_MODULE(core, m) {
         py::arg("back_names") = std::vector<std::string>{"C", "N", "O", "CA"},
         py::arg("matrix_file") = "src/pdb_cpp/data/blosum62.txt",
         py::arg("frame_ref") = 0,
-        py::arg("compute_rmsd") = true,
         "Align two coordinate structures using sequence based alignement");
 /*
     // Bind the Quaternion struct

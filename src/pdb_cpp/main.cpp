@@ -4,7 +4,7 @@
 #include "Coor.h"
 #include "select.h"
 #include "Model.h"
-#include "TMAlign.h"
+#include "TMalign_iface.h"
 #include "align.h"
 
 using namespace std;
@@ -207,7 +207,7 @@ int main() {
     // print_alignment(align_test);
 
 
-    auto indexes2 = align_seq_based(
+    auto align_result = align_seq_based(
         coor_1,
         coor_2);//,
         //{"A", "B", "C", "D", "E"},

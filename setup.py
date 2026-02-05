@@ -13,10 +13,11 @@ ext_modules = [
          "src/pdb_cpp/sequence.cpp",
          "src/pdb_cpp/align.cpp",
          "src/pdb_cpp/seq_align.cpp",
-         "src/pdb_cpp/data/residue.cpp",],
+         "src/pdb_cpp/data/residue.cpp",
+         "src/pdb_cpp/TMalign_wrapper.cpp"],
         include_dirs=[
             pybind11.get_include(),
-            "src/pdb_cpp"
+            "src/pdb_cpp",
         ],
         language="c++"
     ),

@@ -133,7 +133,7 @@ string get_pdb_string(const Coor& coor) {
                 << setw(5) << model.get_num()[i] << " "
                 << setw(4) << model.get_name()[i].data()
                 << setw(1) << model.get_alterloc()[i].data()
-                << setw(3) << model.get_resname()[i].data()
+                << setw(3) << model.get_resname()[i].data() << " "
                 << setw(1) << model.get_chain()[i].data()
                 << setw(4) << model.get_resid()[i]
                 << setw(1) << model.get_insertres()[i].data() << "   "

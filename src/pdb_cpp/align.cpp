@@ -485,15 +485,14 @@ pair<vector<int>, vector<int>> get_common_atoms(
 }
 
 
-pair<vector<int>, vector<int>> align_seq_based(
+tuple<vector<float>, vector<int>, vector<int>> align_seq_based(
     Coor &coor_1,
     const Coor &coor_2,
     const vector<string> &chain_1,
     const vector<string> &chain_2,
     const vector<string> &back_names,
     const string &matrix_file,
-    const int frame_ref,
-    const bool compute_rmsd
+    const int frame_ref
 ) {
     vector<float> rmsd_vec;
     vector<int> index_1, index_2;
@@ -516,19 +515,13 @@ pair<vector<int>, vector<int>> align_seq_based(
         index_2, 
         frame_ref);
     
-    if (compute_rmsd) {
-        Model ref_model = coor_2.get_Models(frame_ref);
-
-        if (compute_rmsd) {
-            for (size_t i = 0; i < coor_1.model_size(); ++i) {
-                Model model_1 = coor_1.get_Models(i);
-                rmsd_vec.push_back(rmsd(model_1, ref_model, index_1, index_2));
-                cout << "RMSD = " << rmsd(model_1, ref_model, index_1, index_2) << endl;
-            }
-        }
+    Model ref_model = coor_2.get_Models(frame_ref);
+    for (size_t i = 0; i < coor_1.model_size(); ++i) {
+        Model model_1 = coor_1.get_Models(i);
+        rmsd_vec.push_back(rmsd(model_1, ref_model, index_1, index_2));
     }
 
-    return make_pair(index_1, index_2);
+    return make_tuple(rmsd_vec, index_1, index_2);
 
 }
 
@@ -678,17 +671,5 @@ void coor_align(
         coor_1.add_Model(model);
     }
     
-    // Restore reference structure coordinates
-    // for (size_t i = 0; i < models_2[frame_ref].size(); ++i) {
-    //     models_2[frame_ref].set_x(i, models_2[frame_ref].get_x()[i] + centroid_2[0]);
-    //     models_2[frame_ref].set_y(i, models_2[frame_ref].get_y()[i] + centroid_2[1]);
-    //     models_2[frame_ref].set_z(i, models_2[frame_ref].get_z()[i] + centroid_2[2]);
-    // }
-    
-    // Update coor_2 with modified models
-    // coor_2.clear();
-    // for (const auto& model : models_2) {
-    //     coor_2.add_Model(model);
-    // }
 }
 
