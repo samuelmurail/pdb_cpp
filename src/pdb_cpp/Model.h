@@ -63,6 +63,7 @@ public:
     void set_x(size_t index, float value) { if (index < x_.size()) x_[index] = value; }
     void set_y(size_t index, float value) { if (index < y_.size()) y_[index] = value; }
     void set_z(size_t index, float value) { if (index < z_.size()) z_[index] = value; }
+    void set_num(size_t index, int value) { if (index < num_.size()) num_[index] = value; }
 
 private:
     // === Storage (Structure of Arrays) ===

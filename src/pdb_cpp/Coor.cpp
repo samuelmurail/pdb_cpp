@@ -23,6 +23,7 @@ void Coor::clear()
 {
     models_.clear();
     crystal_pack.clear();
+    conect.clear();
     active_model = 0;
 }
 
@@ -79,9 +80,44 @@ Coor Coor::select_bool_index(const vector<bool> &indexes) const {
     selected.symmetry = symmetry;
     selected.active_model = active_model;
 
+    unordered_map<int, int> index_dict;
+    const vector<int> &num_list = models_[active_model].get_num();
+    int new_serial = 1;
+    for (size_t i = 0; i < indexes.size(); ++i) {
+        if (indexes[i]) {
+            index_dict[num_list[i]] = new_serial;
+            ++new_serial;
+        }
+    }
+
     for (size_t i = 0; i < models_.size(); ++i) {
         Model model = models_[i].select_index(indexes);
         selected.add_Model(model);
+    }
+
+    for (size_t m = 0; m < selected.models_.size(); ++m) {
+        for (size_t i = 0; i < selected.models_[m].size(); ++i) {
+            selected.models_[m].set_num(i, static_cast<int>(i + 1));
+        }
+    }
+
+    selected.conect.clear();
+    for (const auto &kv : conect) {
+        auto key_it = index_dict.find(kv.first);
+        if (key_it == index_dict.end()) {
+            continue;
+        }
+        vector<int> new_values;
+        new_values.reserve(kv.second.size());
+        for (int val : kv.second) {
+            auto val_it = index_dict.find(val);
+            if (val_it != index_dict.end()) {
+                new_values.push_back(val_it->second);
+            }
+        }
+        if (!new_values.empty()) {
+            selected.conect[key_it->second] = move(new_values);
+        }
     }
 
     return selected;

@@ -34,6 +34,20 @@ tmp*
 *.out
 *.app
 
+# Tmp files
+external/
+*.tmp
+*.temp
+*.log
+*.bak
+*.swp
+*.orig
+*.rej
+*.swo
+tmp/
+temp/
+tmp_*
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

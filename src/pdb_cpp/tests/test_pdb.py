@@ -11,7 +11,7 @@ import numpy as np
 import logging
 
 from pdb_cpp import Coor
-from .datafiles import PDB_1Y0M, PDB_2RRI#, PQR_1Y0M, PDB_3FTK
+from .datafiles import PDB_1Y0M, PDB_2RRI, PDB_5M6N#, PQR_1Y0M, PDB_3FTK
 
 
 def test_get_pdb(tmp_path):
@@ -111,6 +111,48 @@ def test_read_write_pdb_models(tmp_path):
     assert (
         test.models[0].resname == test_2.models[0].resname
         )
+
+
+def test_pdb_conect(tmp_path):
+    test = Coor(PDB_5M6N)
+
+    assert test.len == 2147
+    assert test.model_num == 1
+
+    assert len(test.conect) == 191
+    for key in test.conect:
+        assert len(test.conect[key]) >= 1
+
+    assert test.conect[369] == [1618]
+    assert test.conect[1743] == [1755, 1756, 1782, 1783]
+    assert test.conect[1800] == [1759]
+
+    assert test.conect[1629] == [1630, 1666, 1667, 1668]
+
+    test_sel = test.select_atoms("protein")
+
+    assert len(test_sel.conect) == 0
+
+    test_sel_2 = test.select_atoms("resname 7H9")
+
+    assert len(test_sel_2.conect) == 156
+
+    for key in test_sel_2.conect:
+        assert len(test_sel_2.conect[key]) >= 1
+
+    assert test_sel_2.conect[1] == [2, 38, 39, 40]
+    assert test_sel_2.conect[83] == [82, 84, 122, 123]
+    assert test_sel_2.conect[156] == [115]
+
+    test_sel_2.write(os.path.join(tmp_path, "test_5m6n_conect.pdb"))
+
+    test_reload = Coor(os.path.join(tmp_path, "test_5m6n_conect.pdb"))
+    assert len(test_reload.conect) == 156
+    for key in test_reload.conect:
+        assert len(test_reload.conect[key]) >= 1
+    assert test_reload.conect[1] == [2, 38, 39, 40]
+    assert test_reload.conect[83] == [82, 84, 122, 123]
+    assert test_reload.conect[155] == [115]
 
 
 # def test_get_pdb_bioassembly(tmp_path):

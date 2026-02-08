@@ -1,6 +1,9 @@
+#include <algorithm>
 #include <cstring>
 #include <iomanip>
 #include <fstream>
+#include <sstream>
+#include <vector>
 
 #include "../Model.h"
 #include "../Coor.h"
@@ -35,7 +38,7 @@ Coor PDB_parse(const string& filename) {
         if (line.compare(0, 6, "ATOM  ") == 0 || line.compare(0, 6, "HETATM") == 0) {
             bool field = line.compare(0, 6, "ATOM  ") ? true : false;
             int num = stoi(line.substr(6, 5));
-            array<char, 5> name_array;
+            array<char, 5> name_array{};
             // strip spaces
             array_i = 0;
             for (size_t i = 0; i < 4; ++i) {
@@ -46,7 +49,7 @@ Coor PDB_parse(const string& filename) {
             }
             name_array[array_i] = '\0';
             array<char, 2> alterloc = {line[16], '\0'};
-            array<char, 5> resname_array;
+            array<char, 5> resname_array{};
             // strip spaces
             array_i = 0;
             for (size_t i = 0; i < 3; ++i) {
@@ -69,7 +72,7 @@ Coor PDB_parse(const string& filename) {
             float z = stof(line.substr(46, 8));
             float occ  = stof(line.substr(54, 6));
             float beta = stof(line.substr(60, 6));
-            array<char, 5> elem;
+            array<char, 5> elem{};
             array_i = 0;
             for (size_t i = 0; i < 2; ++i) {
                 if (line[76 + i] != ' ') {
@@ -100,6 +103,17 @@ Coor PDB_parse(const string& filename) {
             model.clear();
             uniq_resid = -1;
             old_resid = -99999999;
+        } else if (line.compare(0, 6, "CONECT") == 0) {
+            istringstream iss(line.substr(6));
+            int atom_index = 0;
+            if (!(iss >> atom_index)) {
+                continue;
+            }
+            vector<int> &connections = coor.conect[atom_index];
+            int connected_atom = 0;
+            while (iss >> connected_atom) {
+                connections.push_back(connected_atom);
+            }
         } else if (line.compare(0, 6, "CRYST1") == 0) {
             // Parse CRYST1 line
             coor.crystal_pack.set_CRYST1_pdb(line);
@@ -146,6 +160,25 @@ string get_pdb_string(const Coor& coor) {
                 << "\n";
         }
         oss << "ENDMDL\n";
+    }
+    if (!coor.conect.empty()) {
+        vector<int> keys;
+        keys.reserve(coor.conect.size());
+        for (const auto &kv : coor.conect) {
+            keys.push_back(kv.first);
+        }
+        sort(keys.begin(), keys.end());
+        for (int atom_index : keys) {
+            const vector<int> &connected_atoms = coor.conect.at(atom_index);
+            for (size_t i = 0; i < connected_atoms.size(); i += 4) {
+                oss << "CONECT" << setw(5) << atom_index;
+                size_t end = min(i + 4, connected_atoms.size());
+                for (size_t j = i; j < end; ++j) {
+                    oss << setw(5) << connected_atoms[j];
+                }
+                oss << "\n";
+            }
+        }
     }
     oss << "END\n";
     return oss.str();

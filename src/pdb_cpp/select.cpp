@@ -19,7 +19,7 @@ using namespace std;
 
 const unordered_set<string> KEYWORDS = {
     "resname", "chain", "name", "altloc",
-    "resid", "residue", "beta", "occupancy",
+    "resid", "residue", "num", "beta", "occupancy",
     "x", "y", "z"
 };
 

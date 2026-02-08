@@ -12,7 +12,7 @@ import numpy as np
 from pdb_cpp import Coor
 # from pdb_cpp import select as select
 
-from .datafiles import PDB_1Y0M, PDB_2RRI
+from .datafiles import PDB_1U85, PDB_1Y0M, PDB_2RRI
 
 
 def test_select_atoms():
@@ -155,3 +155,18 @@ def test_select_atoms_within_multi_frame():
     new = test.select_atoms(selec, frame=15)
     assert new.len == 99
     assert new.models[10].len == 99
+
+
+def test_select_atoms_conect_update():
+    """Ensure CONECT records are renumbered after selection."""
+    test = Coor(PDB_1U85)
+
+    assert 529 in test.conect
+    assert 139 in test.conect
+
+    new = test.select_atoms("num 139 529")
+    assert new.len == 2
+
+    assert new.num == [1, 2]
+    assert new.conect[1] == [2]
+    assert new.conect[2] == [1]

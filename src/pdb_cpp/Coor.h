@@ -4,6 +4,7 @@
 #include <vector>
 #include <string>
 #include <array>
+#include <unordered_map>
 
 #include "Model.h"
 #include "geom.h"
@@ -20,6 +21,7 @@ public:
     Transformation transformation;
     Symmetry symmetry;
     size_t active_model = 0;
+    std::unordered_map<int, std::vector<int>> conect;
 
     // === Public interface ===
 
