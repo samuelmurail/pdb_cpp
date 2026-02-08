@@ -114,6 +114,15 @@ public:
         chains.clear();
         matrix.clear();
     }
+    void set_chains(const std::vector<std::string> &new_chains) {
+        chains = new_chains;
+    }
+    void add_matrix_row(const std::vector<float> &row) {
+        matrix.push_back(row);
+    }
+    const std::vector<std::vector<float>> &get_matrix() const {
+        return matrix;
+    }
 private:
     std::vector<std::string> chains;
     std::vector<std::vector<float>> matrix;

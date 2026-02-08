@@ -146,6 +146,48 @@ print(f"-pdb_cpp   Time taken to align   :          {avg_cpp_align:.4f} +- {std_
 
 read_times = []
 write_times = []
+read_cpp_times = []
+write_cpp_times = []
+
+file_name = "1y0m.cif"
+mmcif_id = file_name.split(".")[0]
+
+print(f"- Testing with {file_name} file (mmCIF)")
+
+for i in range(N):
+
+    # pdb_numpy
+    start_time = time.time()
+    coor = pdb_numpy.Coor("src/pdb_cpp/tests/input/" +file_name)
+    pdb_numpy_read_time = time.time() - start_time
+    read_times.append(pdb_numpy_read_time)
+    start_time = time.time()
+    coor.write(f"tmp_python_{mmcif_id}.cif", overwrite=True)
+    pdb_numpy_write_time = time.time() - start_time
+    write_times.append(pdb_numpy_write_time)
+
+    # cpp
+    start_time = time.time()
+    coor = Coor(file_name)
+    pdb_cpp_read_time = time.time() - start_time
+    read_cpp_times.append(pdb_cpp_read_time)
+    start_time = time.time()
+    coor.write(f"tmp_cpp_{mmcif_id}.cif")
+    pdb_cpp_write_time = time.time() - start_time
+    write_cpp_times.append(pdb_cpp_write_time)
+
+avg_read, std_read = avg_std(read_times)
+print(f"-pdb_numpy Time taken to read mmcif:        {avg_read:.4f} +- {std_read:.4f} seconds")
+avg_write, std_write = avg_std(write_times)
+print(f"-pdb_numpy Time taken to write mmcif:       {avg_write:.4f} +- {std_write:.4f} seconds")
+
+avg_cpp_read, std_cpp_read = avg_std(read_cpp_times)
+print(f"-pdb_cpp   Time taken to read mmcif:        {avg_cpp_read:.4f} +- {std_cpp_read:.4f} seconds, speed-up:  {avg_read/avg_cpp_read:.2f}")
+avg_cpp_write, std_cpp_write = avg_std(write_cpp_times)
+print(f"-pdb_cpp   Time taken to write mmcif:       {avg_cpp_write:.4f} +- {std_cpp_write:.4f} seconds, speed-up:  {avg_write/avg_cpp_write:.2f}")
+
+read_times = []
+write_times = []
 
 file_name = "2rri.pdb"
 pdb_id = file_name.split(".")[0]

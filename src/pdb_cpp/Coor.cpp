@@ -7,6 +7,7 @@
 #include "Coor.h"
 #include "Model.h"
 #include "format/pdb.h"
+#include "format/mmcif.h"
 #include "sequence.h"
 
 using namespace std;
@@ -41,6 +42,10 @@ bool Coor::read(const string &filename) {
         *this = PDB_parse(filename);
         return true;
     }
+    if (endswith(filename, ".cif")) {
+        *this = MMCIF_parse(filename);
+        return true;
+    }
     return false;
 }
 
@@ -54,6 +59,10 @@ bool Coor::write(const string &filename) const {
     if (endswith(filename, ".pdb")) {
         // cout << "Writing PDB file: " << filename << endl;
         PDB_write(*this, filename);
+        return true;
+    }
+    if (endswith(filename, ".cif")) {
+        MMCIF_write(*this, filename);
         return true;
     }
     return false;
