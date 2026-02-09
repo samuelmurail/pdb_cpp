@@ -15,6 +15,8 @@
 #include <algorithm>
 #include <unordered_map>
 #include <utility>
+#include <limits>
+#include <numeric>
 
 #include "align.h"
 #include "seq_align.h"
@@ -523,6 +525,83 @@ tuple<vector<float>, vector<int>, vector<int>> align_seq_based(
 
     return make_tuple(rmsd_vec, index_1, index_2);
 
+}
+
+pair<vector<float>, pair<vector<int>, vector<int>>> align_chain_permutation(
+    const Coor &coor_1,
+    const Coor &coor_2,
+    const vector<string> &back_names,
+    const string &matrix_file,
+    const int frame_ref
+) {
+    auto chain_to_string = [](const array<char, 2> &chain) -> string {
+        string out;
+        if (chain[0] != '\0' && chain[0] != ' ') {
+            out.push_back(chain[0]);
+        }
+        return out;
+    };
+
+    vector<string> chain_1;
+    for (const auto &chain : coor_1.get_uniq_chain()) {
+        chain_1.push_back(chain_to_string(chain));
+    }
+    vector<string> chain_2;
+    for (const auto &chain : coor_2.get_uniq_chain()) {
+        chain_2.push_back(chain_to_string(chain));
+    }
+
+    if (chain_1.empty() || chain_2.empty()) {
+        throw runtime_error("No chains available for permutation alignment");
+    }
+    if (chain_1.size() != chain_2.size()) {
+        throw runtime_error("Chain counts differ; cannot permute chains");
+    }
+
+    vector<string> perm = chain_2;
+    sort(perm.begin(), perm.end());
+
+    bool found = false;
+    double best_score = numeric_limits<double>::infinity();
+    vector<float> best_rmsds;
+    vector<int> best_index_1;
+    vector<int> best_index_2;
+
+    do {
+        Coor coor_tmp = coor_1;
+        vector<float> rmsds;
+        vector<int> index_1;
+        vector<int> index_2;
+
+        tie(rmsds, index_1, index_2) = align_seq_based(
+            coor_tmp,
+            coor_2,
+            chain_1,
+            perm,
+            back_names,
+            matrix_file,
+            frame_ref);
+
+        if (rmsds.empty()) {
+            continue;
+        }
+        double sum = accumulate(rmsds.begin(), rmsds.end(), 0.0);
+        double score = sum / static_cast<double>(rmsds.size());
+
+        if (score < best_score) {
+            best_score = score;
+            best_rmsds = rmsds;
+            best_index_1 = index_1;
+            best_index_2 = index_2;
+            found = true;
+        }
+    } while (next_permutation(perm.begin(), perm.end()));
+
+    if (!found) {
+        throw runtime_error("Unable to compute chain permutation alignment");
+    }
+
+    return make_pair(best_rmsds, make_pair(best_index_1, best_index_2));
 }
 
 float rmsd(

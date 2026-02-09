@@ -11,7 +11,48 @@ __maintainer__ = "Samuel Murail"
 __email__ = "samuel.murail@u-paris.fr"
 __status__ = "Beta"
 
+import os
+import tempfile
+import urllib.request
+from urllib.error import HTTPError
+
 from .core import Coor, Model
+
+_coor_init = Coor.__init__
+
+
+def _fetch_mmcif(pdb_id):
+    pdb_id = pdb_id.lower()
+    cache_dir = os.path.join(tempfile.gettempdir(), "pdb_cpp_cache")
+    os.makedirs(cache_dir, exist_ok=True)
+    local_path = os.path.join(cache_dir, f"{pdb_id}.cif")
+    if os.path.exists(local_path):
+        return local_path
+
+    url = f"https://files.rcsb.org/download/{pdb_id.upper()}.cif"
+    try:
+        with urllib.request.urlopen(url) as response:
+            data = response.read()
+    except HTTPError as exc:
+        raise ValueError(f"Failed to fetch mmCIF for PDB ID {pdb_id}") from exc
+
+    with open(local_path, "wb") as handle:
+        handle.write(data)
+    return local_path
+
+
+def _coor_init_with_pdb_id(self, coor_in=None, pdb_id=None):
+    _coor_init(self)
+    if coor_in is not None and pdb_id is not None:
+        raise ValueError("Provide only one of coor_in or pdb_id")
+    if pdb_id is not None:
+        local_path = _fetch_mmcif(pdb_id)
+        self.read(local_path)
+    elif coor_in is not None:
+        self.read(coor_in)
+
+
+Coor.__init__ = _coor_init_with_pdb_id
 
 @property
 def num(self):
@@ -178,18 +219,4 @@ Coor.occ = occ
 Coor.residue = residue
 Coor.uniq_resid = uniq_resid
 
-def get_aa_seq(self, gap_in_seq=True, frame=0):
-    """Return the amino acid sequence of the selection."""
-    uniq_chains = self.get_uniq_chain()
-    sequences = self.get_aa_sequences(gap_in_seq=gap_in_seq, frame=frame)
-    seq_dict = {}
-
-    for chain, seq in zip(uniq_chains, sequences):
-        new_chain = ""
-        for letter in chain:
-            if letter != '\x00':
-                new_chain += letter
-        seq_dict[new_chain] = seq
-    return seq_dict
-
-Coor.get_aa_seq = get_aa_seq
+from . import sequence

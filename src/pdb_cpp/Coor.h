@@ -32,13 +32,19 @@ public:
     void add_Model(const Model& model) { models_.push_back(model); };
     size_t get_active_model() const { return active_model; };
     void set_active_model(size_t model) { active_model = model; };
-    size_t size() const { return models_[active_model].size(); };
+    size_t size() const {
+        if (models_.empty() || active_model >= models_.size()) {
+            return 0;
+        }
+        return models_[active_model].size();
+    };
     size_t model_size() const { return models_.size(); };
     Coor select_atoms(const std::string &selection, size_t frame=0) const;
     Coor select_bool_index(const std::vector<bool> &indexes) const;
     std::vector<int> get_index_select(const std::string selection, size_t frame=0) const;
     std::vector<std::array<char, 2>> get_uniq_chain() const;
     std::vector<std::string> get_aa_sequences(bool gap_in_seq=true, size_t frame=0) const;
+    std::vector<std::string> get_aa_sequences_dl(bool gap_in_seq=true, size_t frame=0) const;
 
     Model get_Models(int i) const { return models_[i]; }
     std::vector<Model> get_all_Models() const { return models_; }

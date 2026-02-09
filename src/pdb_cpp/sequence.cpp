@@ -1,4 +1,5 @@
 #include <array>
+#include <cctype>
 #include <cstring>
 #include <stdexcept>
 
@@ -17,5 +18,26 @@ char convert_to_one_letter_resname(const array<char, 5> &resname_array) {
     }
 
     // If not found, throw an exception or return a placeholder
+    throw invalid_argument("Unknown residue name: " + resname);
+}
+
+char convert_to_one_letter_resname_dl(const array<char, 5> &resname_array) {
+    string resname(resname_array.data(), strnlen(resname_array.data(), resname_array.size()));
+
+    auto it_l = AA_DICT_L.find(resname);
+    if (it_l != AA_DICT_L.end()) {
+        return it_l->second;
+    }
+
+    auto it_d = AA_DICT_D.find(resname);
+    if (it_d != AA_DICT_D.end()) {
+        return static_cast<char>(tolower(static_cast<unsigned char>(it_d->second)));
+    }
+
+    auto it_na = NA_DICT.find(resname);
+    if (it_na != NA_DICT.end()) {
+        return it_na->second;
+    }
+
     throw invalid_argument("Unknown residue name: " + resname);
 }

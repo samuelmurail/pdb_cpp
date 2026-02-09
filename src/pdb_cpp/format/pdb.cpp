@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <cctype>
 #include <cstring>
 #include <iomanip>
 #include <fstream>
@@ -8,8 +9,22 @@
 #include "../Model.h"
 #include "../Coor.h"
 #include "../geom.h"
+#include "encode.h"
 
 using namespace std;
+
+namespace {
+
+bool is_all_spaces(const string& s) {
+    for (char c : s) {
+        if (c != ' ') {
+            return false;
+        }
+    }
+    return true;
+}
+
+}
 
 Coor PDB_parse(const string& filename) {
 
@@ -37,7 +52,7 @@ Coor PDB_parse(const string& filename) {
     while (getline(file, line)) {
         if (line.compare(0, 6, "ATOM  ") == 0 || line.compare(0, 6, "HETATM") == 0) {
             bool field = line.compare(0, 6, "ATOM  ") ? true : false;
-            int num = stoi(line.substr(6, 5));
+            int num = hy36decode(5, line.substr(6, 5));
             array<char, 5> name_array{};
             // strip spaces
             array_i = 0;
@@ -60,7 +75,7 @@ Coor PDB_parse(const string& filename) {
             }
             resname_array[array_i] = '\0';
             array<char, 2> chain_array = {line[21], '\0'};
-            int res_id            = stoi(line.substr(22, 4));
+            int res_id            = hy36decode(4, line.substr(22, 4));
             if (res_id != old_resid || line[26] != old_insert_res) {
                 ++uniq_resid;
                 old_resid = res_id;
@@ -104,15 +119,20 @@ Coor PDB_parse(const string& filename) {
             uniq_resid = -1;
             old_resid = -99999999;
         } else if (line.compare(0, 6, "CONECT") == 0) {
-            istringstream iss(line.substr(6));
             int atom_index = 0;
-            if (!(iss >> atom_index)) {
-                continue;
-            }
-            vector<int> &connections = coor.conect[atom_index];
-            int connected_atom = 0;
-            while (iss >> connected_atom) {
-                connections.push_back(connected_atom);
+            bool have_atom = false;
+            for (size_t pos = 6; pos + 5 <= line.size(); pos += 5) {
+                string chunk = line.substr(pos, 5);
+                if (is_all_spaces(chunk)) {
+                    continue;
+                }
+                int value = hy36decode(5, chunk);
+                if (!have_atom) {
+                    atom_index = value;
+                    have_atom = true;
+                } else {
+                    coor.conect[atom_index].push_back(value);
+                }
             }
         } else if (line.compare(0, 6, "CRYST1") == 0) {
             // Parse CRYST1 line
@@ -143,13 +163,15 @@ string get_pdb_string(const Coor& coor) {
         oss << "MODEL      " << setw(3) << model_index + 1 << "\n";
         for (size_t i = 0; i < model.size(); ++i) {
             string field = model.get_field()[i] ? "HETATM" : "ATOM  ";
+            string serial = hy36encode(5, model.get_num()[i]);
+            string resid = hy36encode(4, model.get_resid()[i]);
             oss << field
-                << setw(5) << model.get_num()[i] << " "
+                << serial << " "
                 << setw(4) << model.get_name()[i].data()
                 << setw(1) << model.get_alterloc()[i].data()
                 << setw(3) << model.get_resname()[i].data() << " "
                 << setw(1) << model.get_chain()[i].data()
-                << setw(4) << model.get_resid()[i]
+                << resid
                 << setw(1) << model.get_insertres()[i].data() << "   "
                 << setw(8) << fixed << setprecision(3) << model.get_x()[i]
                 << setw(8) << fixed << setprecision(3) << model.get_y()[i]
@@ -171,10 +193,10 @@ string get_pdb_string(const Coor& coor) {
         for (int atom_index : keys) {
             const vector<int> &connected_atoms = coor.conect.at(atom_index);
             for (size_t i = 0; i < connected_atoms.size(); i += 4) {
-                oss << "CONECT" << setw(5) << atom_index;
+                oss << "CONECT" << hy36encode(5, atom_index);
                 size_t end = min(i + 4, connected_atoms.size());
                 for (size_t j = i; j < end; ++j) {
-                    oss << setw(5) << connected_atoms[j];
+                    oss << hy36encode(5, connected_atoms[j]);
                 }
                 oss << "\n";
             }

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # coding: utf-8
 
+from .core import align_chain_permutation as _align_chain_permutation
 from .core import sequence_align
 from .data.blosum import BLOSUM62
 
@@ -95,3 +96,22 @@ def print_align_seq(seq_1, seq_2, line_len=80):
     print(f"Similarity seq2: {similarity / len_2 * 100:.2f}%")
 
     return
+
+
+def align_chain_permutation(
+    coor_1,
+    coor_2,
+    back_names=None,
+    matrix_file="src/pdb_cpp/data/blosum62.txt",
+    frame_ref=0,
+):
+    if back_names is None:
+        back_names = ["C", "N", "O", "CA"]
+        
+    return _align_chain_permutation(
+        coor_1,
+        coor_2,
+        back_names,
+        matrix_file,
+        frame_ref,
+    )

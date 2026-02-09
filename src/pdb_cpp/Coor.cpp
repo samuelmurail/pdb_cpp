@@ -207,3 +207,55 @@ vector<string> Coor::get_aa_sequences(bool gap_in_seq, size_t frame) const {
     }
     return seq_vec;
 }
+
+vector<string> Coor::get_aa_sequences_dl(bool gap_in_seq, size_t frame) const {
+    if (frame >= model_size()) {
+        throw out_of_range("Frame index out of range");
+    }
+
+    vector<bool> CA_indexes = models_[frame].select_atoms("name CA");
+    vector<array<char, 5>> resname_array = models_[frame].get_resname();
+    vector<array<char, 2>> chain_array = models_[frame].get_chain();
+    vector<int> resid_array = models_[frame].get_resid();
+
+    vector<array<char, 2>> uniq_chains = get_uniq_chain();
+
+    array<char, 2> old_chain = chain_array[0];
+    auto it = find(uniq_chains.begin(), uniq_chains.end(), old_chain);
+    if (it == uniq_chains.end()) {
+        throw runtime_error("Chain not found in unique chains");
+    }
+    int chain_index = distance(uniq_chains.begin(), it);
+    size_t gap_num;
+
+    vector<string> seq_vec;
+    int old_resid = resid_array[0];
+    seq_vec.emplace_back("");
+
+    for (size_t i = 0; i < CA_indexes.size(); ++i) {
+        if (CA_indexes[i]) {
+            if (chain_array[i] != old_chain) {
+                old_chain = chain_array[i];
+                old_resid = resid_array[i];
+                it = find(uniq_chains.begin(), uniq_chains.end(), old_chain);
+                if (it == uniq_chains.end()) {
+                    throw runtime_error("Chain not found in unique chains");
+                }
+                chain_index = distance(uniq_chains.begin(), it);
+                seq_vec.emplace_back("");
+            }
+            if (resid_array[i] != old_resid) {
+                if (gap_in_seq) {
+                    gap_num = resid_array[i] - old_resid;
+                    for (size_t j = 0; j < gap_num; ++j) {
+                        seq_vec[chain_index] += "-";
+                    }
+                }
+                old_resid = resid_array[i];
+            }
+            seq_vec[chain_index] += convert_to_one_letter_resname_dl(resname_array[i]);
+            old_resid += 1;
+        }
+    }
+    return seq_vec;
+}

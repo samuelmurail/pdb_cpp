@@ -7,6 +7,7 @@
 #include "align.h"
 #include "geom.h"
 #include "seq_align.h"
+#include "format/encode.h"
 
 namespace py = pybind11;
 
@@ -64,6 +65,9 @@ PYBIND11_MODULE(core, m) {
         .def("get_aa_sequences", &Coor::get_aa_sequences, 
             py::arg("gap_in_seq") = true, py::arg("frame") = 0, // Specify default values for `gap_in_seq` and `frame`
             "Get the amino acid sequence, optionally including gaps and specifying a frame index")
+        .def("get_aa_sequences_dl", &Coor::get_aa_sequences_dl,
+            py::arg("gap_in_seq") = true, py::arg("frame") = 0,
+            "Get the amino acid sequence with D-residues encoded as lowercase")
         // Add more methods as needed
         ;
     // Bind the TMAlign secondary-structure function
@@ -144,44 +148,25 @@ PYBIND11_MODULE(core, m) {
         py::arg("matrix_file") = "src/pdb_cpp/data/blosum62.txt",
         py::arg("frame_ref") = 0,
         "Align two coordinate structures using sequence based alignement");
-/*
-    // Bind the Quaternion struct
-    py::class_<Quaternion>(m, "Quaternion")
-        .def(py::init<>())
-        .def(py::init<float, float, float, float>())
-        .def_readwrite("w", &Quaternion::w)
-        .def_readwrite("x", &Quaternion::x)
-        .def_readwrite("y", &Quaternion::y)
-        .def_readwrite("z", &Quaternion::z)
-        .def("normalize", &Quaternion::normalize)
-        .def("conjugate", &Quaternion::conjugate)
-        .def("__mul__", &Quaternion::operator*);
 
-    // Bind quaternion functions
-    m.def("makeQ", &makeQ, py::arg("angle"), py::arg("ax"), py::arg("ay"), py::arg("az"),
-          "Create a quaternion from axis-angle representation");
-    
-    m.def("makeW", &makeW, py::arg("x"), py::arg("y"), py::arg("z"),
-          "Create a quaternion from x,y,z components, calculating w");
-    
-    m.def("quaternion_transform", &quaternion_transform, py::arg("q"), py::arg("x"), py::arg("y"), py::arg("z"),
-          "Transform a 3D point using quaternion rotation");
-    
-    m.def("quaternion_rotate", &quaternion_rotate, 
-          py::arg("X"), py::arg("Y"),
-          "Calculate optimal rotation matrix between two sets of 3D points using quaternion method");
-    
-    m.def("quaternion_to_matrix", &quaternion_to_matrix, py::arg("q"),
-          "Convert quaternion to 3x3 rotation matrix");
-    
-    m.def("matrix_to_quaternion", &matrix_to_quaternion, py::arg("matrix"),
-          "Convert 3x3 rotation matrix to quaternion");
-          */
+    m.def("align_chain_permutation",
+        &align_chain_permutation,
+        py::arg("coor_1"),
+        py::arg("coor_2"),
+        py::arg("back_names") = std::vector<std::string>{"C", "N", "O", "CA"},
+        py::arg("matrix_file") = "src/pdb_cpp/data/blosum62.txt",
+        py::arg("frame_ref") = 0,
+        "Align structures by permuting chain order and selecting the best RMSD.");
+
+    m.def("hy36encode",
+        &hy36encode,
+        py::arg("width"),
+        py::arg("value"),
+        "Encode a number using hybrid-36 with fixed width.");
+    m.def("hy36decode",
+        &hy36decode,
+        py::arg("width"),
+        py::arg("value"),
+        "Decode a hybrid-36 string with fixed width.");
+
 }
-
-// // Alignment align(
-// const string &seq1
-//  const string &seq2, 
-//  onst string &matrix_file,
-//  int GAP_COST,
-//  int GAP_EXT) {

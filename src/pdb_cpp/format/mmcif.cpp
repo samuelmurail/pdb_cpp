@@ -82,93 +82,109 @@ struct LoopTable {
 
 LoopTable parse_loop_for_prefix(const vector<string> &lines, const string &prefix) {
     LoopTable table;
-    bool in_loop = false;
-    vector<string> pending;
-
-    // Track multi-line tokens wrapped by ';' delimiters.
-    bool in_multiline = false;
-    string multiline_value;
 
     for (size_t i = 0; i < lines.size(); ++i) {
         string line = lines[i];
         if (!line.empty() && line.back() == '\n') {
             line.pop_back();
         }
+        if (!starts_with(line, "loop_")) {
+            continue;
+        }
 
-        if (in_multiline) {
-            if (starts_with(line, ";")) {
-                in_multiline = false;
-                string token = multiline_value;
-                multiline_value.clear();
-                pending.push_back(token);
-                if (table.col_names.size() > 0 && pending.size() == table.col_names.size()) {
-                    table.rows.push_back(pending);
-                    pending.clear();
-                }
+        size_t j = i + 1;
+        vector<string> col_names;
+        bool all_prefix = true;
+        bool saw_column = false;
+
+        for (; j < lines.size(); ++j) {
+            line = lines[j];
+            if (!line.empty() && line.back() == '\n') {
+                line.pop_back();
+            }
+            if (line.empty()) {
                 continue;
             }
-            multiline_value += line + "\n";
+            if (!starts_with(line, "_")) {
+                break;
+            }
+            saw_column = true;
+            if (!starts_with(line, prefix)) {
+                all_prefix = false;
+            }
+            if (all_prefix) {
+                vector<string> tokens = split_tokens(line);
+                if (tokens.empty()) {
+                    continue;
+                }
+                col_names.push_back(tokens[0].substr(prefix.size()));
+            }
+        }
+
+        if (!saw_column || !all_prefix || col_names.empty()) {
+            for (; j < lines.size(); ++j) {
+                line = lines[j];
+                if (!line.empty() && line.back() == '\n') {
+                    line.pop_back();
+                }
+                if (starts_with(line, "loop_") || starts_with(line, "_") || starts_with(line, "#")) {
+                    i = j - 1;
+                    break;
+                }
+            }
             continue;
         }
 
-        if (starts_with(line, "loop_")) {
-            in_loop = true;
-            table.col_names.clear();
-            table.rows.clear();
-            // New loop resets column collection and buffered row tokens.
-            if (starts_with(line, "loop_")) {
-            continue;
-        }
+        table.col_names = col_names;
+        vector<string> pending;
+        bool in_multiline = false;
+        string multiline_value;
 
-        if (!in_loop) {
-            continue;
-        }
+        for (; j < lines.size(); ++j) {
+            line = lines[j];
+            if (!line.empty() && line.back() == '\n') {
+                line.pop_back();
+            }
 
-            // Collect column names matching the target prefix.
-            if (starts_with(line, "_")) {
-            if (!table.col_names.empty()) {
+            if (in_multiline) {
+                if (starts_with(line, ";")) {
+                    in_multiline = false;
+                    pending.push_back(multiline_value);
+                    multiline_value.clear();
+                    if (pending.size() == table.col_names.size()) {
+                        table.rows.push_back(pending);
+                        pending.clear();
+                    }
+                    continue;
+                }
+                multiline_value += line + "\n";
+                continue;
+            }
+
+            if (line.empty()) {
+                continue;
+            }
+            if (starts_with(line, "loop_") || starts_with(line, "_") || starts_with(line, "#")) {
                 return table;
             }
-            in_loop = false;
-            continue;
-        }
-
-        if (starts_with(line, "_")) {
-            if (!starts_with(line, prefix)) {
-                if (!table.col_names.empty()) {
-                    return table;
-                }
+            if (starts_with(line, ";")) {
+                in_multiline = true;
+                multiline_value = line.substr(1) + "\n";
                 continue;
             }
-            // Rows may span multiple lines; accumulate until the row is complete.
-            pending.insert(pending.end(), tokens.begin(), tokens.end());
-            if (!tokens.empty()) {
-                string col = tokens[0].substr(prefix.size());
-                table.col_names.push_back(col);
+
+            vector<string> tokens = split_tokens(line);
+            if (tokens.empty()) {
+                continue;
             }
-            continue;
+            pending.insert(pending.end(), tokens.begin(), tokens.end());
+            if (pending.size() == table.col_names.size()) {
+                table.rows.push_back(pending);
+                pending.clear();
+            }
         }
 
-        if (table.col_names.empty()) {
-            continue;
-        }
-
-        if (starts_with(line, ";")) {
-            in_multiline = true;
-            multiline_value = line.substr(1) + "\n";
-            continue;
-        }
-
-        vector<string> tokens = split_tokens(line);
-        if (tokens.empty()) {
-            continue;
-        }
-
-        pending.insert(pending.end(), tokens.begin(), tokens.end());
-        if (pending.size() == table.col_names.size()) {
-            table.rows.push_back(pending);
-            pending.clear();
-        }
+        return table;
     }
 
     return table;
