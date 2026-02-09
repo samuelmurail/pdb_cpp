@@ -150,10 +150,32 @@ vector<array<char, 2>> Coor::get_uniq_chain() const {
     return models_[active_model].get_uniq_chain();
 }
 
+vector<string> Coor::get_uniq_chain_str() const {
+    vector<string> chains;
+    if (models_.empty()) {
+        return chains;
+    }
+    vector<array<char, 2>> raw = models_[active_model].get_uniq_chain();
+    chains.reserve(raw.size());
+    for (const auto &chain : raw) {
+        string chain_id;
+        for (char letter : chain) {
+            if (letter != '\0' && letter != ' ') {
+                chain_id.push_back(letter);
+            }
+        }
+        chains.push_back(chain_id);
+    }
+    return chains;
+}
+
 vector<string> Coor::get_aa_sequences(bool gap_in_seq, size_t frame) const {
     // Ensure the frame index is valid
     if (frame >= model_size()) {
         throw out_of_range("Frame index out of range");
+    }
+    if (models_[frame].size() == 0) {
+        return {};
     }
 
     // Get the indexes of the selected atoms from the specified model
@@ -162,49 +184,54 @@ vector<string> Coor::get_aa_sequences(bool gap_in_seq, size_t frame) const {
     vector<array<char, 2>> chain_array = models_[frame].get_chain();
     vector<int> resid_array = models_[frame].get_resid();
 
-    vector<array<char, 2>> uniq_chains= get_uniq_chain();
-
-    array<char, 2> old_chain = chain_array[0];
-    // Get the index of the old chain in the unique chains
-    auto it = find(uniq_chains.begin(), uniq_chains.end(), old_chain);
-    if (it == uniq_chains.end()) {
-        throw runtime_error("Chain not found in unique chains");
+    if (resname_array.empty() || chain_array.empty() || resid_array.empty()) {
+        return {};
     }
-    int chain_index = distance(uniq_chains.begin(), it);
-    size_t gap_num;
+
+    auto chain_to_string = [](const array<char, 2> &chain) {
+        string chain_id;
+        for (char letter : chain) {
+            if (letter != '\0' && letter != ' ') {
+                chain_id.push_back(letter);
+            }
+        }
+        return chain_id;
+    };
 
     vector<string> seq_vec;
-    int old_resid = resid_array[0];
-    seq_vec.emplace_back("");
+    unordered_map<string, size_t> chain_index;
+    unordered_map<string, int> last_resid;
+    size_t gap_num = 0;
 
     for (size_t i = 0; i < CA_indexes.size(); ++i) {
-        if (CA_indexes[i]) {
-            if (chain_array[i] != old_chain) {
-                // New chain or new residue
-                old_chain = chain_array[i];
-                old_resid = resid_array[i];
-                // Get the index of the old chain in the unique chains
-                it = find(uniq_chains.begin(), uniq_chains.end(), old_chain);
-                if (it == uniq_chains.end()) {
-                    throw runtime_error("Chain not found in unique chains");
-                }
-                chain_index = distance(uniq_chains.begin(), it);
-                seq_vec.emplace_back("");
-            }
-            if (resid_array[i] != old_resid) {
-                // New residue
-                if (gap_in_seq) {
-                    gap_num = resid_array[i] - old_resid;
-                    for (size_t j = 0; j < gap_num; ++j) {
-                        seq_vec[chain_index] += "-"; // Add gap for new residue
-                    }
-                }
-                old_resid = resid_array[i];
-            }
-            seq_vec[chain_index] += convert_to_one_letter_resname(resname_array[i]);
-            old_resid += 1;
+        if (!CA_indexes[i]) {
+            continue;
         }
+
+        string chain_id = chain_to_string(chain_array[i]);
+        auto it = chain_index.find(chain_id);
+        if (it == chain_index.end()) {
+            chain_index[chain_id] = seq_vec.size();
+            seq_vec.emplace_back("");
+            last_resid[chain_id] = resid_array[i];
+            it = chain_index.find(chain_id);
+        }
+
+        int prev_resid = last_resid[chain_id];
+        if (gap_in_seq) {
+            int diff = resid_array[i] - prev_resid;
+            if (diff > 1) {
+                gap_num = static_cast<size_t>(diff - 1);
+                for (size_t j = 0; j < gap_num; ++j) {
+                    seq_vec[it->second] += "-";
+                }
+            }
+        }
+
+        seq_vec[it->second] += convert_to_one_letter_resname(resname_array[i]);
+        last_resid[chain_id] = resid_array[i];
     }
+
     return seq_vec;
 }
 
@@ -212,50 +239,62 @@ vector<string> Coor::get_aa_sequences_dl(bool gap_in_seq, size_t frame) const {
     if (frame >= model_size()) {
         throw out_of_range("Frame index out of range");
     }
+    if (models_[frame].size() == 0) {
+        return {};
+    }
 
     vector<bool> CA_indexes = models_[frame].select_atoms("name CA");
     vector<array<char, 5>> resname_array = models_[frame].get_resname();
     vector<array<char, 2>> chain_array = models_[frame].get_chain();
     vector<int> resid_array = models_[frame].get_resid();
 
-    vector<array<char, 2>> uniq_chains = get_uniq_chain();
-
-    array<char, 2> old_chain = chain_array[0];
-    auto it = find(uniq_chains.begin(), uniq_chains.end(), old_chain);
-    if (it == uniq_chains.end()) {
-        throw runtime_error("Chain not found in unique chains");
+    if (resname_array.empty() || chain_array.empty() || resid_array.empty()) {
+        return {};
     }
-    int chain_index = distance(uniq_chains.begin(), it);
-    size_t gap_num;
+
+    auto chain_to_string = [](const array<char, 2> &chain) {
+        string chain_id;
+        for (char letter : chain) {
+            if (letter != '\0' && letter != ' ') {
+                chain_id.push_back(letter);
+            }
+        }
+        return chain_id;
+    };
 
     vector<string> seq_vec;
-    int old_resid = resid_array[0];
-    seq_vec.emplace_back("");
+    unordered_map<string, size_t> chain_index;
+    unordered_map<string, int> last_resid;
+    size_t gap_num = 0;
 
     for (size_t i = 0; i < CA_indexes.size(); ++i) {
-        if (CA_indexes[i]) {
-            if (chain_array[i] != old_chain) {
-                old_chain = chain_array[i];
-                old_resid = resid_array[i];
-                it = find(uniq_chains.begin(), uniq_chains.end(), old_chain);
-                if (it == uniq_chains.end()) {
-                    throw runtime_error("Chain not found in unique chains");
-                }
-                chain_index = distance(uniq_chains.begin(), it);
-                seq_vec.emplace_back("");
-            }
-            if (resid_array[i] != old_resid) {
-                if (gap_in_seq) {
-                    gap_num = resid_array[i] - old_resid;
-                    for (size_t j = 0; j < gap_num; ++j) {
-                        seq_vec[chain_index] += "-";
-                    }
-                }
-                old_resid = resid_array[i];
-            }
-            seq_vec[chain_index] += convert_to_one_letter_resname_dl(resname_array[i]);
-            old_resid += 1;
+        if (!CA_indexes[i]) {
+            continue;
         }
+
+        string chain_id = chain_to_string(chain_array[i]);
+        auto it = chain_index.find(chain_id);
+        if (it == chain_index.end()) {
+            chain_index[chain_id] = seq_vec.size();
+            seq_vec.emplace_back("");
+            last_resid[chain_id] = resid_array[i];
+            it = chain_index.find(chain_id);
+        }
+
+        int prev_resid = last_resid[chain_id];
+        if (gap_in_seq) {
+            int diff = resid_array[i] - prev_resid;
+            if (diff > 1) {
+                gap_num = static_cast<size_t>(diff - 1);
+                for (size_t j = 0; j < gap_num; ++j) {
+                    seq_vec[it->second] += "-";
+                }
+            }
+        }
+
+        seq_vec[it->second] += convert_to_one_letter_resname_dl(resname_array[i]);
+        last_resid[chain_id] = resid_array[i];
     }
+
     return seq_vec;
 }

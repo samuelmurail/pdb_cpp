@@ -43,6 +43,7 @@ public:
     Coor select_bool_index(const std::vector<bool> &indexes) const;
     std::vector<int> get_index_select(const std::string selection, size_t frame=0) const;
     std::vector<std::array<char, 2>> get_uniq_chain() const;
+    std::vector<std::string> get_uniq_chain_str() const;
     std::vector<std::string> get_aa_sequences(bool gap_in_seq=true, size_t frame=0) const;
     std::vector<std::string> get_aa_sequences_dl(bool gap_in_seq=true, size_t frame=0) const;
 
