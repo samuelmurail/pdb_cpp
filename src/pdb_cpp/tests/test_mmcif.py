@@ -15,7 +15,7 @@ def test_read_mmcif_basic():
     assert test.len == 648
     assert test.model_num == 1
 
-    assert ''.join(test.models[0].resname[0]) == "THR\x00\x00"
+    assert "".join(test.models[0].resname[0]) == "THR\x00\x00"
     assert test.models[0].resid[0] == 791
     assert test.models[0].uniq_resid[0] == 0
     assert test.models[0].name[0][0] == "N"

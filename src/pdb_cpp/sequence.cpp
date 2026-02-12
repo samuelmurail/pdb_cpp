@@ -41,3 +41,30 @@ char convert_to_one_letter_resname_dl(const array<char, 5> &resname_array) {
 
     throw invalid_argument("Unknown residue name: " + resname);
 }
+
+char convert_to_one_letter_resname_na(const array<char, 5> &resname_array) {
+    string resname(resname_array.data(), strnlen(resname_array.data(), resname_array.size()));
+
+    auto it = AA_NA_DICT.find(resname);
+    if (it != AA_NA_DICT.end()) {
+        return it->second;
+    }
+
+    throw invalid_argument("Unknown residue name: " + resname);
+}
+
+char convert_to_one_letter_resname_any(const array<char, 5> &resname_array) {
+    string resname(resname_array.data(), strnlen(resname_array.data(), resname_array.size()));
+
+    auto it_l = AA_DICT_L.find(resname);
+    if (it_l != AA_DICT_L.end()) {
+        return it_l->second;
+    }
+
+    auto it_d = AA_DICT_D.find(resname);
+    if (it_d != AA_DICT_D.end()) {
+        return it_d->second;
+    }
+
+    throw invalid_argument("Unknown residue name: " + resname);
+}

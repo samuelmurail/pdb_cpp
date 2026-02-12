@@ -5,7 +5,10 @@ from .core import align_chain_permutation as _align_chain_permutation
 from .core import sequence_align
 from .data.blosum import BLOSUM62
 
-def align_seq(seq1, seq2, gap_cost=-11, gap_ext=-1, matrix_file='src/pdb_cpp/data/blosum62.txt'):
+
+def align_seq(
+    seq1, seq2, gap_cost=-11, gap_ext=-1, matrix_file="src/pdb_cpp/data/blosum62.txt"
+):
     """
     Align two sequences using a simple scoring system.
 
@@ -31,9 +34,10 @@ def align_seq(seq1, seq2, gap_cost=-11, gap_ext=-1, matrix_file='src/pdb_cpp/dat
     alignement = sequence_align(
         seq1=seq1,
         seq2=seq2,
-        matrix_file='src/pdb_cpp/data/blosum62.txt',
+        matrix_file="src/pdb_cpp/data/blosum62.txt",
         GAP_COST=gap_cost,
-        GAP_EXT=gap_ext)
+        GAP_EXT=gap_ext,
+    )
 
     return alignement.seq1, alignement.seq2, alignement.score
 
@@ -107,7 +111,7 @@ def align_chain_permutation(
 ):
     if back_names is None:
         back_names = ["C", "N", "O", "CA"]
-        
+
     return _align_chain_permutation(
         coor_1,
         coor_2,

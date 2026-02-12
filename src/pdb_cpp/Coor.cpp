@@ -3,6 +3,7 @@
 #include <unordered_map>
 #include <string>
 #include <fstream>
+#include <cctype>
 
 #include "Coor.h"
 #include "Model.h"
@@ -243,10 +244,13 @@ vector<string> Coor::get_aa_sequences_dl(bool gap_in_seq, size_t frame) const {
         return {};
     }
 
-    vector<bool> CA_indexes = models_[frame].select_atoms("name CA");
+    vector<int> CA_indexes = models_[frame].get_index_select("name CA and not altloc B C D E F");
     vector<array<char, 5>> resname_array = models_[frame].get_resname();
     vector<array<char, 2>> chain_array = models_[frame].get_chain();
     vector<int> resid_array = models_[frame].get_resid();
+    vector<int> uniq_resid_array = models_[frame].get_uniqresid();
+
+    Coor n_c_cb = select_atoms("name N C CB and not altloc B C D E F", frame);
 
     if (resname_array.empty() || chain_array.empty() || resid_array.empty()) {
         return {};
@@ -267,23 +271,19 @@ vector<string> Coor::get_aa_sequences_dl(bool gap_in_seq, size_t frame) const {
     unordered_map<string, int> last_resid;
     size_t gap_num = 0;
 
-    for (size_t i = 0; i < CA_indexes.size(); ++i) {
-        if (!CA_indexes[i]) {
-            continue;
-        }
-
-        string chain_id = chain_to_string(chain_array[i]);
+    for (int idx : CA_indexes) {
+        string chain_id = chain_to_string(chain_array[idx]);
         auto it = chain_index.find(chain_id);
         if (it == chain_index.end()) {
             chain_index[chain_id] = seq_vec.size();
             seq_vec.emplace_back("");
-            last_resid[chain_id] = resid_array[i];
+            last_resid[chain_id] = resid_array[idx];
             it = chain_index.find(chain_id);
         }
 
         int prev_resid = last_resid[chain_id];
         if (gap_in_seq) {
-            int diff = resid_array[i] - prev_resid;
+            int diff = resid_array[idx] - prev_resid;
             if (diff > 1) {
                 gap_num = static_cast<size_t>(diff - 1);
                 for (size_t j = 0; j < gap_num; ++j) {
@@ -292,9 +292,160 @@ vector<string> Coor::get_aa_sequences_dl(bool gap_in_seq, size_t frame) const {
             }
         }
 
-        seq_vec[it->second] += convert_to_one_letter_resname_dl(resname_array[i]);
-        last_resid[chain_id] = resid_array[i];
+        char aa = convert_to_one_letter_resname_any(resname_array[idx]);
+        if (aa == 'G') {
+            seq_vec[it->second] += aa;
+        } else {
+            int uniq_resid = uniq_resid_array[idx];
+            vector<int> n_index = n_c_cb.get_index_select(
+                "name N and residue " + to_string(uniq_resid), frame);
+            vector<int> c_index = n_c_cb.get_index_select(
+                "name C and residue " + to_string(uniq_resid), frame);
+            vector<int> cb_index = n_c_cb.get_index_select(
+                "name CB and residue " + to_string(uniq_resid), frame);
+
+            if (!n_index.empty() && !c_index.empty() && !cb_index.empty()) {
+                const Model ncc_model = n_c_cb.get_Models(static_cast<int>(frame));
+                auto to_array = [](const Model &model, int index) {
+                    return std::array<float, 3>{
+                        model.get_x()[index],
+                        model.get_y()[index],
+                        model.get_z()[index]
+                    };
+                };
+
+                const Model ref_model = get_Models(static_cast<int>(frame));
+                std::array<float, 3> ca_xyz = {
+                    ref_model.get_x()[idx],
+                    ref_model.get_y()[idx],
+                    ref_model.get_z()[idx]
+                };
+
+                float dihed = atom_dihed_angle(
+                    ca_xyz,
+                    to_array(ncc_model, n_index[0]),
+                    to_array(ncc_model, c_index[0]),
+                    to_array(ncc_model, cb_index[0]));
+
+                if (dihed > 0.0f) {
+                    seq_vec[it->second] += aa;
+                } else {
+                    seq_vec[it->second] += static_cast<char>(
+                        std::tolower(static_cast<unsigned char>(aa)));
+                }
+            } else {
+                seq_vec[it->second] += aa;
+            }
+        }
+        last_resid[chain_id] = resid_array[idx];
     }
 
     return seq_vec;
+}
+
+unordered_map<string, string> Coor::get_aa_na_seq(bool gap_in_seq, size_t frame) const {
+    if (frame >= model_size()) {
+        throw out_of_range("Frame index out of range");
+    }
+    if (models_[frame].size() == 0) {
+        return {};
+    }
+
+    vector<bool> sel = models_[frame].select_atoms(
+        "((protein and name CA) or (dna and name P)) and not altloc B C D E F");
+    vector<array<char, 5>> resname_array = models_[frame].get_resname();
+    vector<array<char, 2>> chain_array = models_[frame].get_chain();
+    vector<int> resid_array = models_[frame].get_resid();
+
+    if (resname_array.empty() || chain_array.empty() || resid_array.empty()) {
+        return {};
+    }
+
+    auto chain_to_string = [](const array<char, 2> &chain) {
+        string chain_id;
+        for (char letter : chain) {
+            if (letter != '\0' && letter != ' ') {
+                chain_id.push_back(letter);
+            }
+        }
+        return chain_id;
+    };
+
+    unordered_map<string, string> seq_dict;
+    unordered_map<string, int> last_resid;
+
+    for (size_t i = 0; i < sel.size(); ++i) {
+        if (!sel[i]) {
+            continue;
+        }
+
+        string chain_id = chain_to_string(chain_array[i]);
+        if (seq_dict.find(chain_id) == seq_dict.end()) {
+            seq_dict[chain_id] = "";
+            last_resid[chain_id] = resid_array[i];
+        }
+
+        if (gap_in_seq) {
+            int diff = resid_array[i] - last_resid[chain_id];
+            if (diff > 1 && !seq_dict[chain_id].empty()) {
+                seq_dict[chain_id].append(static_cast<size_t>(diff - 1), '-');
+            }
+        }
+
+        try {
+            seq_dict[chain_id].push_back(convert_to_one_letter_resname_na(resname_array[i]));
+        } catch (const std::exception &) {
+            seq_dict[chain_id].push_back('X');
+        }
+
+        last_resid[chain_id] = resid_array[i];
+    }
+
+    return seq_dict;
+}
+
+Coor Coor::remove_incomplete_backbone_residues(const vector<string> &back_atom) const {
+    Coor no_alter_loc = select_atoms("protein and not altloc B C D");
+    if (no_alter_loc.model_size() == 0) {
+        return no_alter_loc;
+    }
+
+    string name_sel = "name";
+    for (const auto &atom : back_atom) {
+        name_sel += " " + atom;
+    }
+    Coor backbone = no_alter_loc.select_atoms(name_sel);
+    if (backbone.model_size() == 0) {
+        return no_alter_loc;
+    }
+
+    Model bb_model = backbone.get_Models(0);
+    const vector<int> &uniq_resid = bb_model.get_uniqresid();
+    if (uniq_resid.empty()) {
+        return no_alter_loc;
+    }
+
+    unordered_map<int, int> counts;
+    for (int resid : uniq_resid) {
+        counts[resid] += 1;
+    }
+
+    vector<int> to_remove;
+    to_remove.reserve(counts.size());
+    int expected = static_cast<int>(back_atom.size());
+    for (const auto &kv : counts) {
+        if (kv.second != expected) {
+            to_remove.push_back(kv.first);
+        }
+    }
+
+    if (to_remove.empty()) {
+        return no_alter_loc;
+    }
+
+    string remove_sel = "not residue";
+    for (int resid : to_remove) {
+        remove_sel += " " + to_string(resid);
+    }
+    return no_alter_loc.select_atoms(remove_sel);
 }

@@ -49,7 +49,6 @@ def test_get_aa_DL_seq():
 def test_seq_align(capsys):
     """Test seq_align function."""
 
-
     seq_1 = (
         "AQDMVSPPPPIADEPLTVNTGIYLIECYSLDDKAETFKVNAFLSLSWKDRRLAFDPV"
         "RSGVRVKTYEPEAIWIPEIRFVNVENARDADVVDISVSPDGTVQYLERFSARVLSPLDFRRYPFDSQTLHIYLIVRSV"
@@ -68,7 +67,7 @@ def test_seq_align(capsys):
     align_seq_1, align_seq_2, score = alignement.align_seq(seq_1, seq_2)
     assert score == 363
     alignement.print_align_seq(align_seq_1, align_seq_2, line_len=80)
-    #captured = caplog.records
+    # captured = caplog.records
     captured = capsys.readouterr().out.split("\n")[:-1]
 
     print("captured", captured)
@@ -142,7 +141,6 @@ def test_seq_align(capsys):
     assert captured[-3] == "Identity seq2: 49.12%"
     assert captured[-2] == "Similarity seq1: 100.00%"
     assert captured[-1] == "Similarity seq2: 49.12%"
-
 
 
 def test_align_seq_based():

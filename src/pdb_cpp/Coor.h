@@ -46,6 +46,8 @@ public:
     std::vector<std::string> get_uniq_chain_str() const;
     std::vector<std::string> get_aa_sequences(bool gap_in_seq=true, size_t frame=0) const;
     std::vector<std::string> get_aa_sequences_dl(bool gap_in_seq=true, size_t frame=0) const;
+    std::unordered_map<std::string, std::string> get_aa_na_seq(bool gap_in_seq=true, size_t frame=0) const;
+    Coor remove_incomplete_backbone_residues(const std::vector<std::string> &back_atom) const;
 
     Model get_Models(int i) const { return models_[i]; }
     std::vector<Model> get_all_Models() const { return models_; }

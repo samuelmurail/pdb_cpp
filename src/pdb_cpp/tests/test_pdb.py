@@ -11,7 +11,7 @@ import numpy as np
 import logging
 
 from pdb_cpp import Coor
-from .datafiles import PDB_1Y0M, PDB_2RRI, PDB_5M6N#, PQR_1Y0M, PDB_3FTK
+from .datafiles import PDB_1Y0M, PDB_2RRI, PDB_5M6N  # , PQR_1Y0M, PDB_3FTK
 
 
 def test_get_pdb(tmp_path):
@@ -20,8 +20,8 @@ def test_get_pdb(tmp_path):
     assert test.len == 648
     assert test.model_num == 1
 
-    #assert test.models[0].atom_dict["name_resname_elem"][0, 1] == "THR"
-    assert ''.join(test.models[0].resname[0]) == "THR\x00\x00"
+    # assert test.models[0].atom_dict["name_resname_elem"][0, 1] == "THR"
+    assert "".join(test.models[0].resname[0]) == "THR\x00\x00"
     assert test.models[0].resid[0] == 791
     assert test.models[0].uniq_resid[0] == 0
     assert test.models[0].name[0][0] == "N"
@@ -44,8 +44,8 @@ def test_get_pdb_models(tmp_path):
     assert test.len == 479
     assert test.active_model == 0
 
-    assert test.resname[0] == ['H', 'I', 'S', '\x00', '\x00']
-    assert test.models[0].resname[0] == ['H', 'I', 'S', '\x00', '\x00']
+    assert test.resname[0] == ["H", "I", "S", "\x00", "\x00"]
+    assert test.models[0].resname[0] == ["H", "I", "S", "\x00", "\x00"]
     assert test.resid[0] == 1
     assert test.name[0][0] == "N"
     assert test.num[0] == 1
@@ -56,7 +56,7 @@ def test_get_pdb_models(tmp_path):
     test.active_model = 19
     assert test.active_model == 19
 
-    assert test.resname[0] == ['H', 'I', 'S', '\x00', '\x00']
+    assert test.resname[0] == ["H", "I", "S", "\x00", "\x00"]
     assert test.models[19].resid[0] == 1
     assert test.models[19].name[0][0] == "N"
     assert test.name[0][0] == "N"
@@ -73,24 +73,18 @@ def test_get_pdb_models(tmp_path):
 def test_read_write_pdb(tmp_path, caplog):
     """Test read_file function."""
 
-
     test = Coor(PDB_1Y0M)
     assert test.len == 648
 
     test.write(os.path.join(tmp_path, "test.pdb"))
     captured = caplog.records
 
-
     test2 = Coor(os.path.join(tmp_path, "test.pdb"))
     assert test2.len == test.len
-    #assert test2.crystal_pack.strip() == test.crystal_pack.strip()
+    # assert test2.crystal_pack.strip() == test.crystal_pack.strip()
 
-    assert (
-        test.models[0].x == test2.models[0].x
-        )
-    assert (
-        test.models[0].resname == test2.models[0].resname
-        )
+    assert test.models[0].x == test2.models[0].x
+    assert test.models[0].resname == test2.models[0].resname
 
 
 def test_read_write_pdb_models(tmp_path):
@@ -105,12 +99,8 @@ def test_read_write_pdb_models(tmp_path):
 
     assert test_2.model_num == 20
 
-    assert (
-        test.models[0].x == test_2.models[0].x
-        )
-    assert (
-        test.models[0].resname == test_2.models[0].resname
-        )
+    assert test.models[0].x == test_2.models[0].x
+    assert test.models[0].resname == test_2.models[0].resname
 
 
 def test_pdb_conect(tmp_path):

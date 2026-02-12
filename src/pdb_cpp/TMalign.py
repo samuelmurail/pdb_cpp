@@ -2,8 +2,8 @@
 # coding: utf-8
 
 
-
 from .core import compute_SS
+
 
 def compute_secondary_structure(coor, **kwargs):
     """
@@ -36,14 +36,13 @@ def compute_secondary_structure(coor, **kwargs):
     for ss_frame in ss_list:
 
         ss_dict = {}
-        #print(f"Secondary structure: {ss_sec}")
-
+        # print(f"Secondary structure: {ss_sec}")
 
         for chain, seq in zip(uniq_chains, ss_frame):
-            #print(f"Chain: {chain}, Sequence: {seq}")
+            # print(f"Chain: {chain}, Sequence: {seq}")
             new_chain = ""
             for letter in chain:
-                if letter != '\x00':
+                if letter != "\x00":
                     new_chain += letter
             ss_dict[new_chain] = seq
         SS_new_list.append(ss_dict)

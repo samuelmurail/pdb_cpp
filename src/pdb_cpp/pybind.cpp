@@ -1,4 +1,5 @@
 #include <pybind11/pybind11.h>
+#include <pybind11/numpy.h>
 #include <pybind11/stl.h>
 #include <pybind11/stl_bind.h>
 #include "Model.h"
@@ -69,8 +70,33 @@ PYBIND11_MODULE(core, m) {
         .def("get_aa_sequences_dl", &Coor::get_aa_sequences_dl,
             py::arg("gap_in_seq") = true, py::arg("frame") = 0,
             "Get the amino acid sequence with D-residues encoded as lowercase")
+        .def("get_aa_na_seq", &Coor::get_aa_na_seq,
+            py::arg("gap_in_seq") = true, py::arg("frame") = 0,
+            "Get amino-acid and nucleic-acid sequences per chain")
+        .def("remove_incomplete_backbone_residues", &Coor::remove_incomplete_backbone_residues,
+            py::arg("back_atom") = std::vector<std::string>{"CA", "C", "N", "O"},
+            "Remove residues with incomplete backbone atoms")
         // Add more methods as needed
         ;
+
+    m.def("distance_matrix",
+        [](py::array_t<float, py::array::c_style | py::array::forcecast> a,
+           py::array_t<float, py::array::c_style | py::array::forcecast> b) {
+            if (a.ndim() != 2 || b.ndim() != 2 || a.shape(1) != 3 || b.shape(1) != 3) {
+                throw std::runtime_error("Inputs must be 2D arrays with shape (N, 3) and (M, 3)");
+            }
+            const auto n = static_cast<size_t>(a.shape(0));
+            const auto m = static_cast<size_t>(b.shape(0));
+            py::array_t<float> out({n, m});
+            const float *a_ptr = static_cast<const float *>(a.data());
+            const float *b_ptr = static_cast<const float *>(b.data());
+            float *out_ptr = static_cast<float *>(out.mutable_data());
+            distance_matrix(a_ptr, n, b_ptr, m, out_ptr);
+            return out;
+        },
+        py::arg("xyz_a"),
+        py::arg("xyz_b"),
+        "Compute a pairwise distance matrix between two coordinate sets");
     // Bind the TMAlign secondary-structure function
     m.def("compute_SS",
         static_cast<std::vector<std::vector<std::string>>(*)(const Coor&, bool)>(&compute_SS),

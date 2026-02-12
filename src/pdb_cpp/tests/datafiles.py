@@ -34,7 +34,7 @@ PDB_2MUS_MODEL = os.path.join(TEST_FILE_PATH, "af_2.2_2mus.pdb")
 # PDB_3FTK = os.path.join(TEST_FILE_PATH, "3ftk.pdb")
 # MMCIF_3FTK = os.path.join(TEST_FILE_PATH, "3ftk.cif")
 
-# PDB_2OL9 = os.path.join(TEST_FILE_PATH, "2ol9.pdb")
+PDB_2OL9 = os.path.join(TEST_FILE_PATH, "2ol9.pdb")
 # MMCIF_2OL9 = os.path.join(TEST_FILE_PATH, "2ol9.cif")
 
 # PDB_1RXZ_Colabfold_1 = os.path.join(
@@ -88,4 +88,3 @@ PDB_2MUS_MODEL = os.path.join(TEST_FILE_PATH, "af_2.2_2mus.pdb")
 #     TEST_FILE_PATH,
 #     "examplefold_pdb_7rce_full_data_0.json",
 # )
-
