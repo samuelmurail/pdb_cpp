@@ -3,6 +3,8 @@
 
 import numpy as np
 
+__all__ = ["rmsd"]
+
 
 def rmsd(coor_1, coor_2, selection="name CA", index_list=None, frame_ref=0):
     """Compute RMSD between two sets of coordinates.

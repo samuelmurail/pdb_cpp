@@ -108,18 +108,6 @@ def num(self):
 
 
 @property
-def residue(self):
-    """Return the residue identifiers of the selection.
-
-    Returns
-    -------
-    list[int]
-        Residue identifiers.
-    """
-    return self.get_uniqresid()
-
-
-@property
 def uniq_resid(self):
     """Return the unique residue identifiers of the selection.
 
@@ -324,7 +312,6 @@ def insertres_str(self):
 
 
 Model.num = num
-Model.residue = residue
 Model.uniq_resid = uniq_resid
 Model.name = name
 Model.chain = chain
@@ -410,18 +397,6 @@ def resid(self):
         Residue IDs.
     """
     return self.models[self.active_model].get_resid()
-
-
-@property
-def residue(self):
-    """Return the residue identifiers of the selection.
-
-    Returns
-    -------
-    list[int]
-        Residue identifiers.
-    """
-    return self.models[self.active_model].get_uniqresid()
 
 
 @property
@@ -634,7 +609,4 @@ Coor.resname_str = resname_str
 Coor.elem_str = elem_str
 Coor.alterloc_str = alterloc_str
 Coor.insertres_str = insertres_str
-Coor.residue = residue
 Coor.uniq_resid = uniq_resid
-
-from . import sequence

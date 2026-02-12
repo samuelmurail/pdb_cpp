@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 # coding: utf-8
 
+__all__ = ["remove_incomplete_backbone_residues"]
+
 
 def remove_incomplete_backbone_residues(coor, back_atom=None):
     """Remove residues with incomplete backbone atoms.

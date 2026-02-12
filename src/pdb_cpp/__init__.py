@@ -12,6 +12,8 @@ __email__ = "samuel.murail@u-paris.fr"
 __status__ = "Beta"
 
 from .core import Coor, Model
+
+# Importing _pyprops applies runtime patches for python-facing helpers.
 from . import _pyprops  # noqa: F401
 
 __all__ = ["Coor", "Model"]

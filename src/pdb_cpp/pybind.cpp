@@ -70,6 +70,12 @@ PYBIND11_MODULE(core, m) {
         .def("get_aa_sequences_dl", &Coor::get_aa_sequences_dl,
             py::arg("gap_in_seq") = true, py::arg("frame") = 0,
             "Get the amino acid sequence with D-residues encoded as lowercase")
+        .def("get_aa_seq", &Coor::get_aa_seq,
+            py::arg("gap_in_seq") = true, py::arg("frame") = 0,
+            "Get amino-acid sequences per chain")
+        .def("get_aa_DL_seq", &Coor::get_aa_DL_seq,
+            py::arg("gap_in_seq") = true, py::arg("frame") = 0,
+            "Get amino-acid sequences with D-residues encoded as lowercase")
         .def("get_aa_na_seq", &Coor::get_aa_na_seq,
             py::arg("gap_in_seq") = true, py::arg("frame") = 0,
             "Get amino-acid and nucleic-acid sequences per chain")

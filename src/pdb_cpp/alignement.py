@@ -5,6 +5,8 @@ from .core import align_chain_permutation as _align_chain_permutation
 from .core import sequence_align
 from .data.blosum import BLOSUM62
 
+__all__ = ["align_seq", "print_align_seq", "align_chain_permutation"]
+
 
 def align_seq(
     seq1, seq2, gap_cost=-11, gap_ext=-1, matrix_file="src/pdb_cpp/data/blosum62.txt"

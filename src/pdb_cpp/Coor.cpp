@@ -1,6 +1,7 @@
 #include <cstring>
 #include <iomanip>
 #include <unordered_map>
+#include <unordered_set>
 #include <string>
 #include <fstream>
 #include <cctype>
@@ -341,6 +342,78 @@ vector<string> Coor::get_aa_sequences_dl(bool gap_in_seq, size_t frame) const {
     }
 
     return seq_vec;
+}
+
+unordered_map<string, string> Coor::get_aa_seq(bool gap_in_seq, size_t frame) const {
+    vector<string> seq_vec = get_aa_sequences(gap_in_seq, frame);
+    if (seq_vec.empty()) {
+        return {};
+    }
+
+    vector<int> ca_index = models_[frame].get_index_select("name CA");
+    vector<array<char, 2>> chain_array = models_[frame].get_chain();
+
+    auto chain_to_string = [](const array<char, 2> &chain) {
+        string chain_id;
+        for (char letter : chain) {
+            if (letter != '\0' && letter != ' ') {
+                chain_id.push_back(letter);
+            }
+        }
+        return chain_id;
+    };
+
+    vector<string> chain_keys;
+    unordered_set<string> seen;
+    for (int idx : ca_index) {
+        string chain_id = chain_to_string(chain_array[idx]);
+        if (seen.insert(chain_id).second) {
+            chain_keys.push_back(chain_id);
+        }
+    }
+
+    unordered_map<string, string> seq_dict;
+    size_t count = min(chain_keys.size(), seq_vec.size());
+    for (size_t i = 0; i < count; ++i) {
+        seq_dict[chain_keys[i]] = seq_vec[i];
+    }
+    return seq_dict;
+}
+
+unordered_map<string, string> Coor::get_aa_DL_seq(bool gap_in_seq, size_t frame) const {
+    vector<string> seq_vec = get_aa_sequences_dl(gap_in_seq, frame);
+    if (seq_vec.empty()) {
+        return {};
+    }
+
+    vector<int> ca_index = models_[frame].get_index_select("name CA and not altloc B C D E F");
+    vector<array<char, 2>> chain_array = models_[frame].get_chain();
+
+    auto chain_to_string = [](const array<char, 2> &chain) {
+        string chain_id;
+        for (char letter : chain) {
+            if (letter != '\0' && letter != ' ') {
+                chain_id.push_back(letter);
+            }
+        }
+        return chain_id;
+    };
+
+    vector<string> chain_keys;
+    unordered_set<string> seen;
+    for (int idx : ca_index) {
+        string chain_id = chain_to_string(chain_array[idx]);
+        if (seen.insert(chain_id).second) {
+            chain_keys.push_back(chain_id);
+        }
+    }
+
+    unordered_map<string, string> seq_dict;
+    size_t count = min(chain_keys.size(), seq_vec.size());
+    for (size_t i = 0; i < count; ++i) {
+        seq_dict[chain_keys[i]] = seq_vec[i];
+    }
+    return seq_dict;
 }
 
 unordered_map<string, string> Coor::get_aa_na_seq(bool gap_in_seq, size_t frame) const {

@@ -4,6 +4,8 @@
 
 from .core import compute_SS
 
+__all__ = ["compute_secondary_structure"]
+
 
 def compute_secondary_structure(coor, **kwargs):
     """Compute secondary structure using the TM-align core.

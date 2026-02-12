@@ -62,7 +62,7 @@ def test_select_atoms():
     assert new.len == 56
 
     selec = "name N and residue == 0"
-    print(test.models[0].residue)
+    print(test.models[0].uniq_resid)
     print(test.models[0].name)
     new = test.select_atoms(selec)
     assert new.len == 1
