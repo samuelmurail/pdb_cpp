@@ -5,7 +5,20 @@ from .core import Coor
 
 
 def get_aa_seq(self, gap_in_seq=True, frame=0):
-    """Return the amino acid sequence of the selection."""
+    """Return the amino acid sequence of the selection.
+
+    Parameters
+    ----------
+    gap_in_seq : bool, optional
+        Whether to insert gaps for missing residues.
+    frame : int, optional
+        Frame index to use for the selection.
+
+    Returns
+    -------
+    dict
+        Mapping of chain ID to sequence.
+    """
     sequences = self.get_aa_sequences(gap_in_seq=gap_in_seq, frame=frame)
     if not sequences:
         return {}
@@ -30,7 +43,20 @@ def get_aa_seq(self, gap_in_seq=True, frame=0):
 
 
 def get_aa_DL_seq(self, gap_in_seq=True, frame=0):
-    """Return the amino acid sequence with D-residues in lowercase."""
+    """Return the amino acid sequence with D-residues in lowercase.
+
+    Parameters
+    ----------
+    gap_in_seq : bool, optional
+        Whether to insert gaps for missing residues.
+    frame : int, optional
+        Frame index to use for the selection.
+
+    Returns
+    -------
+    dict
+        Mapping of chain ID to sequence.
+    """
     sequences = self.get_aa_sequences_dl(gap_in_seq=gap_in_seq, frame=frame)
     if not sequences:
         return {}

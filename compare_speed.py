@@ -158,7 +158,7 @@ for i in range(N):
 
     # pdb_numpy
     start_time = time.time()
-    coor = pdb_numpy.Coor("src/pdb_cpp/tests/input/" +file_name)
+    coor = pdb_numpy.Coor("tests/input/" + file_name)
     pdb_numpy_read_time = time.time() - start_time
     read_times.append(pdb_numpy_read_time)
     start_time = time.time()

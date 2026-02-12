@@ -6,15 +6,10 @@ from .core import compute_SS
 
 
 def compute_secondary_structure(coor, **kwargs):
-    """
-    Compute the secondary structure of a protein structure.
+    """Compute secondary structure using the TM-align core.
 
-    This function uses the TMalign algorithm to compute the secondary structure elements
-
-    You should cite the original TMalign paper if you use this function in your work:
-    Zhang, Y., & Skolnick, J. NAR (2005). TM-align: a protein structure alignment
-    algorithm based on the TM-score.
-    https://doi.org/10.1093/nar/gki524
+    You should cite the original TM-align paper if you use this function:
+    Zhang, Y., & Skolnick, J. NAR (2005).
 
     Parameters
     ----------
@@ -26,7 +21,7 @@ def compute_secondary_structure(coor, **kwargs):
     Returns
     -------
     list
-        A list of secondary structure elements.
+        List of per-chain secondary-structure dictionaries per model.
     """
     ss_list = compute_SS(coor, **kwargs)
     uniq_chains = coor.get_uniq_chain()

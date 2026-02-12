@@ -9,26 +9,25 @@ from .data.blosum import BLOSUM62
 def align_seq(
     seq1, seq2, gap_cost=-11, gap_ext=-1, matrix_file="src/pdb_cpp/data/blosum62.txt"
 ):
-    """
-    Align two sequences using a simple scoring system.
+    """Align two sequences using a simple scoring system.
 
     Parameters
     ----------
-    seq_1 : str
-        First sequence
-    seq_2 : str
-        Second sequence
+    seq1 : str
+        First sequence.
+    seq2 : str
+        Second sequence.
     gap_cost : int, optional
-        Cost for opening a gap, by default -11
+        Cost for opening a gap.
     gap_ext : int, optional
-        Cost for extending a gap, by default 1
+        Cost for extending a gap.
     matrix_file : str, optional
-        Path to the scoring matrix file, by default 'src/pdb_cpp/data/blosum62.txt'
+        Path to the scoring matrix file.
 
     Returns
     -------
     tuple
-        Tuple containing the aligned sequences (seq1, seq2)
+        Tuple containing the aligned sequences (seq1, seq2) and score.
     """
 
     alignement = sequence_align(
@@ -43,21 +42,20 @@ def align_seq(
 
 
 def print_align_seq(seq_1, seq_2, line_len=80):
-    """Print the aligned sequences with a line length of 80 characters.
+    """Print the aligned sequences with a fixed line length.
 
     Parameters
     ----------
     seq_1 : str
-        First sequence
+        First sequence.
     seq_2 : str
-        Second sequence
+        Second sequence.
     line_len : int, optional
-        Length of the line, by default 80
+        Length of each output line.
 
     Returns
     -------
     None
-
     """
 
     sim_seq = ""
@@ -109,6 +107,26 @@ def align_chain_permutation(
     matrix_file="src/pdb_cpp/data/blosum62.txt",
     frame_ref=0,
 ):
+    """Align structures by permuting chain order and selecting the best RMSD.
+
+    Parameters
+    ----------
+    coor_1 : Coor
+        First coordinate object.
+    coor_2 : Coor
+        Second coordinate object.
+    back_names : list[str], optional
+        Backbone atom names to use.
+    matrix_file : str, optional
+        Path to the scoring matrix file.
+    frame_ref : int, optional
+        Reference frame index in coor_2.
+
+    Returns
+    -------
+    tuple
+        RMSD list and index mappings from the best permutation.
+    """
     if back_names is None:
         back_names = ["C", "N", "O", "CA"]
 
