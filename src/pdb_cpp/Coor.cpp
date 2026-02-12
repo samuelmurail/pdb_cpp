@@ -127,7 +127,7 @@ Coor Coor::select_bool_index(const vector<bool> &indexes) const {
             }
         }
         if (!new_values.empty()) {
-            selected.conect[key_it->second] = move(new_values);
+            selected.conect[key_it->second] = std::move(new_values);
         }
     }
 
