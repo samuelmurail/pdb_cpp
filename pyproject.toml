@@ -5,9 +5,13 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "pdb-cpp"
 version = "0.0.1"
-dynamic = ["readme", "dependencies"]
+dynamic = ["readme"]
 description = "Pdb_cpp is a python library allowing simple operations on pdb coor files."
 requires-python = ">=3.6"
+dependencies = [
+    "numpy>=1.2",
+    "pybind11==2.13",
+]
 authors = [
     { name = "Samuel Murail", email = "samuel.murail@u-paris.fr" },
 ]
@@ -48,7 +52,9 @@ Homepage = "https://pdb-cpp.readthedocs.io/en/latest/"
 
 [tool.setuptools.dynamic]
 readme = {file = ["README.md"]}
-dependencies = {file = ["requirements.txt"]}
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.build-ext]
+extra-compile-args = ["-O3", "-ffast-math", "-std=c++17"]
