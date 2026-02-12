@@ -104,7 +104,7 @@ vector<bool> Model::select_tokens(const Token &tokens) const {
             string token_str = tok.as_string();
             if (token_str == "and" || token_str == "or") {
                 logical = token_str;
-                bool_list = move(new_bool_list);
+                bool_list = std::move(new_bool_list);
                 new_bool_list.clear();
                 continue;
             } else if (token_str == "not") {
@@ -119,7 +119,7 @@ vector<bool> Model::select_tokens(const Token &tokens) const {
             }
         }
 
-        new_bool_list = move(select_tokens(tok)); // Avoid copy
+        new_bool_list = select_tokens(tok);
 
         if (not_flag) {
             for (size_t j = 0; j < new_bool_list.size(); ++j) {
