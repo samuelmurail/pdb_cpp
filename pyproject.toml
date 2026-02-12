@@ -55,6 +55,3 @@ readme = {file = ["README.md"]}
 
 [tool.setuptools.packages.find]
 where = ["src"]
-
-[tool.setuptools.build-ext]
-extra-compile-args = ["-O3", "-ffast-math", "-std=c++17"]
