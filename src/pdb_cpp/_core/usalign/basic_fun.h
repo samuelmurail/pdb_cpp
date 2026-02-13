@@ -890,7 +890,7 @@ void file2chainlist(vector<string>&chain_list, const string &name,
         PrintErrorAndQuit(("Can not open file: "+name+'\n').c_str());
     string line;
     string filename;
-    int a,b;
+    int a;
     string sep;
     while (fp.good())
     {
@@ -940,7 +940,7 @@ void file2chainpairlist(vector<string>&chain1_list, vector<string>&chain2_list,
         PrintErrorAndQuit(("Can not open file: "+name+'\n').c_str());
     string line;
     string filename;
-    int a,b;
+    int a;
     size_t i;
     string sep,filename1,filename2;
     vector<string> line_vec;
