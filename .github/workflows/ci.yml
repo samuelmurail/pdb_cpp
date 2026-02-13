@@ -30,7 +30,7 @@ jobs:
           python -m pip install --upgrade setuptools wheel -v
           python -m pip install -r requirements.txt -v
           python -m pip install pytest -v
-          python -m pip install -e . --no-build-isolation -v
+          python -m pip install . -v
 
       - name: Run tests
         run: pytest -q
