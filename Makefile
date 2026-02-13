@@ -2,7 +2,7 @@ CXX = g++
 CXXFLAGS = -std=c++17 -O2 -Wall -Wextra
 
 TARGET = main
-SRCS = src/pdb_cpp/select.cpp src/pdb_cpp/Model.cpp  src/pdb_cpp/Coor.cpp src/pdb_cpp/sequence.cpp src/pdb_cpp/align.cpp src/pdb_cpp/seq_align.cpp src/pdb_cpp/format/pdb.cpp src/pdb_cpp/data/residue.cpp src/pdb_cpp/main.cpp 
+SRCS = src/pdb_cpp/_core/select.cpp src/pdb_cpp/_core/Model.cpp src/pdb_cpp/_core/Coor.cpp src/pdb_cpp/_core/sequence.cpp src/pdb_cpp/_core/align.cpp src/pdb_cpp/_core/seq_align.cpp src/pdb_cpp/_core/format/pdb.cpp src/pdb_cpp/_core/data/residue.cpp src/pdb_cpp/_core/main.cpp
 OBJS = $(SRCS:.cpp=.o)
 
 scratch: clean $(TARGET)

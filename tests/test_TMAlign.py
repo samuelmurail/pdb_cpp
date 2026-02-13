@@ -2,7 +2,7 @@
 # coding: utf-8
 
 """
-Tests for _alignement functions
+Tests for _alignment functions
 """
 
 from .datafiles import PDB_1Y0M, PDB_1U85

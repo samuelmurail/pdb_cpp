@@ -425,10 +425,10 @@ Alignment *seq_align(const char *seq1, const char *seq2, const char *matrix_file
     return alignment;
 }
 
-    // alignement = sequence_align(
+    // alignment = sequence_align(
     //     seq1=seq1,
     //     seq2=seq2,
-    //     matrix_file='src/pdb_cpp/data/blosum62.txt',
+    //     matrix_file='<package-resource blosum62.txt>',
     //     GAP_COST=gap_cost,
     //     GAP_EXT=gap_ext)
 
@@ -490,7 +490,7 @@ void free_align(Alignment *align)
 
 //     Alignment *alignment = NULL;
     
-//     alignment = seq_align(seq_1, seq_2, "./src/pdb_cpp/data/blosum62.txt", -11, -1);
+//     alignment = seq_align(seq_1, seq_2, "<matrix-file>", -11, -1);
 //     printf ("Alignment:\n%s:\n%s:\n", alignment->seq1, alignment->seq2);
 
 //     //print_alignment(alignment);
@@ -521,7 +521,7 @@ SEDIHKQ";
     
     printf ("READ MATRIX:\n");
 
-    read_matrix("./src/pdb_cpp/data/blosum62.txt", sub_matrix);
+    read_matrix("<matrix-file>", sub_matrix);
 
     printf ("MATRIX:\n");
     for (int i = 0; i < MATRIX_SIZE; i++)

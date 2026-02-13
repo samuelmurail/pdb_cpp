@@ -9,7 +9,7 @@ import pytest
 from pdb_cpp import Coor, core
 
 # import pdb_numpy
-# import pdb_numpy.alignement as align
+# import pdb_numpy.alignment as align
 
 
 def test_coor_align_basic():

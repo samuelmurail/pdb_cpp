@@ -335,7 +335,7 @@ using namespace std;
 
 //     // Alignment alignment;
 
-//     Alignment alignment = sequence_align(seq_1, seq_2, "src/pdb_cpp/data/blosum62.txt", -11, -1);
+//     Alignment alignment = sequence_align(seq_1, seq_2, "<matrix-file>", -11, -1);
 //     // printf ("Alignment:\n%s:\n%s:\n", alignment->seq1, alignment->seq2);
 
 //     print_alignment(alignment);
@@ -446,7 +446,7 @@ pair<vector<int>, vector<int>> get_common_atoms(
     Alignment *alignment = seq_align(seq_1.c_str(), seq_2.c_str(), matrix_file.c_str());
     auto stop = high_resolution_clock::now();
     auto duration = duration_cast<microseconds>(stop - start);
-    // cout << "Alignement duration :" << duration.count()/1e6 << endl;
+    // cout << "Alignment duration :" << duration.count()/1e6 << endl;
     string align_seq_1(alignment->seq1);
     string align_seq_2(alignment->seq2);
 

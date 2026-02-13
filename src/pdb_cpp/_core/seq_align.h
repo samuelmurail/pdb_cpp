@@ -74,7 +74,7 @@ Alignment *seq_align(const char *seq1, const char *seq2, const char *matrix_file
 Alignment_cpp *sequence_align(
     const std::string &seq1,
     const std::string &seq2,
-    const std::string &matrix_file = "src/pdb_cpp/data/blosum62.txt",
+    const std::string &matrix_file = "",
     int GAP_COST = -11,
     int GAP_EXT = -1
 );

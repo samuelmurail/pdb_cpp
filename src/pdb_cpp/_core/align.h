@@ -44,7 +44,7 @@ std::pair<std::vector<float>, std::pair<std::vector<int>, std::vector<int>>> ali
     const Coor &coor_1,
     const Coor &coor_2,
     const std::vector<std::string> &back_names= {"C", "N", "O", "CA"},
-    const std::string &matrix_file="src/pdb_cpp/data/blosum62.txt",
+    const std::string &matrix_file="",
     const int frame_ref=0
 );
 

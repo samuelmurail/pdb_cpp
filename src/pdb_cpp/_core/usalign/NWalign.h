@@ -436,7 +436,7 @@ int NWalign_main(const char *seqx, const char *seqy, const int xlen,
     DeleteArray(&JumpV, xlen+1);
     DeleteArray(&P, xlen+1);
     DeleteArray(&S, xlen+1);
-    return aln_score; // aligment score
+    return aln_score; // alignment score
 }
 
 void get_seqID(int *invmap, const char *seqx, const char *seqy, 

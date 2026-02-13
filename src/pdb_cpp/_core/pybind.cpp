@@ -12,6 +12,15 @@
 
 namespace py = pybind11;
 
+static std::string resolve_matrix_file(const std::string &matrix_file) {
+    if (!matrix_file.empty()) {
+        return matrix_file;
+    }
+    py::module_ resources = py::module_::import("importlib.resources");
+    py::object matrix_path = resources.attr("files")("pdb_cpp.data").attr("joinpath")("blosum62.txt");
+    return py::str(matrix_path);
+}
+
 PYBIND11_MODULE(core, m) {
     py::class_<Model>(m, "Model")
         .def(py::init<>())
@@ -141,10 +150,16 @@ PYBIND11_MODULE(core, m) {
 
     // Bind the align function
     m.def("sequence_align",
-        &sequence_align,  // Directly bind the align function
+        [](const std::string &seq1,
+           const std::string &seq2,
+           const std::string &matrix_file,
+           int gap_cost,
+           int gap_ext) {
+            return sequence_align(seq1, seq2, resolve_matrix_file(matrix_file), gap_cost, gap_ext);
+        },
         py::arg("seq1"),
         py::arg("seq2"),
-        py::arg("matrix_file") = "src/pdb_cpp/data/blosum62.txt",
+        py::arg("matrix_file") = "",
         py::arg("GAP_COST") = -11,
         py::arg("GAP_EXT") = -1,
         py::return_value_policy::take_ownership,  // Python takes ownership of the returned pointer
@@ -152,13 +167,27 @@ PYBIND11_MODULE(core, m) {
 
     // Bind the get_common_atoms function
     m.def("get_common_atoms",
-        &get_common_atoms,
+        [](const Coor &coor_1,
+           const Coor &coor_2,
+           const std::vector<std::string> &chain_1,
+           const std::vector<std::string> &chain_2,
+           const std::vector<std::string> &back_names,
+           const std::string &matrix_file) {
+            return get_common_atoms(
+                coor_1,
+                coor_2,
+                chain_1,
+                chain_2,
+                back_names,
+                resolve_matrix_file(matrix_file)
+            );
+        },
         py::arg("coor_1"),
         py::arg("coor_2"),
         py::arg("chain_1") = std::vector<std::string>{"A"},
         py::arg("chain_2") = std::vector<std::string>{"A"},
         py::arg("back_names") = std::vector<std::string>{"C", "N", "O", "CA"},
-        py::arg("matrix_file") = "src/pdb_cpp/data/blosum62.txt",
+        py::arg("matrix_file") = "",
         "Get common atoms between two Coor objects based on sequence alignment");
 
     // Bind the coor_align function
@@ -172,22 +201,50 @@ PYBIND11_MODULE(core, m) {
         "Align two coordinate structures using quaternion-based rotation");
     
     m.def("align_seq_based",
-        &align_seq_based,
+        [](Coor &coor_1,
+           const Coor &coor_2,
+           const std::vector<std::string> &chain_1,
+           const std::vector<std::string> &chain_2,
+           const std::vector<std::string> &back_names,
+           const std::string &matrix_file,
+           int frame_ref) {
+            return align_seq_based(
+                coor_1,
+                coor_2,
+                chain_1,
+                chain_2,
+                back_names,
+                resolve_matrix_file(matrix_file),
+                frame_ref
+            );
+        },
         py::arg("coor_1"),
         py::arg("coor_2"),
         py::arg("chain_1") = std::vector<std::string>{"A"},
         py::arg("chain_2") = std::vector<std::string>{"A"},
         py::arg("back_names") = std::vector<std::string>{"C", "N", "O", "CA"},
-        py::arg("matrix_file") = "src/pdb_cpp/data/blosum62.txt",
+        py::arg("matrix_file") = "",
         py::arg("frame_ref") = 0,
-        "Align two coordinate structures using sequence based alignement");
+        "Align two coordinate structures using sequence based alignment");
 
     m.def("align_chain_permutation",
-        &align_chain_permutation,
+        [](const Coor &coor_1,
+           const Coor &coor_2,
+           const std::vector<std::string> &back_names,
+           const std::string &matrix_file,
+           int frame_ref) {
+            return align_chain_permutation(
+                coor_1,
+                coor_2,
+                back_names,
+                resolve_matrix_file(matrix_file),
+                frame_ref
+            );
+        },
         py::arg("coor_1"),
         py::arg("coor_2"),
         py::arg("back_names") = std::vector<std::string>{"C", "N", "O", "CA"},
-        py::arg("matrix_file") = "src/pdb_cpp/data/blosum62.txt",
+        py::arg("matrix_file") = "",
         py::arg("frame_ref") = 0,
         "Align structures by permuting chain order and selecting the best RMSD.");
 
