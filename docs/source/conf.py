@@ -31,6 +31,7 @@ import sys
 
 extensions = [
     'sphinx.ext.autodoc',
+    'sphinx.ext.autosummary',
     'sphinx.ext.coverage',
     'sphinx.ext.todo',
     'sphinx.ext.viewcode',
@@ -72,6 +73,11 @@ man_pages = [
 
 # autodoc_mock_imports = ["numpy", "scipy", "pytest"]
 autodoc_mock_imports = ["pytest"]
+
+# Avoid generating per-method autosummary stub pages for numpydoc class members
+# (pybind classes expose many members and trigger "stub file not found" warnings).
+numpydoc_class_members_toctree = False
+autosummary_generate = True
 
 # Exclude generated index page from direct rendering
 exclude_patterns = ['modules.rst']

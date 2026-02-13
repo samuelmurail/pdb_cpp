@@ -2,6 +2,8 @@
 
 Library to use pdb/mmcif files with c++.
 
+<img src="https://raw.githubusercontent.com/samuelmurail/pdb_cpp/master/docs/source/logo.png" alt="AF Analysis Logo" width="300" style="display: block; margin: auto;"/>
+
 
 ## Installation
 
