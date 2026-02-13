@@ -7,8 +7,16 @@ import pybind11
 
 def _cpp_args():
     if sys.platform == "win32":
-        return ["/std:c++17"]
-    return ["-std=c++17"]
+        return [
+            "/O2",
+            "/fp:fast",
+            "/std:c++17",
+            "/wd4244",
+            "/wd4267",
+            "/wd4305",
+            "/wd4996",
+        ]
+    return ["-O3", "-ffast-math", "-std=c++17"]
 
 ext_modules = [
     Extension(
@@ -29,7 +37,7 @@ ext_modules = [
             pybind11.get_include(),
             "src/pdb_cpp",
         ],
-        extra_compile_args=["-O3", "-ffast-math"] + _cpp_args(),
+        extra_compile_args=_cpp_args(),
         language="c++"
     ),
 ]
