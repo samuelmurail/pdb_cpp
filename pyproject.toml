@@ -40,12 +40,8 @@ classifiers = [
     "Programming Language :: Python :: 3.10",
     "Topic :: Software Development",
 ]
-
-[project.license]
-text = "GPL-2.0-only"
-
-[project.license-files]
-paths = ["LICENSE"]
+license = "GPL-2.0-only"
+license-files = ["LICENSE"]
 
 [project.scripts]
 pdb_cpp = "pdb_cpp.__main__:main"
