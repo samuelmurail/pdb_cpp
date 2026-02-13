@@ -17,6 +17,7 @@
 #include <utility>
 #include <limits>
 #include <numeric>
+#include <cmath>
 
 #include "align.h"
 #include "seq_align.h"
@@ -582,10 +583,20 @@ pair<vector<float>, pair<vector<int>, vector<int>>> align_chain_permutation(
         if (rmsds.empty()) {
             continue;
         }
-        double sum = accumulate(rmsds.begin(), rmsds.end(), 0.0);
-        double score = sum / static_cast<double>(rmsds.size());
+        double sum = 0.0;
+        size_t finite_count = 0;
+        for (float value : rmsds) {
+            if (std::isfinite(value)) {
+                sum += value;
+                ++finite_count;
+            }
+        }
+        if (finite_count == 0) {
+            continue;
+        }
+        double score = sum / static_cast<double>(finite_count);
 
-        if (score < best_score) {
+        if (!found || score < best_score) {
             best_score = score;
             best_rmsds = rmsds;
             best_index_1 = index_1;
