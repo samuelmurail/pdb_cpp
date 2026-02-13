@@ -19,19 +19,14 @@ GRO_2RRI = os.path.join(TEST_FILE_PATH, "2rri.gro")
 PDB_1U85 = os.path.join(TEST_FILE_PATH, "1u85.pdb")
 PDB_1UBD = os.path.join(TEST_FILE_PATH, "1ubd.pdb")
 
-# DockQ test inputs live in external/pdb_numpy for now.
-EXTERNAL_TEST_INPUT = os.path.abspath(
-	os.path.join(PYTEST_DIR, "..", "external", "pdb_numpy", "tests", "input")
-)
-
-PDB_1JD4 = os.path.join(EXTERNAL_TEST_INPUT, "1jd4.pdb")
+PDB_1JD4 = os.path.join(TEST_FILE_PATH, "1jd4.pdb")
 PDB_5M6N = os.path.join(TEST_FILE_PATH, "5m6n.pdb")
 
-PDB_1RXZ = os.path.join(EXTERNAL_TEST_INPUT, "1rxz.pdb")
-PDB_1RXZ_Colabfold = os.path.join(EXTERNAL_TEST_INPUT, "1rxz_colabfold_model_1.pdb")
+PDB_1RXZ = os.path.join(TEST_FILE_PATH, "1rxz.pdb")
+PDB_1RXZ_Colabfold = os.path.join(TEST_FILE_PATH, "1rxz_colabfold_model_1.pdb")
 
-DOCKQ_MODEL = os.path.join(EXTERNAL_TEST_INPUT, "model.pdb")
-DOCKQ_NATIVE = os.path.join(EXTERNAL_TEST_INPUT, "native.pdb")
+DOCKQ_MODEL = os.path.join(TEST_FILE_PATH, "model.pdb")
+DOCKQ_NATIVE = os.path.join(TEST_FILE_PATH, "native.pdb")
 
 PDB_2MUS = os.path.join(TEST_FILE_PATH, "2mus.pdb")
 PDB_2MUS_MODEL = os.path.join(TEST_FILE_PATH, "af_2.2_2mus.pdb")
