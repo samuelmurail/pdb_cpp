@@ -241,7 +241,7 @@ vector<bool> simple_select_atoms_model(const Model &model, const string &column,
         vector<array<char, 5>> model_val = (column == "name") ? model.get_name() : (column == "resname") ? model.get_resname() : model.get_elem();
 
         if (values.size() == 1 && values[0].back() == '*') {
-            cout << "Using 'startswith'." << endl;
+            // cout << "Using 'startswith'." << endl;
             only_val = values[0].substr(0, values[0].size() - 1);
             for (size_t i = 0; i < n; ++i) {
                 result[i] = str_startswith(model_val[i], only_val);
