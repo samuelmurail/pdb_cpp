@@ -2,6 +2,8 @@
 #include <string>
 #include <iostream>
 #include <vector>
+#include <fstream>
+#include <sstream>
 
 
 
@@ -120,39 +122,32 @@ void print_alignment(Alignment *alignment)
 
 void read_matrix(const char *matrix_file, short int matrix[MATRIX_SIZE][MATRIX_SIZE])
 {
-    FILE *fp;
-    char *line = NULL;
-    size_t len = 0;
-    ssize_t read;
-    //short int matrix[MATRIX_SIZE][MATRIX_SIZE];
-    char *ptr;
-    char delim[] = " ";
-
-    fp = fopen(matrix_file, "r");
-    if (fp == NULL)
+    std::ifstream fp(matrix_file);
+    if (!fp.is_open())
+    {
         exit(EXIT_FAILURE);
+    }
 
-    int i = 0, j;
-    while (((read = getline(&line, &len, fp)) != -1) && (i < MATRIX_SIZE)) {
-        if (line[0] == '#' || line[0] == ' ' || line[0] == '*')
+    std::string line;
+    int i = 0;
+    while (std::getline(fp, line) && i < MATRIX_SIZE)
+    {
+        if (line.empty() || line[0] == '#' || line[0] == ' ' || line[0] == '*')
             continue;
-        if (i >= 0) {
-            ptr = strtok(line, delim);
-            ptr = strtok(NULL, delim);
-            for (j = 0; (ptr != NULL) && (j < MATRIX_SIZE); j++)
-            {
-                matrix[i][j] = atoi(ptr);
-                ptr = strtok(NULL, delim);
-            }
+
+        std::istringstream iss(line);
+        std::string row_label;
+        iss >> row_label;
+
+        for (int j = 0; j < MATRIX_SIZE; ++j)
+        {
+            int value = 0;
+            if (!(iss >> value))
+                break;
+            matrix[i][j] = static_cast<short int>(value);
         }
         i++;
     }
-
-    // Free dynamically allocated memory for line
-    free(line);
-
-    // Close file
-    fclose(fp);
 }
 
 // Alignment *align_test(const char *seq1, const char *seq2, const char *matrix_file, int GAP_COST, int GAP_EXT)
@@ -200,7 +195,7 @@ Alignment *seq_align(const char *seq1, const char *seq2, const char *matrix_file
     std::vector<std::vector<int>> score_matrix(seq1_len + 1, std::vector<int>(seq2_len + 1, 0));
     
     // std::cout << "End score matrix memory assignation"  << std::endl;
-    int prev_score_line [seq2_len];
+    std::vector<int> prev_score_line(seq2_len + 1, FALSE);
     int prev_score = FALSE;
     int i, j, counter;
     // Alignment *alignment = malloc(sizeof(Alignment));
@@ -221,7 +216,7 @@ Alignment *seq_align(const char *seq1, const char *seq2, const char *matrix_file
 
     for (i = 0; i < seq1_len + 1; i++) score_matrix[i][0] = 0;
     for (i = 0; i < seq2_len + 1; i++) score_matrix[0][i] = 0;
-    for (i = 0; i < seq2_len; i++) prev_score_line[i] = FALSE;
+    for (i = 0; i <= seq2_len; i++) prev_score_line[i] = FALSE;
 
 
     int *seq_1_num = seq_to_num(seq1);
@@ -300,96 +295,53 @@ Alignment *seq_align(const char *seq1, const char *seq2, const char *matrix_file
 
     alignment->score = max_score;
 
-    // Traceback and compute the alignment
-
-    int max_len = seq1_len + seq2_len;
-    char align_seq_1[max_len];
-    char align_seq_2[max_len];
-
-    //printf ("A Checking align sequences 1 len = %ld:\n", strlen(align_seq_1));
-    //check_seq(align_seq_1);
-    //printf ("A Checking align sequences 2 len = %ld:\n", strlen(align_seq_2));
-    //check_seq(align_seq_2);
-
-    counter = 0;
-    i = min_i;
-    j = min_j;
+    // Traceback and compute the alignment using dynamic strings to avoid
+    // fixed-buffer overflows.
+    std::string rev_align_seq_1;
+    std::string rev_align_seq_2;
+    rev_align_seq_1.reserve(seq1_len + seq2_len + 2);
+    rev_align_seq_2.reserve(seq1_len + seq2_len + 2);
 
     for (i = seq1_len - 1; i >= min_i; i--) {
-        align_seq_1[counter] = seq1[i];
-        align_seq_2[counter] = '-';
-        counter++;
+        rev_align_seq_1.push_back(seq1[i]);
+        rev_align_seq_2.push_back('-');
     }
 
     for (j = seq2_len - 1; j >= min_j; j--) {
-        align_seq_2[counter] = seq2[j];
-        align_seq_1[counter] = '-';
-        counter++;
+        rev_align_seq_1.push_back('-');
+        rev_align_seq_2.push_back(seq2[j]);
     }
 
-    align_seq_1[counter] = '\0';
-    align_seq_2[counter] = '\0';
-
-    //printf ("B Checking align sequences 1 len = %ld:\n", strlen(align_seq_1));
-    //check_seq(align_seq_1);
-    //printf ("B Checking align sequences 2 len = %ld:\n", strlen(align_seq_2));
-    //check_seq(align_seq_2);
-
-    //printf ("Start matrix backtrack i=%d, j=%d, counter=%d\n", i, j, counter);
-    do {
-        if (score_matrix[i+1][j+1] == score_matrix[i][j] + subs_matrix[seq_1_num[i]][seq_2_num[j]]) {
-            align_seq_1[counter] = seq1[i--];
-            align_seq_2[counter] = seq2[j--];
-            //printf ("Match: %c, %c at i=%d, j=%d counter=%d\n", align_seq_1[counter], align_seq_2[counter], i, j, counter);
+    int trace_i = min_i - 1;
+    int trace_j = min_j - 1;
+    while (trace_i >= 0 && trace_j >= 0) {
+        if (score_matrix[trace_i + 1][trace_j + 1] == score_matrix[trace_i][trace_j] + subs_matrix[seq_1_num[trace_i]][seq_2_num[trace_j]]) {
+            rev_align_seq_1.push_back(seq1[trace_i--]);
+            rev_align_seq_2.push_back(seq2[trace_j--]);
         }
-        else if ((score_matrix[i+1][j+1] == score_matrix[i][j+1] + GAP_COST) ||
-                 (score_matrix[i+1][j+1] == score_matrix[i][j+1] + GAP_EXT)) {
-            align_seq_1[counter] = seq1[i--];
-            align_seq_2[counter] = '-';
-            //printf ("Insert: %c, %c at i=%d, j=%d counter=%d\n", align_seq_1[counter], align_seq_2[counter], i, j, counter);
+        else if ((score_matrix[trace_i + 1][trace_j + 1] == score_matrix[trace_i][trace_j + 1] + GAP_COST) ||
+                 (score_matrix[trace_i + 1][trace_j + 1] == score_matrix[trace_i][trace_j + 1] + GAP_EXT)) {
+            rev_align_seq_1.push_back(seq1[trace_i--]);
+            rev_align_seq_2.push_back('-');
         }
         else {
-            align_seq_1[counter] = '-';
-            align_seq_2[counter] = seq2[j--];
-            //printf ("Delete: %c, %c at i=%d, j=%d counter=%d\n", align_seq_1[counter], align_seq_2[counter], i, j, counter);
+            rev_align_seq_1.push_back('-');
+            rev_align_seq_2.push_back(seq2[trace_j--]);
         }
-        counter ++;
-    } while (i >= 0 && j >= 0);
-
-    align_seq_1[counter] = '\0';
-    align_seq_2[counter] = '\0';
-
-    //printf ("C Checking align sequences 1 len = %ld:\n", strlen(align_seq_1));
-    //check_seq(align_seq_1);
-    //printf ("C Checking align sequences 2 len = %ld:\n", strlen(align_seq_2));
-    //check_seq(align_seq_2);
-
-    for (i = i + 1; i > 0; i--) {
-        align_seq_1[counter] = seq1[i - 1];
-        align_seq_2[counter] = '-';
-        counter ++;
     }
-    for (j = j + 1; j > 0; j--) {
-        align_seq_2[counter] = seq2[j - 1];
-        align_seq_1[counter] = '-';
-        counter ++;
-    }
-    align_seq_1[counter] = '\0';
-    align_seq_2[counter] = '\0';
 
-
-    //printf ("D Checking align sequences 1 len = %ld:\n", strlen(align_seq_1));
-    //check_seq(align_seq_1);
-    //printf ("D Checking align sequences 2 len = %ld:\n", strlen(align_seq_2));
-    //check_seq(align_seq_2);
-    // Get size of the alignment
-    int align_len = 0;
-    for (int i = 0; i < max_len; i++) {
-        if ((align_seq_1[i] == '\0') || (align_seq_2[i] == '\0')) {
-            break;
-        }
-        align_len++;
+    for (i = trace_i + 1; i > 0; i--) {
+        rev_align_seq_1.push_back(seq1[i - 1]);
+        rev_align_seq_2.push_back('-');
     }
+    for (j = trace_j + 1; j > 0; j--) {
+        rev_align_seq_1.push_back('-');
+        rev_align_seq_2.push_back(seq2[j - 1]);
+    }
+
+    std::string final_align_seq_1(rev_align_seq_1.rbegin(), rev_align_seq_1.rend());
+    std::string final_align_seq_2(rev_align_seq_2.rbegin(), rev_align_seq_2.rend());
+    int align_len = static_cast<int>(final_align_seq_1.size());
 
     // Inverse the sequences
     //alignment->seq1 = calloc((align_len + 1), sizeof(char));
@@ -400,23 +352,18 @@ Alignment *seq_align(const char *seq1, const char *seq2, const char *matrix_file
     assert(alignment->seq2 != NULL);
     //printf ("Alignment len align_len: %d\n", align_len + 1);
 
-    int rev_i = 0;
-    for (int i = counter - 1; i >= 0; i--) {
-        if ((align_seq_1[i] == '\0') || (align_seq_2[i] == '\0')) {
-            continue;
-        }
-        alignment->seq1[rev_i] = align_seq_1[i];    
-        alignment->seq2[rev_i] = align_seq_2[i];
-        //printf ("%c %c %d %d %d\n", alignment->seq1[rev_i], alignment->seq2[rev_i], alignment->seq1[rev_i], alignment->seq2[rev_i], rev_i);
-        rev_i++;
+    for (int k = 0; k < align_len; ++k)
+    {
+        alignment->seq1[k] = final_align_seq_1[k];
+        alignment->seq2[k] = final_align_seq_2[k];
     }
-    alignment->seq1[rev_i] = '\0';
-    alignment->seq2[rev_i] = '\0';
+    alignment->seq1[align_len] = '\0';
+    alignment->seq2[align_len] = '\0';
 
     //printf ("Alignment len %d\n", rev_i);
 
-    free(seq_1_num);
-    free(seq_2_num);
+    delete[] seq_1_num;
+    delete[] seq_2_num;
     check_seq(alignment->seq1);
     check_seq(alignment->seq2);
 
@@ -466,21 +413,21 @@ void free_align(Alignment *align)
 
     //printf("Freeing alignment seq1: %s\n", align->seq1);
     if (align->seq1 != NULL) {
-        free(align->seq1); 
+        delete[] align->seq1;
         align->seq1 = NULL;
     } else {
         printf("Warning: seq1 is NULL\n");
     }
     //printf("Freeing alignment seq2: %s\n", align->seq2);
     if (align->seq2 != NULL) {
-        free(align->seq2);
+        delete[] align->seq2;
         align->seq2 = NULL;
     } else {
         printf("Warning: seq2 is NULL\n");
     }
 
     // Free memory for the alignment structure
-    free(align);
+    delete align;
 
 }
 
