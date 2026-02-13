@@ -31,7 +31,6 @@ def compute_secondary_structure(coor, **kwargs):
     SS_new_list = []
 
     for ss_frame in ss_list:
-
         ss_dict = {}
         # print(f"Secondary structure: {ss_sec}")
 
