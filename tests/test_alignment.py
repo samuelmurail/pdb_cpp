@@ -2,11 +2,11 @@
 # coding: utf-8
 
 """
-Tests for _alignement functions
+Tests for _alignment functions
 """
 
 from .datafiles import PDB_1Y0M, PDB_2RRI, PDB_1U85, PDB_1UBD, PDB_2MUS, PDB_2MUS_MODEL
-from pdb_cpp import Coor, alignement, core
+from pdb_cpp import Coor, alignment, core
 
 import logging
 import pytest
@@ -64,9 +64,9 @@ def test_seq_align(capsys):
         "EYAAVNFIARAGTKLFISRAKRIDTVSRVAFPLVFLIFNIFYWITYKLVPR"
     )
 
-    align_seq_1, align_seq_2, score = alignement.align_seq(seq_1, seq_2)
+    align_seq_1, align_seq_2, score = alignment.align_seq(seq_1, seq_2)
     assert score == 363
-    alignement.print_align_seq(align_seq_1, align_seq_2, line_len=80)
+    alignment.print_align_seq(align_seq_1, align_seq_2, line_len=80)
     # captured = caplog.records
     captured = capsys.readouterr().out.split("\n")[:-1]
 
@@ -80,9 +80,9 @@ def test_seq_align(capsys):
     seq_1 = "AQDMVSPPPPIADEPLTVNTGIYLIECYSLDDKAETFKVNAFLSLSWKDRRLAFDPV"
     seq_2 = "AQDMVSPPPPIADEPLTVN"
 
-    align_seq_1, align_seq_2, score = alignement.align_seq(seq_1, seq_2)
+    align_seq_1, align_seq_2, score = alignment.align_seq(seq_1, seq_2)
     assert score == 101
-    alignement.print_align_seq(align_seq_1, align_seq_2, line_len=80)
+    alignment.print_align_seq(align_seq_1, align_seq_2, line_len=80)
     captured = capsys.readouterr().out.split("\n")[:-1]
 
     assert captured[-4] == "Identity seq1: 33.33%"
@@ -93,9 +93,9 @@ def test_seq_align(capsys):
     seq_1 = "AQDMVSPPPPIADEPLTVNTGIYLIECYSLDDKAETFKVNAFLSLSWKDRRLAFDPV"
     seq_2 = "TFKVNAFLSLSWKDRRLAF"
 
-    align_seq_1, align_seq_2, score = alignement.align_seq(seq_1, seq_2)
+    align_seq_1, align_seq_2, score = alignment.align_seq(seq_1, seq_2)
     assert score == 98
-    alignement.print_align_seq(align_seq_1, align_seq_2, line_len=80)
+    alignment.print_align_seq(align_seq_1, align_seq_2, line_len=80)
     captured = capsys.readouterr().out.split("\n")[:-1]
 
     assert captured[-4] == "Identity seq1: 33.33%"
@@ -106,9 +106,9 @@ def test_seq_align(capsys):
     seq_1 = "TFKVNAFLSLSWKDRRLAF"
     seq_2 = "AQDMVSPPPPIADEPLTVNTGIYLIECYSLDDKAETFKVNAFLSLSWKDRRLAFDPV"
 
-    align_seq_1, align_seq_2, score = alignement.align_seq(seq_1, seq_2)
+    align_seq_1, align_seq_2, score = alignment.align_seq(seq_1, seq_2)
     assert score == 98
-    alignement.print_align_seq(align_seq_1, align_seq_2, line_len=80)
+    alignment.print_align_seq(align_seq_1, align_seq_2, line_len=80)
     captured = capsys.readouterr().out.split("\n")[:-1]
 
     assert captured[-4] == "Identity seq1: 100.00%"
@@ -119,9 +119,9 @@ def test_seq_align(capsys):
     seq_1 = "AQDMVSPPPPIADEPLTVN"
     seq_2 = "AQDMVSPPPPIADEPLTVNTGIYLIECYSLDDKAETFKVNAFLSLSWKDRRLAFDPV"
 
-    align_seq_1, align_seq_2, score = alignement.align_seq(seq_1, seq_2)
+    align_seq_1, align_seq_2, score = alignment.align_seq(seq_1, seq_2)
     assert score == 101
-    alignement.print_align_seq(align_seq_1, align_seq_2, line_len=80)
+    alignment.print_align_seq(align_seq_1, align_seq_2, line_len=80)
     captured = capsys.readouterr().out.split("\n")[:-1]
 
     assert captured[-4] == "Identity seq1: 100.00%"
@@ -132,9 +132,9 @@ def test_seq_align(capsys):
     seq_1 = "AQDMVSPPPPIADEPLTVNSLSWKDRRL"
     seq_2 = "AQDMVSPPPPIADEPLTVNTGIYLIECYSLDDKAETFKVNAFLSLSWKDRRLAFDPV"
 
-    align_seq_1, align_seq_2, score = alignement.align_seq(seq_1, seq_2)
+    align_seq_1, align_seq_2, score = alignment.align_seq(seq_1, seq_2)
     assert score == 125
-    alignement.print_align_seq(align_seq_1, align_seq_2, line_len=80)
+    alignment.print_align_seq(align_seq_1, align_seq_2, line_len=80)
     captured = capsys.readouterr().out.split("\n")[:-1]
 
     assert captured[-4] == "Identity seq1: 100.00%"

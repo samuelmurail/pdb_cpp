@@ -6,7 +6,7 @@ RMSD tests.
 """
 
 from .datafiles import PDB_1U85, PDB_1UBD
-from pdb_cpp import Coor, alignement, analysis, core
+from pdb_cpp import Coor, alignment, analysis, core
 import pytest
 
 
@@ -16,8 +16,8 @@ def test_measure_rmsd(capsys):
 
     seq_1 = coor_1.get_aa_seq()
     seq_2 = coor_2.get_aa_seq()
-    align_seq_1, align_seq_2, _ = alignement.align_seq(seq_1["A"], seq_2["C"])
-    alignement.print_align_seq(align_seq_1, align_seq_2, line_len=80)
+    align_seq_1, align_seq_2, _ = alignment.align_seq(seq_1["A"], seq_2["C"])
+    alignment.print_align_seq(align_seq_1, align_seq_2, line_len=80)
     _ = capsys.readouterr()
 
     index_1, index_2 = core.get_common_atoms(

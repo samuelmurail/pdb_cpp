@@ -1,5 +1,6 @@
 # Prerequisites
 *.d
+main
 
 # Test files
 tmp*
@@ -74,6 +75,7 @@ __pycache__/
 # Distribution / packaging
 .Python
 build/
+temp.*
 develop-eggs/
 dist/
 downloads/
@@ -92,6 +94,11 @@ share/python-wheels/
 *.egg
 MANIFEST
 src/*.egg-info
+
+# Local CMake / compiler leftovers
+*.gcda
+*.gcno
+*.gcov
 
 # PyInstaller
 #  Usually these files are written by a python script from a template

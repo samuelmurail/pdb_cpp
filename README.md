@@ -8,7 +8,14 @@ Library to use pdb/mmcif files with c++.
 ```bash
 git clone https://github.com/samuelmurail/pdb_cpp
 cd pdb_cpp
-python setup.py build_ext --inplace
+python -m pip install -e .
+```
+
+For development checks:
+
+```bash
+python -m pip install -r requirements.txt
+pytest
 ```
 
 ## Usage

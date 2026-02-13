@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 # coding: utf-8
 
+from importlib import resources
+
 from .core import align_chain_permutation as _align_chain_permutation
 from .core import sequence_align
 from .data.blosum import BLOSUM62
@@ -8,9 +10,11 @@ from .data.blosum import BLOSUM62
 __all__ = ["align_seq", "print_align_seq", "align_chain_permutation"]
 
 
-def align_seq(
-    seq1, seq2, gap_cost=-11, gap_ext=-1, matrix_file="src/pdb_cpp/data/blosum62.txt"
-):
+def _default_matrix_file():
+    return str(resources.files("pdb_cpp.data").joinpath("blosum62.txt"))
+
+
+def align_seq(seq1, seq2, gap_cost=-11, gap_ext=-1, matrix_file=None):
     """Align two sequences using a simple scoring system.
 
     Parameters
@@ -24,23 +28,25 @@ def align_seq(
     gap_ext : int, optional
         Cost for extending a gap.
     matrix_file : str, optional
-        Path to the scoring matrix file.
+        Path to the scoring matrix file. If None, uses packaged BLOSUM62.
 
     Returns
     -------
     tuple
         Tuple containing the aligned sequences (seq1, seq2) and score.
     """
+    if matrix_file is None:
+        matrix_file = _default_matrix_file()
 
-    alignement = sequence_align(
+    alignment = sequence_align(
         seq1=seq1,
         seq2=seq2,
-        matrix_file="src/pdb_cpp/data/blosum62.txt",
+        matrix_file=matrix_file,
         GAP_COST=gap_cost,
         GAP_EXT=gap_ext,
     )
 
-    return alignement.seq1, alignement.seq2, alignement.score
+    return alignment.seq1, alignment.seq2, alignment.score
 
 
 def print_align_seq(seq_1, seq_2, line_len=80):
@@ -69,7 +75,6 @@ def print_align_seq(seq_1, seq_2, line_len=80):
             if (seq_1[i], seq_2[i]) in BLOSUM62:
                 mut_score = BLOSUM62[seq_1[i], seq_2[i]]
             else:
-                # print(seq_1[i], seq_2[i])
                 mut_score = BLOSUM62[seq_2[i], seq_1[i]]
             if mut_score >= 0:
                 sim_seq += "|"
@@ -106,7 +111,7 @@ def align_chain_permutation(
     coor_1,
     coor_2,
     back_names=None,
-    matrix_file="src/pdb_cpp/data/blosum62.txt",
+    matrix_file=None,
     frame_ref=0,
 ):
     """Align structures by permuting chain order and selecting the best RMSD.
@@ -120,7 +125,7 @@ def align_chain_permutation(
     back_names : list[str], optional
         Backbone atom names to use.
     matrix_file : str, optional
-        Path to the scoring matrix file.
+        Path to the scoring matrix file. If None, uses packaged BLOSUM62.
     frame_ref : int, optional
         Reference frame index in coor_2.
 
@@ -131,6 +136,9 @@ def align_chain_permutation(
     """
     if back_names is None:
         back_names = ["C", "N", "O", "CA"]
+
+    if matrix_file is None:
+        matrix_file = _default_matrix_file()
 
     return _align_chain_permutation(
         coor_1,
