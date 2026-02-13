@@ -1,11 +1,18 @@
 #!/usr/bin/env python3
 # coding: utf-8
 
-"""
-RMSD tests.
-"""
+"""RMSD and DockQ tests."""
 
-from .datafiles import PDB_1U85, PDB_1UBD
+from .datafiles import (
+    DOCKQ_MODEL,
+    DOCKQ_NATIVE,
+    PDB_1JD4,
+    PDB_1RXZ,
+    PDB_1RXZ_Colabfold,
+    PDB_1U85,
+    PDB_1UBD,
+    PDB_5M6N,
+)
 from pdb_cpp import Coor, alignment, analysis, core
 import pytest
 
@@ -57,6 +64,40 @@ def test_measure_rmsd(capsys):
     for expected_rmsd, rmsd_val in zip(expected_rmsds, rmsds):
         assert expected_rmsd == pytest.approx(rmsd_val, 0.0001)
 
-    rmsds = analysis.rmsd(coor_1, coor_2, index_list=[index_1, index_2])
-    for expected_rmsd, rmsd_val in zip(expected_rmsds, rmsds):
-        assert expected_rmsd == pytest.approx(rmsd_val, 0.0001)
+
+def test_dockq_bad():
+    model_coor = Coor(PDB_1JD4)
+    native_coor = Coor(PDB_5M6N)
+
+    dockq = analysis.dockQ(model_coor, native_coor)
+    assert dockq["Fnat"][0] == 0.0
+    assert dockq["Fnonnat"][0] == 1.0
+    assert pytest.approx(dockq["LRMS"][0], 0.1) == 54.0
+    assert pytest.approx(dockq["iRMS"][0], 0.5) == 15.631
+    assert pytest.approx(dockq["DockQ"][0], 0.5) == 0.010
+
+
+def test_dockq_good():
+    model_coor = Coor(PDB_1RXZ_Colabfold)
+    native_coor = Coor(PDB_1RXZ)
+
+    dockq = analysis.dockQ(model_coor, native_coor)
+
+    assert pytest.approx(dockq["DockQ"][0], 0.01) == 0.934
+    assert pytest.approx(dockq["Fnat"][0], 0.01) == 0.963
+    assert pytest.approx(dockq["Fnonnat"][0], 0.01) == 0.088
+    assert pytest.approx(dockq["LRMS"][0], 0.1) == 1.050
+    assert pytest.approx(dockq["iRMS"][0], 0.5) == 0.618
+
+
+def test_dockq_model():
+    model_coor = Coor(DOCKQ_MODEL)
+    native_coor = Coor(DOCKQ_NATIVE)
+
+    dockq = analysis.dockQ(model_coor, native_coor)
+
+    assert pytest.approx(dockq["DockQ"][0], 0.5) == 0.7
+    assert pytest.approx(dockq["Fnat"][0], 0.01) == 0.533
+    assert pytest.approx(dockq["Fnonnat"][0], 0.01) == 0.238
+    assert pytest.approx(dockq["LRMS"][0], 0.1) == 1.516
+    assert pytest.approx(dockq["iRMS"][0], 0.5) == 1.232

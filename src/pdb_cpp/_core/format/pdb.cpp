@@ -24,6 +24,26 @@ bool is_all_spaces(const string& s) {
     return true;
 }
 
+string safe_field(const string& line, size_t start, size_t count) {
+    if (start >= line.size()) {
+        return string(count, ' ');
+    }
+    size_t len = min(count, line.size() - start);
+    string out = line.substr(start, len);
+    if (out.size() < count) {
+        out.append(count - out.size(), ' ');
+    }
+    return out;
+}
+
+float parse_float_field(const string& line, size_t start, size_t count, float fallback) {
+    string field = safe_field(line, start, count);
+    if (is_all_spaces(field)) {
+        return fallback;
+    }
+    return stof(field);
+}
+
 }
 
 Coor PDB_parse(const string& filename) {
@@ -52,7 +72,7 @@ Coor PDB_parse(const string& filename) {
     while (getline(file, line)) {
         if (line.compare(0, 6, "ATOM  ") == 0 || line.compare(0, 6, "HETATM") == 0) {
             bool field = line.compare(0, 6, "ATOM  ") ? true : false;
-            int num = hy36decode(5, line.substr(6, 5));
+            int num = hy36decode(5, safe_field(line, 6, 5));
             array<char, 5> name_array{};
             // strip spaces
             array_i = 0;
@@ -75,18 +95,18 @@ Coor PDB_parse(const string& filename) {
             }
             resname_array[array_i] = '\0';
             array<char, 2> chain_array = {line[21], '\0'};
-            int res_id            = hy36decode(4, line.substr(22, 4));
+            int res_id            = hy36decode(4, safe_field(line, 22, 4));
             if (res_id != old_resid || line[26] != old_insert_res) {
                 ++uniq_resid;
                 old_resid = res_id;
                 old_insert_res = line[26];
             }
             array<char, 2> insertres = {line[26], '\0'};
-            float x = stof(line.substr(30, 8));
-            float y = stof(line.substr(38, 8));
-            float z = stof(line.substr(46, 8));
-            float occ  = stof(line.substr(54, 6));
-            float beta = stof(line.substr(60, 6));
+            float x = parse_float_field(line, 30, 8, 0.0f);
+            float y = parse_float_field(line, 38, 8, 0.0f);
+            float z = parse_float_field(line, 46, 8, 0.0f);
+            float occ  = parse_float_field(line, 54, 6, 1.0f);
+            float beta = parse_float_field(line, 60, 6, 0.0f);
             array<char, 5> elem{};
             array_i = 0;
             for (size_t i = 0; i < 2; ++i) {

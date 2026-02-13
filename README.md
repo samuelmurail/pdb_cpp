@@ -50,3 +50,10 @@ ext_modules = [
 ```
 
 Also add the function and class declarations in the `src/pdb_cpp/_core/pybind.cpp` file to expose your new functionality to Python.
+
+
+## TODO list
+
+- Add tests for usalign comparison.
+- Add dockq score calculation.
+- Add more documentation and examples.
