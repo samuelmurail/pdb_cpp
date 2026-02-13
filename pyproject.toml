@@ -41,8 +41,10 @@ classifiers = [
     "Topic :: Software Development",
 ]
 
-[project.license]
-file = "LICENSE"
+license = "GPL-2.0-only"
+
+[project.license-files]
+paths = ["LICENSE"]
 
 [project.scripts]
 pdb_cpp = "pdb_cpp.__main__:main"
