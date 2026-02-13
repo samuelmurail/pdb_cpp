@@ -24,6 +24,36 @@ bool is_all_spaces(const string& s) {
     return true;
 }
 
+string trim_copy(const string& value) {
+    size_t start = value.find_first_not_of(' ');
+    if (start == string::npos) {
+        return "";
+    }
+    size_t end = value.find_last_not_of(' ');
+    return value.substr(start, end - start + 1);
+}
+
+string derive_element(const string& atom_name) {
+    if (atom_name.empty()) {
+        return "";
+    }
+    if (isdigit(static_cast<unsigned char>(atom_name[0]))) {
+        return string(1, atom_name[1]);
+    }
+    if (atom_name.size() >= 2 && islower(static_cast<unsigned char>(atom_name[1]))) {
+        return atom_name.substr(0, 2);
+    }
+    return atom_name.substr(0, 1);
+}
+
+string format_atom_name(const string& raw_name, const string& raw_elem) {
+    string atom_name = trim_copy(raw_name);
+    if (atom_name.size() >= 4) {
+        return atom_name.substr(0, 4);
+    }
+    return string(" ") + atom_name + string(3 - atom_name.size(), ' ');
+}
+
 string safe_field(const string& line, size_t start, size_t count) {
     if (start >= line.size()) {
         return string(count, ' ');
@@ -185,9 +215,10 @@ string get_pdb_string(const Coor& coor) {
             string field = model.get_field()[i] ? "HETATM" : "ATOM  ";
             string serial = hy36encode(5, model.get_num()[i]);
             string resid = hy36encode(4, model.get_resid()[i]);
+            string atom_name = format_atom_name(model.get_name()[i].data(), model.get_elem()[i].data());
             oss << field
                 << serial << " "
-                << setw(4) << model.get_name()[i].data()
+                << atom_name
                 << setw(1) << model.get_alterloc()[i].data()
                 << setw(3) << model.get_resname()[i].data() << " "
                 << setw(1) << model.get_chain()[i].data()
