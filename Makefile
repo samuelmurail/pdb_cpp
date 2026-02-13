@@ -1,16 +1,88 @@
-CXX = g++
-CXXFLAGS = -std=c++17 -O2 -Wall -Wextra
+.PHONY: clean clean-test clean-pyc clean-build docs help
+.DEFAULT_GOAL := help
 
-TARGET = main
-SRCS = src/pdb_cpp/_core/select.cpp src/pdb_cpp/_core/Model.cpp src/pdb_cpp/_core/Coor.cpp src/pdb_cpp/_core/sequence.cpp src/pdb_cpp/_core/align.cpp src/pdb_cpp/_core/seq_align.cpp src/pdb_cpp/_core/format/pdb.cpp src/pdb_cpp/_core/data/residue.cpp src/pdb_cpp/_core/main.cpp
-OBJS = $(SRCS:.cpp=.o)
+PACKAGE := pdb_cpp
+SRC_DIR := src/$(PACKAGE)
+DOCS_DIR := docs
+DOCS_SRC := $(DOCS_DIR)/source
 
-scratch: clean $(TARGET)
+define BROWSER_PYSCRIPT
+import os, webbrowser, sys
 
-all: $(TARGET)
+from urllib.request import pathname2url
 
-$(TARGET): $(OBJS)
-	$(CXX) $(CXXFLAGS) -o $@ $^
+webbrowser.open("file://" + pathname2url(os.path.abspath(sys.argv[1])))
+endef
+export BROWSER_PYSCRIPT
 
-clean:
-	rm -f $(TARGET) $(OBJS)
+define PRINT_HELP_PYSCRIPT
+import re, sys
+
+for line in sys.stdin:
+	match = re.match(r'^([a-zA-Z_-]+):.*?## (.*)$$', line)
+	if match:
+		target, help = match.groups()
+		print("%-20s %s" % (target, help))
+endef
+export PRINT_HELP_PYSCRIPT
+
+BROWSER := python -c "$$BROWSER_PYSCRIPT"
+
+help:
+	@python -c "$$PRINT_HELP_PYSCRIPT" < $(MAKEFILE_LIST)
+
+clean: clean-build clean-pyc clean-test ## remove all build, test, coverage and Python artifacts
+
+clean-build: ## remove build artifacts
+	rm -fr build/
+	rm -fr dist/
+	rm -fr .eggs/
+	find . -name '*.egg-info' -exec rm -fr {} +
+	find . -name '*.egg' -exec rm -f {} +
+
+clean-pyc: ## remove Python file artifacts
+	find . -name '*.pyc' -exec rm -f {} +
+	find . -name '*.pyo' -exec rm -f {} +
+	find . -name '*~' -exec rm -f {} +
+	find . -name '__pycache__' -exec rm -fr {} +
+
+clean-test: ## remove test and coverage artifacts
+	rm -fr .tox/
+	rm -f .coverage
+	rm -fr htmlcov/
+	rm -fr .pytest_cache
+
+lint: ## check style with black
+	black $(SRC_DIR)
+
+test: ## run tests quickly with the default Python
+	pytest
+
+test-all: ## run tests on every Python version with tox
+	tox
+
+coverage: ## check code coverage quickly with the default Python
+	coverage run --source $(PACKAGE) -m pytest
+	coverage report -m
+	coverage html
+	$(BROWSER) htmlcov/index.html
+
+docs: ## generate Sphinx HTML documentation, including API docs
+	find $(DOCS_SRC) -maxdepth 1 -type f \( -name 'pdb_cpp*.rst' -o -name '$(PACKAGE)*.rst' -o -name 'modules.rst' \) -delete
+	sphinx-apidoc -f -o $(DOCS_SRC) $(SRC_DIR)
+	$(MAKE) -C $(DOCS_DIR) clean
+	$(MAKE) -C $(DOCS_DIR) html
+	$(BROWSER) $(DOCS_DIR)/build/html/index.html
+
+servedocs: docs ## compile the docs watching for changes
+	watchmedo shell-command -p '*.rst' -c '$(MAKE) -C docs html' -R -D .
+
+release: dist ## package and upload a release
+	twine upload dist/*
+
+dist: clean ## builds source and wheel package
+	python -m build
+	ls -l dist
+
+install: clean ## install the package to the active Python's site-packages
+	pip install .
