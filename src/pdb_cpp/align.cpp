@@ -534,22 +534,19 @@ pair<vector<float>, pair<vector<int>, vector<int>>> align_chain_permutation(
     const string &matrix_file,
     const int frame_ref
 ) {
-    auto chain_to_string = [](const array<char, 2> &chain) -> string {
-        string out;
-        if (chain[0] != '\0' && chain[0] != ' ') {
-            out.push_back(chain[0]);
+    auto normalize_chains = [](const vector<string> &chains) {
+        vector<string> out;
+        out.reserve(chains.size());
+        for (const auto &chain : chains) {
+            if (!chain.empty()) {
+                out.push_back(chain);
+            }
         }
         return out;
     };
 
-    vector<string> chain_1;
-    for (const auto &chain : coor_1.get_uniq_chain()) {
-        chain_1.push_back(chain_to_string(chain));
-    }
-    vector<string> chain_2;
-    for (const auto &chain : coor_2.get_uniq_chain()) {
-        chain_2.push_back(chain_to_string(chain));
-    }
+    vector<string> chain_1 = normalize_chains(coor_1.get_uniq_chain_str());
+    vector<string> chain_2 = normalize_chains(coor_2.get_uniq_chain_str());
 
     if (chain_1.empty() || chain_2.empty()) {
         throw runtime_error("No chains available for permutation alignment");

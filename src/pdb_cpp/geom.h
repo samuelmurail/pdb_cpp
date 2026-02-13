@@ -11,8 +11,14 @@
 #include <iostream>
 #include <array>
 #include <vector>
+#include <limits>
 
 #include "usalign/Kabsch.h"
+
+namespace {
+constexpr float kPi = 3.14159265358979323846f;
+constexpr float kNaNf = std::numeric_limits<float>::quiet_NaN();
+}
 
 class CrystalPack {
 
@@ -31,7 +37,7 @@ public:
         {
             z = std::stoi(line.substr(67, 3));
         }
-        catch(const std::exception& e)
+        catch(const std::exception&)
         {
             z = 1;
         }
@@ -54,12 +60,12 @@ public:
 
 
     void clear() {
-        alpha = beta = gamma = a = b = c = nan("");
+        alpha = beta = gamma = a = b = c = kNaNf;
     }
 
 private:
 
-    float alpha=nan(""), beta=nan(""), gamma=nan(""), a=nan(""), b=nan(""), c=nan("");
+    float alpha=kNaNf, beta=kNaNf, gamma=kNaNf, a=kNaNf, b=kNaNf, c=kNaNf;
     int z;
     std::string sGroup;
 
@@ -166,7 +172,7 @@ private:
 };
 
 inline float calculate_distance(float x1, float y1, float z1, float x2, float y2, float z2){
-    return std::sqrt((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2) + (z1 - z2) * (z1 - z2));
+    return std::sqrtf((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2) + (z1 - z2) * (z1 - z2));
 }
 inline float calculate_square_distance(float x1, float y1, float z1, float x2, float y2, float z2) {
     return (x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2) + (z1 - z2) * (z1 - z2);
@@ -197,14 +203,14 @@ inline float atom_dihed_angle(
         v1[0] * v2[1] - v1[1] * v2[0]
     };
 
-    float bc_norm = std::sqrt(bc[0] * bc[0] + bc[1] * bc[1] + bc[2] * bc[2]);
+    float bc_norm = std::sqrtf(bc[0] * bc[0] + bc[1] * bc[1] + bc[2] * bc[2]);
     if (bc_norm == 0.0f) {
         return 0.0f;
     }
 
     float y = (v1_x_v2[0] * bc[0] + v1_x_v2[1] * bc[1] + v1_x_v2[2] * bc[2]) / bc_norm;
     float x = v1[0] * v2[0] + v1[1] * v2[1] + v1[2] * v2[2];
-    return std::atan2(y, x) * 180.0f / static_cast<float>(M_PI);
+    return std::atan2f(y, x) * 180.0f / kPi;
 }
 
 inline void distance_matrix(const float* a, size_t n, const float* b, size_t m, float* out) {
@@ -215,7 +221,7 @@ inline void distance_matrix(const float* a, size_t n, const float* b, size_t m, 
             float dx = a[a_offset] - b[b_offset];
             float dy = a[a_offset + 1] - b[b_offset + 1];
             float dz = a[a_offset + 2] - b[b_offset + 2];
-            out[i * m + j] = std::sqrt(dx * dx + dy * dy + dz * dz);
+            out[i * m + j] = std::sqrtf(dx * dx + dy * dy + dz * dz);
         }
     }
 }
@@ -229,7 +235,7 @@ inline std::vector<std::vector<float>> distance_matrix(
             float dx = a[i][0] - b[j][0];
             float dy = a[i][1] - b[j][1];
             float dz = a[i][2] - b[j][2];
-            out[i][j] = std::sqrt(dx * dx + dy * dy + dz * dz);
+            out[i][j] = std::sqrtf(dx * dx + dy * dy + dz * dz);
         }
     }
     return out;
