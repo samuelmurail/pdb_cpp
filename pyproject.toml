@@ -41,7 +41,8 @@ classifiers = [
     "Topic :: Software Development",
 ]
 
-license = "GPL-2.0-only"
+[project.license]
+text = "GPL-2.0-only"
 
 [project.license-files]
 paths = ["LICENSE"]
