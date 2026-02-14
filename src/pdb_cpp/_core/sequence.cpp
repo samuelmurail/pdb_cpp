@@ -17,8 +17,11 @@ char convert_to_one_letter_resname(const array<char, 5> &resname_array) {
         return it->second; // Return the 1-letter code
     }
 
-    // If not found, throw an exception or return a placeholder
-    throw invalid_argument("Unknown residue name: " + resname);
+    // // If not found, throw an exception or return a placeholder
+    // throw invalid_argument("Unknown residue name: " + resname);
+
+    // If not found, return a placeholder (e.g., 'X' for unknown)
+    return 'X';
 }
 
 char convert_to_one_letter_resname_dl(const array<char, 5> &resname_array) {
@@ -39,7 +42,10 @@ char convert_to_one_letter_resname_dl(const array<char, 5> &resname_array) {
         return it_na->second;
     }
 
-    throw invalid_argument("Unknown residue name: " + resname);
+    // throw invalid_argument("Unknown residue name: " + resname);
+
+    // If not found, return a placeholder (e.g., 'X' for unknown)
+    return 'X';
 }
 
 char convert_to_one_letter_resname_na(const array<char, 5> &resname_array) {
@@ -50,7 +56,8 @@ char convert_to_one_letter_resname_na(const array<char, 5> &resname_array) {
         return it->second;
     }
 
-    throw invalid_argument("Unknown residue name: " + resname);
+    // If not found, return a placeholder (e.g., 'X' for unknown)
+    return 'X';
 }
 
 char convert_to_one_letter_resname_any(const array<char, 5> &resname_array) {
@@ -66,5 +73,7 @@ char convert_to_one_letter_resname_any(const array<char, 5> &resname_array) {
         return it_d->second;
     }
 
-    throw invalid_argument("Unknown residue name: " + resname);
+    //throw invalid_argument("Unknown residue name: " + resname);
+    // If not found, return a placeholder (e.g., 'X' for unknown)
+    return 'X';
 }
