@@ -42,11 +42,11 @@ bool Coor::read(const string &filename) {
     if (endswith(filename, ".pdb")) {
         // cout << "Reading PDB file: " << filename << endl;
         *this = PDB_parse(filename);
-        return true;
+        return model_size() > 0;
     }
     if (endswith(filename, ".cif")) {
         *this = MMCIF_parse(filename);
-        return true;
+        return model_size() > 0;
     }
     return false;
 }

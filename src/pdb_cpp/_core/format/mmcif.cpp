@@ -403,8 +403,15 @@ Coor MMCIF_parse(const string &filename) {
         float gamma = stof(cell_values["angle_gamma"]);
         int z = 1;
         auto z_it = cell_values.find("Z_PDB");
-        if (z_it != cell_values.end() && !z_it->second.empty()) {
-            z = stoi(z_it->second);
+        if (z_it != cell_values.end()) {
+            string z_value = trim_whitespace(trim_quotes(z_it->second));
+            if (!z_value.empty() && z_value != "?" && z_value != ".") {
+                try {
+                    z = stoi(z_value);
+                } catch (const std::exception &) {
+                    z = 1;
+                }
+            }
         }
 
         string sgroup = "P 1";

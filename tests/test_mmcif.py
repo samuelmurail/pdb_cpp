@@ -7,7 +7,7 @@ import os
 import pytest
 
 from pdb_cpp import Coor
-from .datafiles import MMCIF_1Y0M, MMCIF_2RRI
+from .datafiles import MMCIF_1Y0M, MMCIF_2RRI, MMCIF_9X0F
 
 
 def test_read_mmcif_basic():
@@ -85,3 +85,13 @@ def test_read_mmcif_write_mmcif_models(tmp_path):
     assert test_2.len == 479
 
     assert test_2.models[0].resid[0] == test.models[0].resid[0]
+
+
+def test_read_mmcif_9x0f():
+    test = Coor(MMCIF_9X0F)
+
+    assert test.model_num == 1
+    assert test.len == 42552
+
+    selected = test.select_atoms("within 10.0 of chain A")
+    assert selected.len > 0

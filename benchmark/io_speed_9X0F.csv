@@ -1,0 +1,9 @@
+library,file,format,operation,mean_s,std_s,runs,warmup
+pdb_cpp,tests/input/9X0F.cif,cif,read,0.09896427799685625,0.0,1,0
+pdb_cpp,tests/input/9X0F.cif,cif,write,0.08306825299951015,0.0,1,0
+pdb_numpy,tests/input/9X0F.cif,cif,read,0.3311919490006403,0.0,1,0
+pdb_numpy,tests/input/9X0F.cif,cif,write,0.7966587289993186,0.0,1,0
+biopython,tests/input/9X0F.cif,cif,read,0.9127963369974168,0.0,1,0
+biopython,tests/input/9X0F.cif,cif,write,0.8974040699977195,0.0,1,0
+biotite,tests/input/9X0F.cif,cif,read,0.30252163099794416,0.0,1,0
+biotite,tests/input/9X0F.cif,cif,write,0.5375505709962454,0.0,1,0

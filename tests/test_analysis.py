@@ -13,6 +13,7 @@ from .datafiles import (
     PDB_1UBD,
     PDB_5M6N,
 )
+from .dockq_reference_values import DOCKQ_REFERENCES
 from pdb_cpp import Coor, alignment, analysis, core
 import pytest
 
@@ -68,36 +69,39 @@ def test_measure_rmsd(capsys):
 def test_dockq_bad():
     model_coor = Coor(PDB_1JD4)
     native_coor = Coor(PDB_5M6N)
+    ref = DOCKQ_REFERENCES["1jd4_vs_5m6n"]
 
     dockq = analysis.dockQ(model_coor, native_coor)
-    assert dockq["Fnat"][0] == 0.0
-    assert dockq["Fnonnat"][0] == 1.0
-    assert pytest.approx(dockq["LRMS"][0], 0.1) == 54.0
-    assert pytest.approx(dockq["iRMS"][0], 0.5) == 15.631
-    assert pytest.approx(dockq["DockQ"][0], 0.5) == 0.010
+    assert dockq["Fnat"][0] == pytest.approx(ref["Fnat"], abs=0.001)
+    assert dockq["Fnonnat"][0] == pytest.approx(ref["Fnonnat"], abs=0.001)
+    assert dockq["LRMS"][0] == pytest.approx(ref["LRMS"], abs=2.0)
+    assert dockq["iRMS"][0] == pytest.approx(ref["iRMS"], abs=2.5)
+    assert dockq["DockQ"][0] == pytest.approx(ref["DockQ"], abs=0.005)
 
 
 def test_dockq_good():
     model_coor = Coor(PDB_1RXZ_Colabfold)
     native_coor = Coor(PDB_1RXZ)
+    ref = DOCKQ_REFERENCES["1rxz_colabfold_vs_1rxz"]
 
     dockq = analysis.dockQ(model_coor, native_coor)
 
-    assert pytest.approx(dockq["DockQ"][0], 0.01) == 0.934
-    assert pytest.approx(dockq["Fnat"][0], 0.01) == 0.963
-    assert pytest.approx(dockq["Fnonnat"][0], 0.01) == 0.088
-    assert pytest.approx(dockq["LRMS"][0], 0.1) == 1.050
-    assert pytest.approx(dockq["iRMS"][0], 0.5) == 0.618
+    assert dockq["DockQ"][0] == pytest.approx(ref["DockQ"], abs=0.001)
+    assert dockq["Fnat"][0] == pytest.approx(ref["Fnat"], abs=0.001)
+    assert dockq["Fnonnat"][0] == pytest.approx(ref["Fnonnat"], abs=0.001)
+    assert dockq["LRMS"][0] == pytest.approx(ref["LRMS"], abs=0.001)
+    assert dockq["iRMS"][0] == pytest.approx(ref["iRMS"], abs=0.001)
 
 
 def test_dockq_model():
     model_coor = Coor(DOCKQ_MODEL)
     native_coor = Coor(DOCKQ_NATIVE)
+    ref = DOCKQ_REFERENCES["model_vs_native"]
 
     dockq = analysis.dockQ(model_coor, native_coor)
 
-    assert pytest.approx(dockq["DockQ"][0], 0.5) == 0.7
-    assert pytest.approx(dockq["Fnat"][0], 0.01) == 0.533
-    assert pytest.approx(dockq["Fnonnat"][0], 0.01) == 0.238
-    assert pytest.approx(dockq["LRMS"][0], 0.1) == 1.516
-    assert pytest.approx(dockq["iRMS"][0], 0.5) == 1.232
+    assert dockq["DockQ"][0] == pytest.approx(ref["DockQ"], abs=0.001)
+    assert dockq["Fnat"][0] == pytest.approx(ref["Fnat"], abs=0.001)
+    assert dockq["Fnonnat"][0] == pytest.approx(ref["Fnonnat"], abs=0.001)
+    assert dockq["LRMS"][0] == pytest.approx(ref["LRMS"], abs=0.001)
+    assert dockq["iRMS"][0] == pytest.approx(ref["iRMS"], abs=0.001)
