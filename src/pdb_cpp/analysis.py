@@ -173,6 +173,8 @@ def native_contact(
     native_rec_chains,
     native_lig_chains,
     cutoff=5.0,
+    residue_id_map=None,
+    native_residue_id_map=None,
 ):
     """Compute native and non-native contact fractions between model and native.
 
@@ -197,12 +199,21 @@ def native_contact(
         Native ligand chains.
     cutoff : float, default=5.0
         Contact distance cutoff in Angstrom.
+    residue_id_map : dict[int, int], optional
+        Mapping from model residue IDs to a shared residue ID space.
+    native_residue_id_map : dict[int, int], optional
+        Mapping from native residue IDs to the same shared residue ID space.
 
     Returns
     -------
     tuple[list[float], list[float]]
         ``(fnat_list, fnonnat_list)`` for each model in ``coor``.
     """
+
+    if residue_id_map is None:
+        residue_id_map = {}
+    if native_residue_id_map is None:
+        native_residue_id_map = {}
 
     native_rec_lig_interface = native_coor.select_atoms(
         f"(chain {' '.join(native_rec_chains)} and within {cutoff} of chain {' '.join(native_lig_chains)}) or"
@@ -216,11 +227,12 @@ def native_contact(
     native_rec_residue = native_rec_interface.models[0].uniq_resid
 
     for residue in np.unique(native_rec_residue):
+        native_residue_common = native_residue_id_map.get(residue, residue)
         res_lig = native_rec_lig_interface.select_atoms(
             f"chain {' '.join(native_lig_chains)} and within {cutoff} of residue {residue}"
         )
         native_contact_list += [
-            [residue, lig_residue]
+            [native_residue_common, native_residue_id_map.get(lig_residue, lig_residue)]
             for lig_residue in np.unique(res_lig.models[0].uniq_resid)
         ]
 
@@ -243,17 +255,22 @@ def native_contact(
         model_contact_list = []
 
         for residue in model_rec_residue:
+            model_residue_common = residue_id_map.get(residue, residue)
             residue_lig = rec_lig_interface.select_atoms(
                 f"chain {' '.join(lig_chains)} and within {cutoff} of residue {residue}"
             )
 
             for lig_residue in np.unique(residue_lig.uniq_resid):
-                if [residue, lig_residue] in native_contact_list:
+                contact_pair = [
+                    model_residue_common,
+                    residue_id_map.get(lig_residue, lig_residue),
+                ]
+                if contact_pair in native_contact_list:
                     native_contact_num += 1
                 else:
                     non_native_contact_num += 1
 
-                model_contact_list.append([residue, lig_residue])
+                model_contact_list.append(contact_pair)
 
         if native_contact_num > 0:
             fnat = native_contact_num / len(native_contact_list)
@@ -269,7 +286,7 @@ def native_contact(
         if non_native_contact_num > 0:
             fnonnat = non_native_contact_num / len(model_contact_list)
         else:
-            fnonnat = 1.0
+            fnonnat = 0.0
         logger.info(
             "Fnonnat %.3f %d non-native of %d model contacts",
             fnonnat,
@@ -418,6 +435,19 @@ def dockQ(
         f"residue {' '.join(str(i) for i in native_residue_unique)}"
     )
 
+    residue_id_map = {}
+    native_residue_id_map = {}
+    common_residue_ids = {}
+    common_id = 1
+    for model_residue_id, native_residue_id in zip(coor_residue, native_residue):
+        if native_residue_id not in common_residue_ids:
+            common_residue_ids[native_residue_id] = common_id
+            common_id += 1
+
+        mapped_id = common_residue_ids[native_residue_id]
+        residue_id_map[model_residue_id] = mapped_id
+        native_residue_id_map[native_residue_id] = mapped_id
+
     irmsd_list = interface_rmsd(
         interface_coor,
         interface_native_coor,
@@ -436,6 +466,8 @@ def dockQ(
         native_rec_chains,
         native_lig_chains,
         cutoff=5.0,
+        residue_id_map=residue_id_map,
+        native_residue_id_map=native_residue_id_map,
     )
     logger.info("Fnat: %.3f      Fnonnat: %.3f", fnat_list[0], fnonnat_list[0])
 
