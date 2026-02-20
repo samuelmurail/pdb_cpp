@@ -27,6 +27,7 @@
 #include <array>
 #include <cmath>
 #include <map>
+#include <utility>
 
 using std::string;
 using std::vector;
@@ -57,6 +58,28 @@ string build_ca_selection(const vector<string> &chains)
 
 struct TempPdbFile {
     string path;
+
+    TempPdbFile() = default;
+    explicit TempPdbFile(string p) : path(std::move(p)) {}
+
+    TempPdbFile(const TempPdbFile&) = delete;
+    TempPdbFile& operator=(const TempPdbFile&) = delete;
+
+    TempPdbFile(TempPdbFile&& other) noexcept : path(std::move(other.path)) {
+        other.path.clear();
+    }
+
+    TempPdbFile& operator=(TempPdbFile&& other) noexcept {
+        if (this != &other) {
+            if (!path.empty()) {
+                std::remove(path.c_str());
+            }
+            path = std::move(other.path);
+            other.path.clear();
+        }
+        return *this;
+    }
+
     ~TempPdbFile() {
         if (!path.empty()) {
             std::remove(path.c_str());
