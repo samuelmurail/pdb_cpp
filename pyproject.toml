@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "pdb-cpp"
 version = "0.0.1"
-dynamic = ["readme"]
+readme = "README.md"
 description = "Pdb_cpp is a python library allowing simple operations on pdb coor files."
 requires-python = ">=3.6"
 dependencies = [
@@ -40,7 +40,8 @@ classifiers = [
     "Programming Language :: Python :: 3.10",
     "Topic :: Software Development",
 ]
-license = "GPL-2.0-only"
+
+license = "GPL-2.0-or-later"
 license-files = ["LICENSE"]
 
 [project.scripts]
@@ -48,9 +49,6 @@ pdb_cpp = "pdb_cpp.__main__:main"
 
 [project.urls]
 Homepage = "https://pdb-cpp.readthedocs.io/en/latest/"
-
-[tool.setuptools.dynamic]
-readme = {file = ["README.md"]}
 
 [tool.setuptools.packages.find]
 where = ["src"]
