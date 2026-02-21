@@ -52,20 +52,12 @@ bool Coor::read(const string &filename) {
 }
 
 bool Coor::write(const string &filename) const {
-    ofstream file(filename);
-    if (!file) {
-        cerr << "Error: cannot open file " << filename << endl;
-        return false;
-    }
-
     if (endswith(filename, ".pdb")) {
         // cout << "Writing PDB file: " << filename << endl;
-        PDB_write(*this, filename);
-        return true;
+        return PDB_write(*this, filename);
     }
     if (endswith(filename, ".cif")) {
-        MMCIF_write(*this, filename);
-        return true;
+        return MMCIF_write(*this, filename);
     }
     return false;
 }
