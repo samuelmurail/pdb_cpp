@@ -1,19 +1,6 @@
 pdb\_cpp package
 ================
 
-The package is organized around a high-level ``Coor`` object and focused helper
-modules.
-
-Main workflow modules:
-
-- ``pdb_cpp.core``: C++-accelerated core operations (I/O, selection, atom mapping,
-  coordinate alignment, TM-align, sequence-based structural alignment).
-- ``pdb_cpp.analysis``: RMSD, interface RMSD, native contacts, DockQ.
-- ``pdb_cpp.alignment``: sequence alignment and chain-permutation helpers.
-- ``pdb_cpp.TMalign``: secondary structure helper built on TM-align core.
-- ``pdb_cpp.sequence``: sequence extraction wrappers.
-- ``pdb_cpp.geom``: geometry helpers (distance matrix).
-
 Subpackages
 -----------
 
@@ -49,8 +36,8 @@ pdb\_cpp.analysis module
    :show-inheritance:
    :undoc-members:
 
-pdb\_cpp.core extension module
-------------------------------
+pdb\_cpp.core module
+--------------------
 
 .. automodule:: pdb_cpp.core
    :members:
