@@ -76,7 +76,7 @@ servedocs: docs ## compile the docs watching for changes
 
 release: dist ## package and upload a release
 	python3 -m pip install --upgrade twine packaging
-	python3 -m twine upload dist/*
+	python3 -m twine upload dist/*.tar.gz
 
 dist: clean ## builds source and wheel package
 	python3 -m pip install --upgrade build
