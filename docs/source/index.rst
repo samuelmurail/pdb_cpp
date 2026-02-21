@@ -23,6 +23,8 @@ coordinate files in structural bioinformatics.
    readme
    installation
    basic_example
+   functionality
+   quick_recipes
    Github project <https://github.com/samuelmurail/pdb_cpp>
    pdb_cpp
 
