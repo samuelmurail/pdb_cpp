@@ -34,7 +34,7 @@ jobs:
           python -m pip install . -v
 
       - name: Run tests
-        run: pytest --cov --cov-branch --cov-report=xml
+        run: pytest --cov=pdb_cpp --cov-branch --cov-report=xml
 
       - name: Upload results to Codecov
         uses: codecov/codecov-action@v5
