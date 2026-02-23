@@ -1,3 +1,11 @@
+[![Documentation Status](https://readthedocs.org/projects/pdb-cpp/badge/?version=latest)](https://pdb-cpp.readthedocs.io/en/latest/?badge=latest)
+[![codecov](https://codecov.io/gh/samuelmurail/pdb_cpp/graph/badge.svg?token=QWFM35BX2N)](https://codecov.io/gh/samuelmurail/pdb_cpp)
+[![CI](https://github.com/samuelmurail/pdb_cpp/actions/workflows/ci.yml/badge.svg)](https://github.com/samuelmurail/pdb_cpp/actions/workflows/ci.yml)
+[![PyPI - Version](https://img.shields.io/pypi/v/pdb-cpp)](https://pypi.org/project/pdb-cpp/)
+[![Downloads](https://static.pepy.tech/badge/pdb-cpp)](https://pepy.tech/project/pdb-cpp)
+[![License: GPL v2](https://img.shields.io/badge/License-GPL%20v2-blue.svg)](https://www.gnu.org/licenses/old-licenses/gpl-2.0.html)
+
+
 # pdb_cpp
 
 `pdb_cpp` is a structural bioinformatics toolkit with a C++ core and Python API for fast PDB/mmCIF parsing, atom selection, sequence/structure alignment, TM-score, and DockQ evaluation.
