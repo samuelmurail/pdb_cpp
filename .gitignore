@@ -59,6 +59,9 @@ __pycache__/
 # C extensions
 *.so
 
+# Virtual Environments
+.venv*/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 */__pycache__

@@ -145,6 +145,42 @@ def test_pdb_conect(tmp_path):
     assert test_reload.conect[155] == [115]
 
 
+def test_pdb_short_lines_stable_across_reads(tmp_path):
+    probe_pdb = os.path.join(tmp_path, "short_lines_probe.pdb")
+    with open(probe_pdb, "w", encoding="utf-8") as handle:
+        handle.write(
+            "\n".join(
+                [
+                    "ATOM      1  CA  ALA A   1      10.000  11.000  12.000  1.00 36.12",
+                    "ATOM      2  P   DA  B   2      13.000  14.000  15.000  1.00 39.41",
+                    "HETATM    3  ZN  ZN  C   3      16.000  17.000  18.000  1.00 41.03",
+                    "HETATM    4  O1  LIG D   4      19.000  20.000  21.000  1.00 42.34",
+                    "END",
+                ]
+            )
+            + "\n"
+        )
+
+    selection = "(protein and name CA) or (dna and name P) or ions or (not protein and not dna and noh)"
+
+    before = Coor(probe_pdb)
+    before_sel = before.select_atoms(selection)
+    before_beta = np.array(before.beta, dtype=float)
+
+    workload = Coor(PDB_1Y0M)
+    assert workload.select_atoms("protein and name CA").len > 0
+
+    after = Coor(probe_pdb)
+    after_sel = after.select_atoms(selection)
+    after_beta = np.array(after.beta, dtype=float)
+
+    assert before_sel.len == 4
+    assert after_sel.len == before_sel.len
+    assert np.allclose(before_beta, [36.12, 39.41, 41.03, 42.34], atol=1e-6)
+    assert np.allclose(after_beta, before_beta, atol=1e-6)
+    assert float(np.mean(after_beta)) == pytest.approx(float(np.mean(before_beta)), abs=1e-8)
+
+
 # def test_get_pdb_bioassembly(tmp_path):
 #     """Test get_pdb function."""
 #     test = Coor(PDB_3FTK)

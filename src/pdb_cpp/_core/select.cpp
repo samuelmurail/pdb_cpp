@@ -56,7 +56,9 @@ void print_tokens(const Token &token, int indent) {
 void replace_all(string &str, const string &from, const string &to) {
     size_t start_pos = 0;
     while ((start_pos = str.find(from, start_pos)) != string::npos) {
-        if (str[start_pos + 1] == '=' && (from == ">" || from =="<")) { // Handle special case for >= and <=
+        if ((from == ">" || from =="<") &&
+            start_pos + 1 < str.size() &&
+            str[start_pos + 1] == '=') { // Handle special case for >= and <=
             start_pos += 2;
             continue;
         }

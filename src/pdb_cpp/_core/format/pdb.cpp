@@ -66,6 +66,13 @@ string safe_field(const string& line, size_t start, size_t count) {
     return out;
 }
 
+char safe_char(const string& line, size_t index, char fallback = ' ') {
+    if (index >= line.size()) {
+        return fallback;
+    }
+    return line[index];
+}
+
 float parse_float_field(const string& line, size_t start, size_t count, float fallback) {
     string field = safe_field(line, start, count);
     if (is_all_spaces(field)) {
@@ -103,45 +110,49 @@ Coor PDB_parse(const string& filename) {
         if (line.compare(0, 6, "ATOM  ") == 0 || line.compare(0, 6, "HETATM") == 0) {
             bool field = line.compare(0, 6, "ATOM  ") ? true : false;
             int num = hy36decode(5, safe_field(line, 6, 5));
+            const string name_field = safe_field(line, 12, 4);
             array<char, 5> name_array{};
             // strip spaces
             array_i = 0;
             for (size_t i = 0; i < 4; ++i) {
-                if (line[12 + i] != ' ') {
-                    name_array[array_i] = line[12 + i];
+                if (name_field[i] != ' ') {
+                    name_array[array_i] = name_field[i];
                     ++array_i;
                 }
             }
             name_array[array_i] = '\0';
-            array<char, 2> alterloc = {line[16], '\0'};
+            array<char, 2> alterloc = {safe_char(line, 16), '\0'};
+            const string resname_field = safe_field(line, 17, 3);
             array<char, 5> resname_array{};
             // strip spaces
             array_i = 0;
             for (size_t i = 0; i < 3; ++i) {
-                if (line[17 + i] != ' ') {
-                    resname_array[array_i] = line[17 + i];
+                if (resname_field[i] != ' ') {
+                    resname_array[array_i] = resname_field[i];
                     ++array_i;
                 }
             }
             resname_array[array_i] = '\0';
-            array<char, 2> chain_array = {line[21], '\0'};
+            array<char, 2> chain_array = {safe_char(line, 21), '\0'};
             int res_id            = hy36decode(4, safe_field(line, 22, 4));
-            if (res_id != old_resid || line[26] != old_insert_res) {
+            char insert_res_char = safe_char(line, 26);
+            if (res_id != old_resid || insert_res_char != old_insert_res) {
                 ++uniq_resid;
                 old_resid = res_id;
-                old_insert_res = line[26];
+                old_insert_res = insert_res_char;
             }
-            array<char, 2> insertres = {line[26], '\0'};
+            array<char, 2> insertres = {insert_res_char, '\0'};
             float x = parse_float_field(line, 30, 8, 0.0f);
             float y = parse_float_field(line, 38, 8, 0.0f);
             float z = parse_float_field(line, 46, 8, 0.0f);
             float occ  = parse_float_field(line, 54, 6, 1.0f);
             float beta = parse_float_field(line, 60, 6, 0.0f);
+            const string elem_field = safe_field(line, 76, 2);
             array<char, 5> elem{};
             array_i = 0;
             for (size_t i = 0; i < 2; ++i) {
-                if (line[76 + i] != ' ') {
-                    elem [array_i] = line[76 + i];
+                if (elem_field[i] != ' ') {
+                    elem [array_i] = elem_field[i];
                     ++array_i;
                 }
             }

@@ -85,3 +85,9 @@ dist: clean ## builds source and wheel package
 
 install: clean ## install the package to the active Python's site-packages
 	pip install .
+
+valgrind-core: ## run core-only valgrind leak check (override with LOOPS=...)
+	LOOPS=$${LOOPS:-2000} ./scripts/valgrind_core_only.sh
+
+asan-core: ## run core-only ASan/UBSan check (override with LOOPS=..., ASAN_DETECT_LEAKS=1)
+	LOOPS=$${LOOPS:-5000} ./scripts/asan_core_only.sh
