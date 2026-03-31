@@ -13,19 +13,36 @@ Welcome to pdb_cpp's documentation!
 
 |
 
-``pdb_cpp`` is a Python package with a C++ core for working with structural
-coordinate files in structural bioinformatics.
+``pdb_cpp`` is a structural bioinformatics toolkit with a C++ core and Python
+API for fast PDB/mmCIF parsing, atom selection, sequence/structure alignment,
+TM-score, and DockQ evaluation.
 
 .. toctree::
    :maxdepth: 4
-   :caption: Table of Contents:
+   :caption: Getting Started
 
    readme
    installation
+
+.. toctree::
+   :maxdepth: 4
+   :caption: User Guide
+
    basic_example
    functionality
    quick_recipes
-   Github project <https://github.com/samuelmurail/pdb_cpp>
+
+.. toctree::
+   :maxdepth: 4
+   :caption: Development
+
+   contributing
+   Github Repository <https://github.com/samuelmurail/pdb_cpp>
+
+.. toctree::
+   :maxdepth: 4
+   :caption: API Reference
+
    pdb_cpp
 
 Indices and tables

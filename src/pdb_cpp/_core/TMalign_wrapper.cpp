@@ -28,6 +28,8 @@
 #include <cmath>
 #include <map>
 #include <utility>
+#include <filesystem>
+#include <unistd.h>
 
 using std::string;
 using std::vector;
@@ -89,11 +91,20 @@ struct TempPdbFile {
 
 string make_temp_pdb_path()
 {
-    char buffer[L_tmpnam];
-    if (!std::tmpnam(buffer)) {
-        throw std::runtime_error("Failed to create temporary PDB filename");
+    string tmpl = (std::filesystem::temp_directory_path() / "pdbcpp_XXXXXX").string();
+    // mkstemp needs a mutable buffer
+    std::vector<char> buf(tmpl.begin(), tmpl.end());
+    buf.push_back('\0');
+    int fd = mkstemp(buf.data());
+    if (fd == -1) {
+        throw std::runtime_error("Failed to create temporary PDB file");
     }
-    return string(buffer) + ".pdb";
+    close(fd);
+    string path(buf.data());
+    // Rename to .pdb extension so writers detect the format
+    string pdb_path = path + ".pdb";
+    std::rename(path.c_str(), pdb_path.c_str());
+    return pdb_path;
 }
 
 TempPdbFile write_temp_pdb(const Coor &coor)

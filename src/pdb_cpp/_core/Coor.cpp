@@ -10,6 +10,8 @@
 #include "Model.h"
 #include "format/pdb.h"
 #include "format/mmcif.h"
+#include "format/pqr.h"
+#include "format/gro.h"
 #include "sequence.h"
 
 using namespace std;
@@ -48,6 +50,14 @@ bool Coor::read(const string &filename) {
         *this = MMCIF_parse(filename);
         return model_size() > 0;
     }
+    if (endswith(filename, ".pqr")) {
+        *this = PQR_parse(filename);
+        return model_size() > 0;
+    }
+    if (endswith(filename, ".gro")) {
+        *this = GRO_parse(filename);
+        return model_size() > 0;
+    }
     return false;
 }
 
@@ -58,6 +68,12 @@ bool Coor::write(const string &filename) const {
     }
     if (endswith(filename, ".cif")) {
         return MMCIF_write(*this, filename);
+    }
+    if (endswith(filename, ".pqr")) {
+        return PQR_write(*this, filename);
+    }
+    if (endswith(filename, ".gro")) {
+        return GRO_write(*this, filename);
     }
     return false;
 }

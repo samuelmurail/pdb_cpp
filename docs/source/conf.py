@@ -7,9 +7,9 @@
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 project = 'pdb_cpp'
-copyright = '2023, Samuel Murail'
+copyright = '2025, Samuel Murail'
 author = 'Samuel Murail'
-release = '0.0.1'
+release = '0.1.0'
 
 # If extensions (or modules to document with autodoc) are in another
 # directory, add these directories to sys.path here. If the directory is

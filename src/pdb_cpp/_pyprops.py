@@ -28,7 +28,7 @@ def _fetch_mmcif(pdb_id):
     """
     pdb_id = pdb_id.lower()
     cache_dir = os.path.join(tempfile.gettempdir(), "pdb_cpp_cache")
-    os.makedirs(cache_dir, exist_ok=True)
+    os.makedirs(cache_dir, mode=0o700, exist_ok=True)
     local_path = os.path.join(cache_dir, f"{pdb_id}.cif")
     if os.path.exists(local_path):
         return local_path
@@ -224,7 +224,7 @@ def occ(self):
     list[float]
         Occupancies.
     """
-    return self.get_occupancy()
+    return self.get_occ()
 
 
 @property
@@ -504,7 +504,7 @@ def occ(self):
     list[float]
         Occupancies.
     """
-    return self.models[self.active_model].get_occupancy()
+    return self.models[self.active_model].get_occ()
 
 
 @property

@@ -4,6 +4,7 @@
 #include <vector>
 #include <fstream>
 #include <sstream>
+#include <stdexcept>
 
 
 
@@ -12,7 +13,9 @@ int* seq_to_num (const char *seq)
     int seq_len = strlen(seq);
     // int *seq_num = malloc(seq_len * sizeof(int));
     int *seq_num = new int[seq_len];
-    assert(seq_num != NULL);
+    if (!seq_num) {
+        throw std::runtime_error("Failed to allocate memory for sequence numbers");
+    }
     for (int i = 0; i < seq_len; i++)
     {
         switch (seq[i])
@@ -203,7 +206,9 @@ Alignment *seq_align(const char *seq1, const char *seq2, const char *matrix_file
 
 
 
-    assert(alignment != NULL);
+    if (!alignment) {
+        throw std::runtime_error("Failed to allocate memory for alignment");
+    }
 
     // clean input sequences
     check_seq(seq1);
@@ -348,8 +353,9 @@ Alignment *seq_align(const char *seq1, const char *seq2, const char *matrix_file
     alignment->seq1 = new char[align_len + 1];
     //alignment->seq2 = calloc((align_len + 1), sizeof(char));
     alignment->seq2 = new char[align_len + 1];
-    assert(alignment->seq1 != NULL);
-    assert(alignment->seq2 != NULL);
+    if (!alignment->seq1 || !alignment->seq2) {
+        throw std::runtime_error("Failed to allocate memory for aligned sequences");
+    }
     //printf ("Alignment len align_len: %d\n", align_len + 1);
 
     for (int k = 0; k < align_len; ++k)
