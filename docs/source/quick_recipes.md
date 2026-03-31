@@ -246,3 +246,28 @@ rmsd_values = analysis.rmsd(coor, ref, selection="name CA", frame_ref=0)
 for i, r in enumerate(rmsd_values):
     print(f"Model {i}: RMSD = {r:.3f} Å")
 ```
+
+## 18) Bond topology (CONECT / _struct_conn)
+
+```python
+from pdb_cpp import Coor
+
+# Both PDB (CONECT lines) and mmCIF (_struct_conn) bond records are supported
+coor = Coor("tests/input/1u85.pdb")
+
+# Inspect covalent bonds (dict: atom_serial -> list[bonded_serials])
+print(f"Atoms with bonds: {len(coor.conect)}")
+for atom_num, bonded in list(coor.conect.items())[:5]:
+    print(f"  Atom {atom_num} -> {bonded}")
+
+# Convert PDB to mmCIF, preserving bond topology via _struct_conn
+coor.write("output_1u85.cif")
+
+# Reload from mmCIF and confirm bonds survived
+coor2 = Coor("output_1u85.cif")
+print(f"Bonds after mmCIF round-trip: {len(coor2.conect)}")
+
+# Bonds are also preserved after atom selection and renumbering
+ligand = coor.select_atoms("not protein")
+ligand.write("ligand_only.pdb")
+```

@@ -7,7 +7,7 @@ import os
 import pytest
 
 from pdb_cpp import Coor
-from .datafiles import MMCIF_1Y0M, MMCIF_2RRI, MMCIF_9X0F
+from .datafiles import MMCIF_1Y0M, MMCIF_2RRI, MMCIF_9X0F, PDB_5M6N, PDB_1U85
 
 
 def test_read_mmcif_basic():
@@ -95,3 +95,60 @@ def test_read_mmcif_9x0f():
 
     selected = test.select_atoms("within 10.0 of chain A")
     assert selected.len > 0
+
+
+def test_mmcif_conect_roundtrip(tmp_path):
+    """PDB CONECT records survive a PDB -> mmCIF -> PDB roundtrip."""
+    coor = Coor(PDB_5M6N)
+    assert len(coor.conect) == 191
+    assert coor.conect[369] == [1618]
+    assert sorted(coor.conect[1743]) == [1755, 1756, 1782, 1783]
+
+    # Write to mmCIF
+    cif_path = os.path.join(tmp_path, "5m6n.cif")
+    coor.write(cif_path)
+
+    # Read back mmCIF
+    coor2 = Coor(cif_path)
+    assert len(coor2.conect) == 191
+
+    # Check all bonds match
+    for k, v in coor.conect.items():
+        assert sorted(coor2.conect[k]) == sorted(v), f"Mismatch at atom {k}"
+
+
+def test_mmcif_conect_small(tmp_path):
+    """CONECT roundtrip for a small structure (1u85 with zinc coordination)."""
+    coor = Coor(PDB_1U85)
+    assert 529 in coor.conect
+
+    cif_path = os.path.join(tmp_path, "1u85.cif")
+    coor.write(cif_path)
+
+    coor2 = Coor(cif_path)
+    assert len(coor2.conect) == len(coor.conect)
+
+    for k, v in coor.conect.items():
+        assert sorted(coor2.conect[k]) == sorted(v)
+
+
+def test_mmcif_conect_selection(tmp_path):
+    """CONECT records are renumbered correctly after selection + mmCIF roundtrip."""
+    coor = Coor(PDB_1U85)
+    sel = coor.select_atoms("num 139 529")
+    assert sel.conect[1] == [2]
+    assert sel.conect[2] == [1]
+
+    # Write selection to mmCIF, read back
+    cif_path = os.path.join(tmp_path, "sel.cif")
+    sel.write(cif_path)
+
+    sel2 = Coor(cif_path)
+    assert sel2.conect[1] == [2]
+    assert sel2.conect[2] == [1]
+
+
+def test_mmcif_no_conect():
+    """mmCIF without _struct_conn should have empty conect."""
+    coor = Coor(MMCIF_1Y0M)
+    assert len(coor.conect) == 0

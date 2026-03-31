@@ -12,8 +12,8 @@ for the auto-generated API reference see [pdb_cpp package](pdb_cpp.rst).
 
 | Format | Extension | Read | Write | Notes                                    |
 |--------|-----------|------|-------|------------------------------------------|
-| PDB    | `.pdb`    | yes  | yes   |                                          |
-| mmCIF  | `.cif`    | yes  | yes   |                                          |
+| PDB    | `.pdb`    | yes  | yes   | Bond topology via `CONECT` lines         |
+| mmCIF  | `.cif`    | yes  | yes   | Bond topology via `_struct_conn` loop    |
 | PQR    | `.pqr`    | yes  | yes   | Charge in `occ`, radius in `beta` slot   |
 | GRO    | `.gro`    | yes  | yes   | GROMACS format; coordinates converted nm ↔ Å |
 
@@ -66,7 +66,39 @@ available on both classes via Python property accessors.
 | `model_num`       | `int`           | Number of models                              |
 | `models`          | `list[Model]`   | All models                                    |
 | `active_model`    | `int`           | Index of the active model (read/write)        |
-| `conect`          | `list`          | CONECT records (PDB format)                   |
+| `conect`          | `dict[int, list[int]]` | CONECT bond records (atom number → bonded atom numbers) |
+
+### `Coor` methods
+
+| Method                              | Returns        | Description                                       |
+|-------------------------------------|----------------|---------------------------------------------------|
+| `select_atoms(selection)`           | `Coor`         | Select atoms by string query (see §3)             |
+| `select_bool_index(bool_array)`     | `Coor`         | Select atoms by boolean mask (one bool per atom)  |
+| `get_index_select(selection)`       | `list[int]`    | Atom indices matching a selection string          |
+| `read(filename)`                    | `bool`         | Read a file into an existing `Coor` object        |
+| `write(filename)`                   | —              | Write to PDB/mmCIF/PQR/GRO (by extension)        |
+| `add_Model(model)`                  | —              | Append a `Model` to this `Coor`                   |
+| `clear()`                           | —              | Remove all models                                 |
+| `get_uniq_chain()`                  | `list`         | Unique chain IDs (char arrays)                    |
+| `get_uniq_chain_str()`              | `list[str]`    | Unique chain IDs as Python strings                |
+| `get_aa_seq(gap_in_seq=True)`       | `dict`         | Amino acid sequences per chain                    |
+| `get_aa_DL_seq()`                   | `dict`         | D/L amino acid sequences (D as lowercase)         |
+| `get_aa_na_seq()`                   | `dict`         | Amino acid + nucleic acid sequences               |
+| `remove_incomplete_backbone_residues()` | `Coor`     | Remove residues missing backbone atoms            |
+
+### `Model` methods
+
+| Method                              | Returns         | Description                                      |
+|-------------------------------------|-----------------|--------------------------------------------------|
+| `select_atoms(selection)`           | `list[bool]`    | Boolean mask of atoms matching selection          |
+| `addAtom(...)`                      | `bool`          | Add a single atom (see below)                    |
+| `clear()`                           | —               | Remove all atoms from this model                 |
+| `get_centroid(indices=None)`        | `ndarray(3,)`   | Centroid of all atoms, or of given indices        |
+
+Note that `Model.select_atoms()` returns a **boolean mask** (not a new
+object), unlike `Coor.select_atoms()` which returns a new `Coor`.
+`Model.addAtom()` takes positional arguments:
+`num, name, resname, resid, chain, x, y, z, occ, beta, altloc, elem, insertres, field, uniq_resid`.
 
 ### Per-atom properties (on both `Coor` and `Model`)
 
@@ -132,6 +164,72 @@ centroid = model.get_centroid()
 # Centroid of specific atom indices
 ca_indices = coor.get_index_select("name CA")
 centroid_ca = model.get_centroid(ca_indices)
+```
+
+### Boolean-mask selection
+
+When you already have a boolean array (e.g. from NumPy operations),
+use `select_bool_index` instead of building a string query:
+
+```python
+import numpy as np
+
+coor = Coor("tests/input/1y0m.cif")
+mask = np.array(coor.beta) < 30.0          # low B-factor atoms
+low_b = coor.select_bool_index(mask.tolist())
+print(f"{low_b.len} atoms with B < 30")
+```
+
+### CONECT records
+
+CONECT records (covalent bonds) are stored as a dictionary mapping atom
+numbers to lists of bonded atom numbers. Bond topology is read from and
+written to both supported formats:
+
+- **PDB**: `CONECT` lines (hybrid-36 encoded atom serial numbers)
+- **mmCIF**: `_struct_conn` loop (any `conn_type_id` is accepted on read;
+  `covale` is written on output)
+
+```python
+from pdb_cpp import Coor
+
+# Load a structure with covalent bonds (ligands, zinc coordination, etc.)
+coor = Coor("tests/input/1u85.pdb")
+
+# Inspect bonds
+for atom_num, bonded in list(coor.conect.items())[:3]:
+    print(f"Atom {atom_num} bonded to {bonded}")
+
+# Bonds survive PDB and mmCIF round-trips
+coor.write("output_with_conect.pdb")   # writes CONECT lines
+coor.write("output_with_conect.cif")   # writes _struct_conn loop
+```
+
+```{note}
+mmCIF files distributed by the PDB typically store only inter-residue bonds
+in `_struct_conn` (disulfides, metal coordination, covalent cross-links).
+Intra-ligand bonds may be absent unless the file was produced by pdb_cpp.
+```
+
+### Programmatic construction
+
+You can build a `Coor` from scratch or append models:
+
+```python
+from pdb_cpp import Coor
+
+coor_1 = Coor("tests/input/1y0m.cif")
+coor_2 = Coor("tests/input/1y0m.cif")
+
+# Append all models from coor_2 into coor_1
+for model in coor_2.models:
+    coor_1.add_Model(model)
+
+print(coor_1.model_num)  # doubled
+
+# Clear everything
+coor_1.clear()
+print(coor_1.model_num)  # 0
 ```
 
 ---
@@ -294,6 +392,28 @@ alignment.print_align_seq(aln_1, aln_2)
 | `gap_ext`     | -1      | Gap extension penalty              |
 | `matrix_file` | `None`  | Custom substitution matrix file; defaults to bundled BLOSUM62 |
 
+### Low-level C++ alignment: `core.sequence_align`
+
+The `alignment.align_seq()` function is a Python wrapper around the C++
+`core.sequence_align()` function, which returns an `Alignment_cpp` object:
+
+```python
+from pdb_cpp import core
+
+result = core.sequence_align("ACDEFG", "ACDEG")
+print(result.seq1)    # aligned sequence 1 (with gaps)
+print(result.seq2)    # aligned sequence 2 (with gaps)
+print(result.score)   # alignment score (int)
+```
+
+#### `Alignment_cpp` fields
+
+| Field   | Type  | Description                      |
+|---------|-------|----------------------------------|
+| `seq1`  | `str` | Aligned sequence 1 (with gaps)   |
+| `seq2`  | `str` | Aligned sequence 2 (with gaps)   |
+| `score` | `int` | Raw alignment score              |
+
 ---
 
 ## 6. Structural alignment (RMSD-based)
@@ -449,6 +569,19 @@ for chain_id, ss_string in ss_list[0].items():
     print(f"Chain {chain_id}: {ss_string}")
 ```
 
+### Low-level: `core.compute_SS`
+
+The `TMalign.compute_secondary_structure()` wraps the C++ function
+`core.compute_SS()`, which returns secondary structure strings directly:
+
+```python
+from pdb_cpp import Coor, core
+
+coor = Coor("tests/input/1y0m.cif")
+ss = core.compute_SS(coor, gap_in_seq=False)
+# Returns list[list[str]]: one list of SS strings per model
+```
+
 ---
 
 ## 9. DockQ scoring
@@ -521,6 +654,30 @@ irmsd_list = analysis.interface_rmsd(
 )
 ```
 
+#### `native_contact` parameters
+
+| Parameter                | Default | Description                                        |
+|--------------------------|---------|----------------------------------------------------|
+| `coor`                   | —       | Model `Coor`                                       |
+| `native_coor`            | —       | Native `Coor`                                      |
+| `rec_chains`             | —       | Model receptor chain IDs                            |
+| `lig_chains`             | —       | Model ligand chain IDs                              |
+| `native_rec_chains`      | —       | Native receptor chain IDs                           |
+| `native_lig_chains`      | —       | Native ligand chain IDs                             |
+| `cutoff`                 | `5.0`   | Contact distance cutoff (Å)                         |
+| `residue_id_map`         | `None`  | `dict[int, int]` mapping model residue IDs to a shared ID space |
+| `native_residue_id_map`  | `None`  | `dict[int, int]` mapping native residue IDs to the same shared ID space |
+
+The `residue_id_map` parameters are useful when model and native have
+different residue numbering — provide dictionaries that map each residue
+`uniq_resid` to a common numbering scheme.
+
+#### `interface_rmsd` notes
+
+`interface_rmsd` returns a list of floats with one entry per model. Entries
+are `None` when no interface residues are found within the cutoff distance.
+```
+
 ### Citation
 
 If you use DockQ scoring, please cite:
@@ -586,10 +743,62 @@ This is recommended before structural alignment to avoid mismatches.
 | Module              | Key functions / classes                                   |
 |---------------------|-----------------------------------------------------------|
 | `pdb_cpp`           | `Coor`, `Model` — main data objects                           |
-| `pdb_cpp.core`      | `get_common_atoms`, `coor_align`, `align_seq_based`, `tmalign_ca`, `distance_matrix`, `compute_SS`, `hy36encode`, `hy36decode` |
+| `pdb_cpp.core`      | `get_common_atoms`, `coor_align`, `align_seq_based`, `tmalign_ca`, `distance_matrix`, `compute_SS`, `sequence_align`, `Alignment_cpp`, `hy36encode`, `hy36decode` |
 | `pdb_cpp.alignment` | `align_seq`, `print_align_seq`, `align_chain_permutation` |
 | `pdb_cpp.analysis`  | `rmsd`, `interface_rmsd`, `native_contact`, `dockQ`       |
 | `pdb_cpp.TMalign`   | `compute_secondary_structure`                             |
 | `pdb_cpp.geom`      | `distance_matrix`                                         |
 | `pdb_cpp.select`    | `remove_incomplete_backbone_residues`                     |
 | `pdb_cpp.sequence`  | `get_aa_seq`, `get_aa_DL_seq`                             |
+| `pdb_cpp.data`      | `BLOSUM62`, `get_blosum62`, `load_blosum`, `AA_DICT`, `NA_DICT`, `AA_NA_DICT` |
+
+---
+
+## 13. Data subpackage (`pdb_cpp.data`)
+
+The `pdb_cpp.data` module provides residue dictionaries and the BLOSUM62
+substitution matrix used internally by the alignment routines.
+
+### BLOSUM62 matrix
+
+```python
+from pdb_cpp.data.blosum import BLOSUM62
+
+# Substitution score for two amino acids
+print(BLOSUM62[("A", "A")])   # 4
+print(BLOSUM62[("A", "W")])   # -3
+
+# Load a custom matrix from file
+from pdb_cpp.data.blosum import load_blosum
+custom = load_blosum("/path/to/matrix.txt")
+```
+
+`BLOSUM62` is a lazy-loaded dictionary mapping `(aa1, aa2)` tuples to
+integer substitution scores.
+
+### Residue dictionaries
+
+```python
+from pdb_cpp.data.res_dict import AA_DICT, AA_DICT_L, AA_DICT_D, NA_DICT
+
+# 3-letter to 1-letter amino acid code
+print(AA_DICT["ALA"])   # "A"
+print(AA_DICT["GLY"])   # "G"
+
+# D-amino acids (e.g. DAL -> "A")
+print(AA_DICT_D["DAL"])  # "A"
+
+# Nucleic acids
+print(NA_DICT["DA"])     # "A"
+
+# Combined amino acid + nucleic acid dictionary
+from pdb_cpp.data.res_dict import AA_NA_DICT
+```
+
+| Dictionary   | Contents                                    |
+|-------------|---------------------------------------------|
+| `AA_DICT_L` | Standard L-amino acids (31 entries incl. protonation variants) |
+| `AA_DICT_D` | D-amino acids (22 entries)                   |
+| `AA_DICT`   | Combined L + D amino acids                   |
+| `NA_DICT`   | DNA nucleotides (DA, DT, DC, DG)             |
+| `AA_NA_DICT`| Combined amino acids + nucleotides           |
