@@ -30,7 +30,11 @@
 #include <utility>
 #include <cstdlib>
 #include <cstdio>
-#include <unistd.h>
+#ifdef _WIN32
+#  include <io.h>
+#else
+#  include <unistd.h>
+#endif
 
 using std::string;
 using std::vector;
@@ -92,14 +96,26 @@ struct TempPdbFile {
 
 string make_temp_pdb_path()
 {
+#ifdef _WIN32
+    // Windows: _mktemp_s generates a unique name without creating the file.
+    const char *tmpdir = std::getenv("TEMP");
+    if (!tmpdir || tmpdir[0] == '\0') tmpdir = std::getenv("TMP");
+    if (!tmpdir || tmpdir[0] == '\0') tmpdir = "C:\\Temp";
+    string tmpl = string(tmpdir) + "\\pdbcpp_XXXXXX";
+    std::vector<char> buf(tmpl.begin(), tmpl.end());
+    buf.push_back('\0');
+    if (_mktemp_s(buf.data(), buf.size()) != 0) {
+        throw std::runtime_error("Failed to create temporary PDB file");
+    }
+    return string(buf.data()) + ".pdb";
+#else
+    // POSIX: mkstemp atomically creates and opens the file.
     // Avoid std::filesystem::path operator/ which requires macOS 10.15+.
-    // Build the template as a plain string instead.
     const char *tmpdir = std::getenv("TMPDIR");
-    if (!tmpdir || tmpdir[0] == '\0') tmpdir = P_tmpdir;  // fallback: usually /tmp
+    if (!tmpdir || tmpdir[0] == '\0') tmpdir = P_tmpdir;  // fallback: /tmp
     string tmpl = string(tmpdir);
     if (tmpl.back() != '/') tmpl += '/';
     tmpl += "pdbcpp_XXXXXX";
-    // mkstemp needs a mutable buffer
     std::vector<char> buf(tmpl.begin(), tmpl.end());
     buf.push_back('\0');
     int fd = mkstemp(buf.data());
@@ -112,6 +128,7 @@ string make_temp_pdb_path()
     string pdb_path = path + ".pdb";
     std::rename(path.c_str(), pdb_path.c_str());
     return pdb_path;
+#endif
 }
 
 TempPdbFile write_temp_pdb(const Coor &coor)
