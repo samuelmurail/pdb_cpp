@@ -29,12 +29,7 @@
 #include <map>
 #include <utility>
 #include <cstdlib>
-#include <cstdio>
-#ifdef _WIN32
-#  include <io.h>
-#else
-#  include <unistd.h>
-#endif
+#include <atomic>
 
 using std::string;
 using std::vector;
@@ -96,38 +91,19 @@ struct TempPdbFile {
 
 string make_temp_pdb_path()
 {
+    // Use an atomic sequence number for uniqueness — avoids platform-specific
+    // mkstemp (POSIX) / _mktemp_s (MSVC) which behave differently on Windows CI.
+    static std::atomic<unsigned long long> seq{0};
+    unsigned long long n = seq.fetch_add(1, std::memory_order_relaxed);
 #ifdef _WIN32
-    // Windows: _mktemp_s generates a unique name without creating the file.
     const char *tmpdir = std::getenv("TEMP");
-    if (!tmpdir || tmpdir[0] == '\0') tmpdir = std::getenv("TMP");
-    if (!tmpdir || tmpdir[0] == '\0') tmpdir = "C:\\Temp";
-    string tmpl = string(tmpdir) + "\\pdbcpp_XXXXXX";
-    std::vector<char> buf(tmpl.begin(), tmpl.end());
-    buf.push_back('\0');
-    if (_mktemp_s(buf.data(), buf.size()) != 0) {
-        throw std::runtime_error("Failed to create temporary PDB file");
-    }
-    return string(buf.data()) + ".pdb";
+    if (!tmpdir || !tmpdir[0]) tmpdir = std::getenv("TMP");
+    if (!tmpdir || !tmpdir[0]) tmpdir = "C:\\Temp";
+    return string(tmpdir) + "\\pdbcpp_tmp_" + std::to_string(n) + ".pdb";
 #else
-    // POSIX: mkstemp atomically creates and opens the file.
-    // Avoid std::filesystem::path operator/ which requires macOS 10.15+.
     const char *tmpdir = std::getenv("TMPDIR");
-    if (!tmpdir || tmpdir[0] == '\0') tmpdir = P_tmpdir;  // fallback: /tmp
-    string tmpl = string(tmpdir);
-    if (tmpl.back() != '/') tmpl += '/';
-    tmpl += "pdbcpp_XXXXXX";
-    std::vector<char> buf(tmpl.begin(), tmpl.end());
-    buf.push_back('\0');
-    int fd = mkstemp(buf.data());
-    if (fd == -1) {
-        throw std::runtime_error("Failed to create temporary PDB file");
-    }
-    close(fd);
-    string path(buf.data());
-    // Rename to .pdb extension so writers detect the format
-    string pdb_path = path + ".pdb";
-    std::rename(path.c_str(), pdb_path.c_str());
-    return pdb_path;
+    if (!tmpdir || !tmpdir[0]) tmpdir = "/tmp";
+    return string(tmpdir) + "/pdbcpp_tmp_" + std::to_string(n) + ".pdb";
 #endif
 }
 
