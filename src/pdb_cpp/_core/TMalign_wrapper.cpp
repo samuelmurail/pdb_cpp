@@ -28,7 +28,8 @@
 #include <cmath>
 #include <map>
 #include <utility>
-#include <filesystem>
+#include <cstdlib>
+#include <cstdio>
 #include <unistd.h>
 
 using std::string;
@@ -91,7 +92,13 @@ struct TempPdbFile {
 
 string make_temp_pdb_path()
 {
-    string tmpl = (std::filesystem::temp_directory_path() / "pdbcpp_XXXXXX").string();
+    // Avoid std::filesystem::path operator/ which requires macOS 10.15+.
+    // Build the template as a plain string instead.
+    const char *tmpdir = std::getenv("TMPDIR");
+    if (!tmpdir || tmpdir[0] == '\0') tmpdir = P_tmpdir;  // fallback: usually /tmp
+    string tmpl = string(tmpdir);
+    if (tmpl.back() != '/') tmpl += '/';
+    tmpl += "pdbcpp_XXXXXX";
     // mkstemp needs a mutable buffer
     std::vector<char> buf(tmpl.begin(), tmpl.end());
     buf.push_back('\0');
