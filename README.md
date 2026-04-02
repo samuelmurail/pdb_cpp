@@ -20,6 +20,7 @@
 - Sequence-based structural superposition and chain-permutation alignment
 - TM-align/TM-score through the bundled USalign/TM-align core
 - DockQ metrics (`DockQ`, `Fnat`, `Fnonnat`, `LRMS`, `iRMS`, `rRMS`)
+- Hydrogen bond detection (Baker & Hubbard geometric method, no explicit H required)
 - Secondary structure assignment
 - Core geometric helpers (e.g., distance matrix)
 
@@ -163,6 +164,35 @@ print(scores["LRMS"][0], scores["iRMS"][0], scores["rRMS"][0])
 If you use DockQ scoring in `pdb_cpp`, please cite:
 
 - DockQ, DOI: 10.1093/bioinformatics/btae586
+
+## Hydrogen bond detection
+
+`pdb_cpp.hbond` identifies hydrogen bonds using the Baker & Hubbard
+geometric criteria. Hydrogen positions are reconstructed algebraically when
+not present in the file, so no pre-processing step is required.
+
+```python
+from pdb_cpp import Coor
+from pdb_cpp import hbond
+
+coor = Coor("tests/input/2rri.cif")
+
+# One list of HBond objects per model frame
+all_bonds = hbond.hbonds(coor)
+print(f"Model 0: {len(all_bonds[0])} H-bonds")
+
+# Inspect bond geometry
+b = all_bonds[0][0]
+print(f"Donor  : {b.donor_chain}{b.donor_resid} {b.donor_heavy_name}")
+print(f"Acceptor: {b.acceptor_chain}{b.acceptor_resid} {b.acceptor_name}")
+print(f"d(D..A) = {b.dist_DA:.2f} Å  ∠DHA = {b.angle_DHA:.1f}°")
+
+# Cross-selection: protein donors to nucleic-acid acceptors
+rna_bonds = hbond.hbonds(coor, donor_sel="protein", acceptor_sel="nucleic")
+```
+
+Default cutoffs follow Baker & Hubbard (1984):
+`dist_DA_cutoff=3.5 Å`, `dist_HA_cutoff=2.5 Å`, `angle_cutoff=90°`.
 
 ## Geometry utilities
 

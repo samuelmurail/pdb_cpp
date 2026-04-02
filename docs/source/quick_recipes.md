@@ -271,3 +271,29 @@ print(f"Bonds after mmCIF round-trip: {len(coor2.conect)}")
 ligand = coor.select_atoms("not protein")
 ligand.write("ligand_only.pdb")
 ```
+
+## 19) Hydrogen bond detection
+
+```python
+from pdb_cpp import Coor
+from pdb_cpp import hbond
+
+coor = Coor("tests/input/2rri.cif")
+
+# All protein–protein H-bonds (one list per model)
+all_bonds = hbond.hbonds(coor)
+print(f"Model 0: {len(all_bonds[0])} H-bonds")
+
+# Inspect an individual bond
+b = all_bonds[0][0]
+print(f"{b.donor_chain}{b.donor_resid} {b.donor_heavy_name}"
+      f" -> {b.acceptor_chain}{b.acceptor_resid} {b.acceptor_name}"
+      f"  d(DA)={b.dist_DA:.2f} Å  angle={b.angle_DHA:.1f}°")
+
+# Filter inter-chain H-bonds
+inter = [b for b in all_bonds[0] if b.donor_chain != b.acceptor_chain]
+print(f"{len(inter)} inter-chain H-bonds in model 0")
+
+# Protein donors → nucleic-acid acceptors (protein–RNA interface)
+rna_bonds = hbond.hbonds(coor, donor_sel="protein", acceptor_sel="nucleic")
+```

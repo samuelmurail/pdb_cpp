@@ -16,7 +16,9 @@ def _cpp_args():
             "/wd4305",
             "/wd4996",
         ]
-    return ["-O3", "-ffast-math", "-std=c++17"]
+    # "-fno-finite-math-only" overrides the part of "-ffast-math" that breaks
+    # std::isnan / NaN sentinels used in hbond.h for the "atom not found" signal.
+    return ["-O3", "-ffast-math", "-fno-finite-math-only", "-std=c++17"]
 
 ext_modules = [
     Extension(

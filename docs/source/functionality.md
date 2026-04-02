@@ -262,6 +262,9 @@ returns a new `Coor` object containing only the matching atoms.
 | `protein`  | Standard amino acid residue names            |
 | `backbone` | `name CA C N O` within protein residues      |
 | `noh`      | Non-hydrogen atoms                           |
+| `nucleic`  | RNA and DNA residue names                    |
+| `rna`      | RNA residue names (`A U G C`)               |
+| `dna`      | DNA residue names (`DA DC DG DT`)           |
 
 #### Logical operators
 
@@ -686,7 +689,143 @@ If you use DockQ scoring, please cite:
 
 ---
 
-## 10. Geometry utilities
+## 10. Hydrogen bond detection
+
+`pdb_cpp.hbond` detects hydrogen bonds using a purely geometric approach
+(Baker & Hubbard, 1984). For structures without explicit hydrogen atoms,
+backbone NH and sidechain hydrogen positions are reconstructed
+algebraically. The algorithm covers all standard L/D amino acids and RNA/DNA
+nucleotides.
+
+### Basic usage
+
+```python
+from pdb_cpp import Coor
+from pdb_cpp import hbond
+
+coor = Coor("tests/input/2rri.cif")
+
+# All protein–protein H-bonds for every model
+all_bonds = hbond.hbonds(coor)
+
+# List of HBond objects for model 0
+bonds_model0 = all_bonds[0]
+print(f"Model 0: {len(bonds_model0)} hydrogen bonds")
+
+for b in bonds_model0[:3]:
+    print(b)
+```
+
+### Function signature
+
+```python
+hbond.hbonds(
+    coor,
+    donor_sel    = "protein",
+    acceptor_sel = "protein",
+    dist_DA_cutoff = 3.5,   # D···A distance cutoff (Å)
+    dist_HA_cutoff = 2.5,   # H···A distance cutoff (Å)
+    angle_cutoff   = 90.0,  # D−H···A angle cutoff (°)
+) -> list[list[HBond]]
+```
+
+Returns a list with one inner list (of `HBond` objects) per model frame.
+
+#### Parameters
+
+| Parameter        | Default     | Description                                           |
+|------------------|-------------|-------------------------------------------------------|
+| `coor`           | —           | A `Coor` object                                       |
+| `donor_sel`      | `"protein"` | Selection string for donor-containing atoms           |
+| `acceptor_sel`   | `"protein"` | Selection string for acceptor-containing atoms        |
+| `dist_DA_cutoff` | `3.5`       | Maximum heavy-atom donor–acceptor distance (Å)        |
+| `dist_HA_cutoff` | `2.5`       | Maximum hydrogen–acceptor distance (Å)                |
+| `angle_cutoff`   | `90.0`      | Minimum D−H···A angle (°)                             |
+
+### `HBond` object
+
+Each entry in the returned lists is an `HBond` object with the following
+read-only attributes:
+
+| Attribute            | Type    | Description                                        |
+|----------------------|---------|----------------------------------------------------|
+| `donor_resid`        | `int`   | Donor residue sequence number                      |
+| `donor_resname`      | `str`   | Donor residue name                                 |
+| `donor_chain`        | `str`   | Donor chain identifier                             |
+| `donor_heavy_name`   | `str`   | Donor heavy-atom name (e.g. `N`, `OG`)             |
+| `donor_h_name`       | `str`   | Donor hydrogen atom name (e.g. `H`, `HG`)         |
+| `donor_heavy_xyz`    | `tuple` | Donor heavy-atom coordinates (x, y, z)             |
+| `donor_h_xyz`        | `tuple` | Donor hydrogen coordinates (x, y, z)               |
+| `acceptor_resid`     | `int`   | Acceptor residue sequence number                   |
+| `acceptor_resname`   | `str`   | Acceptor residue name                              |
+| `acceptor_chain`     | `str`   | Acceptor chain identifier                          |
+| `acceptor_name`      | `str`   | Acceptor atom name (e.g. `O`, `OD1`)              |
+| `acceptor_xyz`       | `tuple` | Acceptor atom coordinates (x, y, z)                |
+| `dist_DA`            | `float` | D···A distance (Å)                                 |
+| `dist_HA`            | `float` | H···A distance (Å)                                 |
+| `angle_DHA`          | `float` | D−H···A angle (°)                                  |
+
+### Filtering and analysis examples
+
+```python
+from pdb_cpp import Coor
+from pdb_cpp import hbond
+
+coor = Coor("tests/input/2rri.cif")
+bonds = hbond.hbonds(coor)[0]
+
+# Backbone–backbone H-bonds only
+bb_names = {"N", "O"}
+bb_bonds = [b for b in bonds
+            if b.donor_heavy_name in bb_names
+            and b.acceptor_name in bb_names]
+
+# Inter-chain H-bonds (cross-chain contacts)
+inter = [b for b in bonds if b.donor_chain != b.acceptor_chain]
+print(f"{len(inter)} inter-chain H-bonds")
+
+# Sort by D–A distance
+bonds.sort(key=lambda b: b.dist_DA)
+for b in bonds[:5]:
+    print(f"{b.donor_chain}{b.donor_resid}{b.donor_resname:>4}"
+          f" {b.donor_heavy_name} → "
+          f"{b.acceptor_chain}{b.acceptor_resid}{b.acceptor_resname:>4}"
+          f" {b.acceptor_name}  d(DA)={b.dist_DA:.2f} Å"
+          f"  angle={b.angle_DHA:.1f}°")
+```
+
+### Cross-selection H-bonds (e.g. protein–nucleic)
+
+The `donor_sel` and `acceptor_sel` parameters accept any valid selection
+string, enabling inter-molecular or cross-type analysis:
+
+```python
+# Protein side-chains donating to RNA acceptors
+rna_contacts = hbond.hbonds(
+    coor,
+    donor_sel    = "protein",
+    acceptor_sel = "nucleic",
+)
+
+# H-bonds between two specific chains
+ab_bonds = hbond.hbonds(coor, donor_sel="chain A", acceptor_sel="chain B")
+```
+
+### Baker & Hubbard criteria
+
+The default thresholds reproduce the original Baker & Hubbard (1984)
+geometric criteria:
+
+$$d(\text{D}{\cdots}\text{A}) \leq 3.5~\text{Å}, \quad
+  d(\text{H}{\cdots}\text{A}) \leq 2.5~\text{Å}, \quad
+  \angle(\text{D{-}H}{\cdots}\text{A}) \geq 90°$$
+
+A stricter cut-off of 120° (`angle_cutoff=120`) is closer to values used
+by biotite and is recommended when comparing with other tools.
+
+---
+
+## 11. Geometry utilities
 
 ### Distance matrix
 
@@ -717,7 +856,7 @@ decoded = hy36decode(5, "A0000")  # 100000
 
 ---
 
-## 11. Data cleaning utilities
+## 12. Data cleaning utilities
 
 ### Remove incomplete backbone residues
 
@@ -738,7 +877,7 @@ This is recommended before structural alignment to avoid mismatches.
 
 ---
 
-## 12. Module summary
+## 13. Module summary
 
 | Module              | Key functions / classes                                   |
 |---------------------|-----------------------------------------------------------|
@@ -746,6 +885,7 @@ This is recommended before structural alignment to avoid mismatches.
 | `pdb_cpp.core`      | `get_common_atoms`, `coor_align`, `align_seq_based`, `tmalign_ca`, `distance_matrix`, `compute_SS`, `sequence_align`, `Alignment_cpp`, `hy36encode`, `hy36decode` |
 | `pdb_cpp.alignment` | `align_seq`, `print_align_seq`, `align_chain_permutation` |
 | `pdb_cpp.analysis`  | `rmsd`, `interface_rmsd`, `native_contact`, `dockQ`       |
+| `pdb_cpp.hbond`     | `hbonds` — Baker & Hubbard H-bond detection               |
 | `pdb_cpp.TMalign`   | `compute_secondary_structure`                             |
 | `pdb_cpp.geom`      | `distance_matrix`                                         |
 | `pdb_cpp.select`    | `remove_incomplete_backbone_residues`                     |
@@ -754,7 +894,7 @@ This is recommended before structural alignment to avoid mismatches.
 
 ---
 
-## 13. Data subpackage (`pdb_cpp.data`)
+## 14. Data subpackage (`pdb_cpp.data`)
 
 The `pdb_cpp.data` module provides residue dictionaries and the BLOSUM62
 substitution matrix used internally by the alignment routines.
