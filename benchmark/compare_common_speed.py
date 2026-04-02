@@ -137,17 +137,26 @@ def _rmsd(coords_1: np.ndarray, coords_2: np.ndarray) -> float:
     return float(np.sqrt(np.mean(np.sum(delta * delta, axis=1))))
 
 
-def _dihedral(points: np.ndarray) -> float:
-    p0, p1, p2, p3 = points
-    b0 = p1 - p0
-    b1 = p2 - p1
-    b2 = p3 - p2
-    b1_norm = b1 / (np.linalg.norm(b1) + 1e-12)
-    v = b0 - np.dot(b0, b1_norm) * b1_norm
-    w = b2 - np.dot(b2, b1_norm) * b1_norm
-    x = np.dot(v, w)
-    y = np.dot(np.cross(b1_norm, v), w)
-    return float(np.arctan2(y, x))
+def _dihedral_numpy(pts: np.ndarray) -> float:
+    """Pure-NumPy fallback: one dihedral from the first 4 rows of pts."""
+    p0, p1, p2, p3 = pts[0], pts[1], pts[2], pts[3]
+    b0 = p1 - p0; b1 = p2 - p1; b2 = p3 - p2
+    b1n = b1 / (np.linalg.norm(b1) + 1e-12)
+    v = b0 - np.dot(b0, b1n) * b1n
+    w = b2 - np.dot(b2, b1n) * b1n
+    return float(np.degrees(np.arctan2(np.dot(np.cross(b1n, v), w), np.dot(v, w))))
+
+
+def _dihedral(pts: np.ndarray) -> float:
+    """Dihedral angle (degrees) from 4 points; delegates to C++ when available."""
+    try:
+        from pdb_cpp.core import compute_dihedrals as _cpp_dihed
+        arr = np.asarray(pts[:4], dtype=np.float32)
+        result = _cpp_dihed(arr)
+        return float(result[0]) if result.shape[0] > 0 else 0.0
+    except Exception:
+        return _dihedral_numpy(pts)
+
 
 
 def _kabsch_rmsd(coords_1: np.ndarray, coords_2: np.ndarray) -> float:
@@ -226,15 +235,12 @@ def build_backends() -> list[Backend]:
             raise AttributeError("No sequence API found on pdb_cpp Coor")
 
         def cpp_get_ca_coords(obj: Any) -> np.ndarray:
-            model = obj.get_Models(0)
-            idx = obj.get_index_select("name CA")
-            if len(idx) == 0:
+            # select_atoms filters in C++ first (only CA atoms), then returns xyz;
+            # avoids copying all 3 coordinate arrays for every atom in the model.
+            ca = obj.select_atoms("name CA")
+            if ca.len == 0:
                 return np.zeros((0, 3), dtype=float)
-            sel = np.asarray(idx, dtype=int)
-            xs = np.asarray(model.get_x(), dtype=float)
-            ys = np.asarray(model.get_y(), dtype=float)
-            zs = np.asarray(model.get_z(), dtype=float)
-            return np.stack([xs[sel], ys[sel], zs[sel]], axis=1)
+            return np.asarray(ca.xyz, dtype=float)
 
         def cpp_get_chain_seq_ca(obj: Any, chain_id: str) -> tuple[str, np.ndarray]:
             model = obj.get_Models(0)
@@ -743,10 +749,10 @@ def main() -> None:
 
                 dihedral_mean, dihedral_std = benchmark_call(
                     lambda b=backend, current=obj: (
-                        _dihedral(b.get_ca_coords(current)[:4])
-                        if b.get_ca_coords(current).shape[0] >= 4
-                        else 0.0
-                    ),
+                        lambda ca=b.get_ca_coords(current): (
+                            _dihedral(ca) if ca.shape[0] >= 4 else 0.0
+                        )
+                    )(),
                     args.warmup,
                     args.runs,
                 )

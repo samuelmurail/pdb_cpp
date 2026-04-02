@@ -113,6 +113,31 @@ PYBIND11_MODULE(core, m) {
         py::arg("xyz_a"),
         py::arg("xyz_b"),
         "Compute a pairwise distance matrix between two coordinate sets");
+
+    m.def("compute_dihedrals",
+        [](py::array_t<float, py::array::c_style | py::array::forcecast> pts) {
+            if (pts.ndim() != 2 || pts.shape(1) != 3)
+                throw std::runtime_error("Input must be a 2D array with shape (N, 3)");
+            const auto n = static_cast<size_t>(pts.shape(0));
+            if (n < 4) return py::array_t<float>(py::array::ShapeContainer{0});
+            py::array_t<float> out(py::array::ShapeContainer{n - 3});
+            compute_dihedrals(pts.data(), n, out.mutable_data());
+            return out;
+        },
+        py::arg("pts"),
+        R"doc(
+Compute all consecutive dihedral angles from an ordered (N, 3) float array.
+
+Parameters
+----------
+pts : ndarray, shape (N, 3)
+    Ordered 3-D coordinates (e.g. consecutive CA positions).
+
+Returns
+-------
+ndarray, shape (N-3,)
+    Dihedral angles in degrees.  Returns an empty array when N < 4.
+)doc");
     // Bind the TMAlign secondary-structure function
     m.def("compute_SS",
         static_cast<std::vector<std::vector<std::string>>(*)(const Coor&, bool)>(&compute_SS),

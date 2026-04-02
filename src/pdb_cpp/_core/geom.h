@@ -213,6 +213,38 @@ inline float atom_dihed_angle(
     return std::atan2(y, x) * 180.0f / kPi;
 }
 
+// Compute all N-3 consecutive dihedral angles from an ordered (N,3) float array.
+// out must point to at least (n-3) floats.  Values are in degrees.
+inline void compute_dihedrals(const float* pts, size_t n, float* out) {
+    for (size_t i = 0; i + 3 < n; ++i) {
+        const float* a = pts + (i + 0) * 3;
+        const float* b = pts + (i + 1) * 3;
+        const float* c = pts + (i + 2) * 3;
+        const float* d = pts + (i + 3) * 3;
+
+        float ab[3] = {a[0]-b[0], a[1]-b[1], a[2]-b[2]};
+        float bc[3] = {c[0]-b[0], c[1]-b[1], c[2]-b[2]};
+        float cd[3] = {d[0]-c[0], d[1]-c[1], d[2]-c[2]};
+
+        float v1[3] = {ab[1]*bc[2]-ab[2]*bc[1],
+                       ab[2]*bc[0]-ab[0]*bc[2],
+                       ab[0]*bc[1]-ab[1]*bc[0]};
+        float v2[3] = {cd[1]*bc[2]-cd[2]*bc[1],
+                       cd[2]*bc[0]-cd[0]*bc[2],
+                       cd[0]*bc[1]-cd[1]*bc[0]};
+
+        float bc_n = std::sqrt(bc[0]*bc[0]+bc[1]*bc[1]+bc[2]*bc[2]);
+        if (bc_n < 1e-12f) { out[i] = 0.0f; continue; }
+
+        float cross[3] = {v1[1]*v2[2]-v1[2]*v2[1],
+                          v1[2]*v2[0]-v1[0]*v2[2],
+                          v1[0]*v2[1]-v1[1]*v2[0]};
+        float y = (cross[0]*bc[0]+cross[1]*bc[1]+cross[2]*bc[2]) / bc_n;
+        float x = v1[0]*v2[0]+v1[1]*v2[1]+v1[2]*v2[2];
+        out[i] = std::atan2(y, x) * 180.0f / kPi;
+    }
+}
+
 inline void distance_matrix(const float* a, size_t n, const float* b, size_t m, float* out) {
     for (size_t i = 0; i < n; ++i) {
         size_t a_offset = i * 3;
