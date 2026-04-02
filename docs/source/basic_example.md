@@ -1,61 +1,61 @@
 # Basic Usage
 
+A quick-start walk-through. For full details on every feature see the
+[Functionality Guide](functionality.md); for copy-paste snippets see
+[Quick Recipes](quick_recipes.md).
+
 ## Import and load structures
 
 ```python
 from pdb_cpp import Coor
 
-# Load from local file
+# Load from local file (PDB, mmCIF, PQR, or GRO — auto-detected by extension)
 coor = Coor("tests/input/1y0m.cif")
 
 # Load from PDB ID (downloaded as mmCIF and cached locally)
 coor_from_id = Coor(pdb_id="1y0m")
 ```
 
-`Coor` can read `.pdb` and `.cif` files and can contain one or more models.
-
-## Read basic properties
+## Inspect a structure
 
 ```python
-print(coor.model_num)        # number of models
-print(coor.len)              # number of atoms in active model
-print(coor.get_uniq_chain()) # list of chain IDs
-print(coor.get_aa_seq())     # dict: chain -> sequence
+print(coor.model_num)            # number of models
+print(coor.len)                  # number of atoms in active model
+print(coor.get_uniq_chain())     # list of chain IDs
+
+# Coordinates, atom names, residue names
+print(coor.xyz[:5])              # shape (N, 3)
+print(coor.name_str[:5])         # ['N', 'CA', 'C', 'O', 'CB']
+print(coor.resname_str[:5])      # ['THR', 'THR', ...]
+print(coor.chain_str[:5])        # ['A', 'A', ...]
+print(coor.resid[:5])            # residue sequence numbers
+print(coor.beta[:5])             # B-factors
+print(coor.occ[:5])              # occupancies
 ```
 
-## Atom and residue selections
+See the [Coor and Model properties table](functionality.md#2-the-coor-and-model-objects)
+for the complete list.
+
+## Atom selections
 
 ```python
-# Chain selection
 chain_a = coor.select_atoms("chain A")
-
-# Standard protein/backbone keywords
-protein_backbone = coor.select_atoms("protein and backbone")
-
-# Residue ranges
-segment = coor.select_atoms("chain A and residue >= 6 and residue <= 58")
-
-# Spatial query: atoms in chain A within 5 Å of chain B
+backbone = coor.select_atoms("protein and backbone")
 interface = coor.select_atoms("chain A and within 5.0 of chain B")
-
-# Combine logic and numeric filters
-filtered = coor.select_atoms("name CA and not within 5.0 of resname HOH and x >= 20.0")
+indices = coor.get_index_select("name CA and chain A")
 ```
 
-Supported selection primitives include:
+See the [Selection syntax reference](functionality.md#3-atom-selection) for
+all keywords, operators, and spatial queries.
 
-- atom fields: `name`, `altloc`, `resname`, `chain`, `resid`, `residue`, `x`, `y`, `z`, `occ`, `beta`
-- shortcuts: `protein`, `backbone`, `noh`
-- operators: `and`, `or`, `not`, `within`, `==`, `!=`, `>`, `>=`, `<`, `<=`
-
-## Write output structures
+## Write output
 
 ```python
-interface.write("interface_chainA.pdb")
-segment.write("segment_chainA.cif")
+chain_a.write("chain_A.pdb")
+chain_a.write("chain_A.cif")
 ```
 
-## Sequence alignment and coordinate superposition
+## Sequence alignment and structural superposition
 
 ```python
 from pdb_cpp import alignment, core, analysis
@@ -63,45 +63,28 @@ from pdb_cpp import alignment, core, analysis
 coor_1 = Coor("tests/input/1u85.pdb")
 coor_2 = Coor("tests/input/1ubd.pdb")
 
-seq_1 = coor_1.get_aa_seq()["A"]
-seq_2 = coor_2.get_aa_seq()["C"]
-
-aln_1, aln_2, score = alignment.align_seq(seq_1, seq_2)
-alignment.print_align_seq(aln_1, aln_2)
-
-idx_1, idx_2 = core.get_common_atoms(coor_1, coor_2, chain_1=["A"], chain_2=["C"])
-core.coor_align(coor_1, coor_2, idx_1, idx_2, frame_ref=0)
-
-rmsd = analysis.rmsd(coor_1, coor_2, index_list=[idx_1, idx_2])
-print(rmsd[0])
+# One-step sequence-based alignment + RMSD
+rmsd_list, _, _ = core.align_seq_based(coor_1, coor_2, chain_1=["A"], chain_2=["C"])
+print(f"RMSD: {rmsd_list[0]:.3f} Å")
 ```
 
-## TM-score / TM-align
+## TM-score
 
 ```python
 from pdb_cpp.core import tmalign_ca
 
-coor_1 = Coor("tests/input/1y0m.cif")
-coor_2 = Coor("tests/input/1ubd.pdb")
-
 tm = tmalign_ca(coor_1, coor_2, chain_1=["A"], chain_2=["C"], mm=1)
-
-print(tm.L_ali, tm.rmsd)
-print(tm.TM1, tm.TM2)
+print(f"TM1={tm.TM1:.4f}, TM2={tm.TM2:.4f}, RMSD={tm.rmsd:.3f}")
 ```
 
 ## DockQ scoring
 
 ```python
-from pdb_cpp import analysis
-
 model = Coor("tests/input/1rxz_colabfold_model_1.pdb")
 native = Coor("tests/input/1rxz.pdb")
 
 scores = analysis.dockQ(model, native)
-print(scores["DockQ"][0])
-print(scores["Fnat"][0], scores["Fnonnat"][0])
-print(scores["LRMS"][0], scores["iRMS"][0], scores["rRMS"][0])
+print(f"DockQ: {scores['DockQ'][0]:.3f}")
 ```
 
 ## Secondary structure
@@ -110,6 +93,17 @@ print(scores["LRMS"][0], scores["iRMS"][0], scores["rRMS"][0])
 from pdb_cpp import TMalign
 
 ss = TMalign.compute_secondary_structure(coor)
-print(ss[0]["A"])
+for chain_id, ss_string in ss[0].items():
+    print(f"Chain {chain_id}: {ss_string}")
+```
+
+## Distance matrix
+
+```python
+from pdb_cpp import geom
+
+ca = coor.select_atoms("name CA")
+dmat = geom.distance_matrix(ca, ca)
+print(f"Distance matrix shape: {dmat.shape}")
 ```
 

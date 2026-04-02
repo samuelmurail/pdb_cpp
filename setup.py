@@ -27,6 +27,8 @@ ext_modules = [
          "src/pdb_cpp/_core/format/pdb.cpp",
          "src/pdb_cpp/_core/format/encode.cpp",
          "src/pdb_cpp/_core/format/mmcif.cpp",
+         "src/pdb_cpp/_core/format/pqr.cpp",
+         "src/pdb_cpp/_core/format/gro.cpp",
          "src/pdb_cpp/_core/select.cpp",
          "src/pdb_cpp/_core/sequence.cpp",
          "src/pdb_cpp/_core/align.cpp",

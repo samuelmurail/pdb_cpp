@@ -14,7 +14,7 @@
 
 ## What is included
 
-- Read/write `.pdb` and `.cif` files
+- Read/write `.pdb`, `.cif`, `.pqr`, and `.gro` files
 - Atom/residue/chain selections (including geometric `within` queries)
 - Sequence extraction and pairwise sequence alignment
 - Sequence-based structural superposition and chain-permutation alignment

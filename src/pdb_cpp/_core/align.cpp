@@ -436,10 +436,12 @@ pair<vector<int>, vector<int>> get_common_atoms(
     }
 
     // Assertions to check completeness
-    assert(sel_index_1.size() == seq_1.length() * back_names.size() &&
-           "Incomplete backbone atoms for first Coor object, you might consider using the remove_incomplete_residues method before.");
-    assert(sel_index_2.size() == seq_2.length() * back_names.size() &&
-           "Incomplete backbone atoms for second Coor object, you might consider using the remove_incomplete_residues method before.");
+    if (sel_index_1.size() != seq_1.length() * back_names.size()) {
+        throw std::runtime_error("Incomplete backbone atoms for first Coor object, you might consider using the remove_incomplete_residues method before.");
+    }
+    if (sel_index_2.size() != seq_2.length() * back_names.size()) {
+        throw std::runtime_error("Incomplete backbone atoms for second Coor object, you might consider using the remove_incomplete_residues method before.");
+    }
 
     // Perform sequence alignment
     auto start = high_resolution_clock::now();
@@ -479,8 +481,9 @@ pair<vector<int>, vector<int>> get_common_atoms(
         }
     }
 
-    assert(align_sel_1.size() == align_sel_2.size() &&
-           "Two selections don't have the same atom number");
+    if (align_sel_1.size() != align_sel_2.size()) {
+        throw std::runtime_error("Two selections don't have the same atom number");
+    }
 
     
     return make_pair(align_sel_1, align_sel_2);

@@ -4,6 +4,7 @@
 #include <cmath>
 #include <iomanip>
 #include <iostream>
+#include <set>
 #include <sstream>
 #include <string>
 #include <unordered_map>
@@ -387,6 +388,76 @@ Coor MMCIF_parse(const string &filename) {
         coor.add_Model(model);
     }
 
+    // Parse _struct_conn for bond/CONECT records.
+    LoopTable struct_conn = parse_loop_for_prefix(lines, "_struct_conn.");
+    if (!struct_conn.col_names.empty() && coor.model_size() > 0) {
+        unordered_map<string, size_t> sc_index;
+        for (size_t i = 0; i < struct_conn.col_names.size(); ++i) {
+            sc_index[struct_conn.col_names[i]] = i;
+        }
+        auto get_sc_value = [&](const vector<string> &row, const string &key) -> string {
+            auto it = sc_index.find(key);
+            if (it == sc_index.end() || it->second >= row.size()) {
+                return "";
+            }
+            return row[it->second];
+        };
+
+        // Build lookup: (chain, resid, atom_name) -> serial number from model 0.
+        const Model &model0 = coor.get_Models(0);
+        unordered_map<string, int> atom_lookup;
+        for (size_t i = 0; i < model0.size(); ++i) {
+            string chain_s = trim_whitespace(string(model0.get_chain()[i].data()));
+            string name_s = trim_whitespace(string(model0.get_name()[i].data()));
+            int resid_val = model0.get_resid()[i];
+            string altloc_s = trim_whitespace(string(model0.get_alterloc()[i].data()));
+            string key = chain_s + ":" + to_string(resid_val) + ":" + name_s;
+            if (!altloc_s.empty()) {
+                key += ":" + altloc_s;
+            }
+            // Store only the first occurrence (in case of duplicate keys).
+            if (atom_lookup.find(key) == atom_lookup.end()) {
+                atom_lookup[key] = model0.get_num()[i];
+            }
+        }
+
+        for (const auto &sc_row : struct_conn.rows) {
+            // Partner 1: prefer label_asym_id (matches stored chain), auth_seq_id, label_atom_id.
+            string p1_chain = sanitize_value(get_sc_value(sc_row, "ptnr1_label_asym_id"));
+            string p1_resid_str = sanitize_value(get_sc_value(sc_row, "ptnr1_auth_seq_id"));
+            string p1_atom = sanitize_value(get_sc_value(sc_row, "ptnr1_label_atom_id"));
+            string p1_alt = sanitize_value(get_sc_value(sc_row, "pdbx_ptnr1_label_alt_id"));
+
+            // Partner 2.
+            string p2_chain = sanitize_value(get_sc_value(sc_row, "ptnr2_label_asym_id"));
+            string p2_resid_str = sanitize_value(get_sc_value(sc_row, "ptnr2_auth_seq_id"));
+            string p2_atom = sanitize_value(get_sc_value(sc_row, "ptnr2_label_atom_id"));
+            string p2_alt = sanitize_value(get_sc_value(sc_row, "pdbx_ptnr2_label_alt_id"));
+
+            if (p1_chain.empty() || p1_resid_str.empty() || p1_atom.empty() ||
+                p2_chain.empty() || p2_resid_str.empty() || p2_atom.empty()) {
+                continue;
+            }
+
+            string key1 = p1_chain + ":" + p1_resid_str + ":" + p1_atom;
+            string key2 = p2_chain + ":" + p2_resid_str + ":" + p2_atom;
+            if (!p1_alt.empty()) key1 += ":" + p1_alt;
+            if (!p2_alt.empty()) key2 += ":" + p2_alt;
+
+            auto it1 = atom_lookup.find(key1);
+            auto it2 = atom_lookup.find(key2);
+            if (it1 == atom_lookup.end() || it2 == atom_lookup.end()) {
+                continue;
+            }
+
+            int serial1 = it1->second;
+            int serial2 = it2->second;
+            // Add bidirectional bond.
+            coor.conect[serial1].push_back(serial2);
+            coor.conect[serial2].push_back(serial1);
+        }
+    }
+
     auto cell_values = parse_single_value_category(lines, "_cell.");
     if (!cell_values.empty() &&
         cell_values.find("length_a") != cell_values.end() &&
@@ -613,6 +684,95 @@ string get_mmcif_string(const Coor &coor) {
     }
 
     oss << "#\n";
+
+    // Write _struct_conn loop for CONECT records.
+    if (!coor.conect.empty() && coor.model_size() > 0) {
+        const Model &model0 = coor.get_Models(0);
+
+        // Build serial number -> position index map for model 0.
+        unordered_map<int, size_t> serial_to_idx;
+        for (size_t i = 0; i < model0.size(); ++i) {
+            serial_to_idx[model0.get_num()[i]] = i;
+        }
+
+        // Collect unique bond pairs (smaller serial first) to avoid duplicates.
+        set<pair<int, int>> unique_bonds;
+        vector<int> keys;
+        keys.reserve(coor.conect.size());
+        for (const auto &kv : coor.conect) {
+            keys.push_back(kv.first);
+        }
+        sort(keys.begin(), keys.end());
+        for (int atom_idx : keys) {
+            const vector<int> &bonded = coor.conect.at(atom_idx);
+            for (int partner : bonded) {
+                int lo = min(atom_idx, partner);
+                int hi = max(atom_idx, partner);
+                unique_bonds.insert({lo, hi});
+            }
+        }
+
+        if (!unique_bonds.empty()) {
+            oss << "loop_\n"
+                << "_struct_conn.id\n"
+                << "_struct_conn.conn_type_id\n"
+                << "_struct_conn.ptnr1_label_asym_id\n"
+                << "_struct_conn.ptnr1_label_comp_id\n"
+                << "_struct_conn.ptnr1_label_seq_id\n"
+                << "_struct_conn.ptnr1_label_atom_id\n"
+                << "_struct_conn.pdbx_ptnr1_label_alt_id\n"
+                << "_struct_conn.ptnr1_auth_asym_id\n"
+                << "_struct_conn.ptnr1_auth_comp_id\n"
+                << "_struct_conn.ptnr1_auth_seq_id\n"
+                << "_struct_conn.ptnr1_symmetry\n"
+                << "_struct_conn.ptnr2_label_asym_id\n"
+                << "_struct_conn.ptnr2_label_comp_id\n"
+                << "_struct_conn.ptnr2_label_seq_id\n"
+                << "_struct_conn.ptnr2_label_atom_id\n"
+                << "_struct_conn.pdbx_ptnr2_label_alt_id\n"
+                << "_struct_conn.ptnr2_auth_asym_id\n"
+                << "_struct_conn.ptnr2_auth_comp_id\n"
+                << "_struct_conn.ptnr2_auth_seq_id\n"
+                << "_struct_conn.ptnr2_symmetry\n";
+
+            int conn_id = 1;
+            for (const auto &bond : unique_bonds) {
+                auto it1 = serial_to_idx.find(bond.first);
+                auto it2 = serial_to_idx.find(bond.second);
+                if (it1 == serial_to_idx.end() || it2 == serial_to_idx.end()) {
+                    continue;
+                }
+                size_t idx1 = it1->second;
+                size_t idx2 = it2->second;
+
+                string chain1 = trim_whitespace(string(model0.get_chain()[idx1].data()));
+                string resname1 = trim_whitespace(string(model0.get_resname()[idx1].data()));
+                string name1 = trim_whitespace(string(model0.get_name()[idx1].data()));
+                string altloc1 = trim_whitespace(string(model0.get_alterloc()[idx1].data()));
+                int resid1 = model0.get_resid()[idx1];
+                int uniqresid1 = model0.get_uniqresid()[idx1] + 1;
+
+                string chain2 = trim_whitespace(string(model0.get_chain()[idx2].data()));
+                string resname2 = trim_whitespace(string(model0.get_resname()[idx2].data()));
+                string name2 = trim_whitespace(string(model0.get_name()[idx2].data()));
+                string altloc2 = trim_whitespace(string(model0.get_alterloc()[idx2].data()));
+                int resid2 = model0.get_resid()[idx2];
+                int uniqresid2 = model0.get_uniqresid()[idx2] + 1;
+
+                if (altloc1.empty()) altloc1 = "?";
+                if (altloc2.empty()) altloc2 = "?";
+
+                oss << "covale" << conn_id << " covale "
+                    << chain1 << " " << resname1 << " " << uniqresid1 << " " << name1 << " " << altloc1 << " "
+                    << chain1 << " " << resname1 << " " << resid1 << " 1_555 "
+                    << chain2 << " " << resname2 << " " << uniqresid2 << " " << name2 << " " << altloc2 << " "
+                    << chain2 << " " << resname2 << " " << resid2 << " 1_555\n";
+                ++conn_id;
+            }
+            oss << "#\n";
+        }
+    }
+
     return oss.str();
 }
 

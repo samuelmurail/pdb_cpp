@@ -1,1 +1,3 @@
-recursive-include src/pdb_cpp/_core *.h *.hpp
+recursive-include src/pdb_cpp/_core *.h *.hpp *.cpp
+recursive-include src/pdb_cpp/data *.txt
+recursive-include src/pdb_cpp/usalign *.txt

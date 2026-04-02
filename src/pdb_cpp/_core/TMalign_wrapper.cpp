@@ -28,6 +28,8 @@
 #include <cmath>
 #include <map>
 #include <utility>
+#include <cstdlib>
+#include <atomic>
 
 using std::string;
 using std::vector;
@@ -89,11 +91,20 @@ struct TempPdbFile {
 
 string make_temp_pdb_path()
 {
-    char buffer[L_tmpnam];
-    if (!std::tmpnam(buffer)) {
-        throw std::runtime_error("Failed to create temporary PDB filename");
-    }
-    return string(buffer) + ".pdb";
+    // Use an atomic sequence number for uniqueness — avoids platform-specific
+    // mkstemp (POSIX) / _mktemp_s (MSVC) which behave differently on Windows CI.
+    static std::atomic<unsigned long long> seq{0};
+    unsigned long long n = seq.fetch_add(1, std::memory_order_relaxed);
+#ifdef _WIN32
+    const char *tmpdir = std::getenv("TEMP");
+    if (!tmpdir || !tmpdir[0]) tmpdir = std::getenv("TMP");
+    if (!tmpdir || !tmpdir[0]) tmpdir = "C:\\Temp";
+    return string(tmpdir) + "\\pdbcpp_tmp_" + std::to_string(n) + ".pdb";
+#else
+    const char *tmpdir = std::getenv("TMPDIR");
+    if (!tmpdir || !tmpdir[0]) tmpdir = "/tmp";
+    return string(tmpdir) + "/pdbcpp_tmp_" + std::to_string(n) + ".pdb";
+#endif
 }
 
 TempPdbFile write_temp_pdb(const Coor &coor)

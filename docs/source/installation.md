@@ -1,61 +1,80 @@
-# Installation Quick Start
+# Installation
 
-## Through Pypi
+## Requirements
 
-Install from PyPI:
+- **Python** >= 3.10
+- **C++ compiler** with C++17 support (GCC >= 7, Clang >= 5, MSVC >= 2017)
+- **NumPy** >= 1.22
 
-```
+Build-time only (installed automatically):
+
+- **pybind11** == 2.13
+
+## From PyPI (recommended)
+
+```bash
 pip install pdb-cpp
 ```
 
-## Get sources from the GithubRepo
+This installs a pre-built wheel when available for your platform, or
+compiles from source otherwise.
 
-The sources for pdb_cpp can be downloaded from GitHub.
-
-You can either clone the public repository:
-
-```bash
-$ git clone git@github.com:samuelmurail/pdb_cpp.git
-```
-
-Or download the tarball:
+## From source
 
 ```bash
-$ curl -OJL https://github.com/samuelmurail/pdb_cpp/tarball/master
+git clone https://github.com/samuelmurail/pdb_cpp.git
+cd pdb_cpp
+pip install .
 ```
 
-Once you have a copy of the source, switch to the `pdb_cpp` directory.
+### Development install
+
+For active development with editable installs:
 
 ```bash
-$ cd pdb_cpp
+pip install -r requirements.txt   # build dependencies
+pip install -e .                   # editable install
 ```
 
-##  Install `pdb_cpp`
-
-Once you have a copy of the source and have created an environment, install with:
+After changing C++ code, rebuild the extension:
 
 ```bash
-$ pip install .
+pip install -e . --no-build-isolation
 ```
 
-For development mode:
+## Verify the installation
 
 ```bash
-$ pip install -e .
+python -c "from pdb_cpp import Coor; print('pdb_cpp imported successfully')"
 ```
 
-## Test Installation
-
-To test the installation, use `pytest`:
+## Run the test suite
 
 ```bash
-$ pytest
+pip install pytest
+pytest
 ```
 
-If you changed C++ extension code, reinstall to rebuild the extension:
+## Platform notes
+
+### Linux
+
+A C++ compiler is usually pre-installed. If not:
 
 ```bash
-$ pip install -e . --no-build-isolation
+sudo apt-get install g++    # Debian/Ubuntu
+sudo dnf install gcc-c++    # Fedora
 ```
 
-and then run the tests again.
+### macOS
+
+The Xcode command-line tools provide `clang++`:
+
+```bash
+xcode-select --install
+```
+
+### Windows
+
+Install the [Visual Studio Build Tools](https://visualstudio.microsoft.com/visual-cpp-build-tools/)
+and select the "C++ build tools" workload.
