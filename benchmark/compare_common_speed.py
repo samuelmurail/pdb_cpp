@@ -70,6 +70,7 @@ class Backend:
     get_ca_coords: Callable[[Any], np.ndarray]
     get_chain_seq_ca: Callable[[Any, str], tuple[str, np.ndarray]]
     align_ca_self: Callable[[str], float]
+    hbond_count: Callable[[Any], int]
 
 
 DEFAULT_FILES = [
@@ -206,6 +207,7 @@ def build_backends() -> list[Backend]:
 
     try:
         from pdb_cpp import Coor, core
+        from pdb_cpp import hbond as pdb_hbond
 
         def cpp_read(path: str):
             return Coor(path)
@@ -267,6 +269,9 @@ def build_backends() -> list[Backend]:
             idx_native = idx_native[:n]
             return core.coor_align(model, native, idx_model, idx_native)
 
+        def cpp_hbond_count(obj: Any) -> int:
+            return len(pdb_hbond.hbonds(obj, angle_cutoff=120.0)[0])
+
         backends.append(
             Backend(
                 name="pdb_cpp",
@@ -277,6 +282,7 @@ def build_backends() -> list[Backend]:
                 get_ca_coords=cpp_get_ca_coords,
                 get_chain_seq_ca=cpp_get_chain_seq_ca,
                 align_ca_self=cpp_align_ca_self,
+                hbond_count=cpp_hbond_count,
             )
         )
     except Exception:
@@ -284,7 +290,7 @@ def build_backends() -> list[Backend]:
 
     try:
         import pdb_numpy
-        from pdb_numpy import alignement
+        from pdb_numpy import alignement, DSSP as pdb_numpy_DSSP
 
         def numpy_read(path: str):
             return pdb_numpy.Coor(path)
@@ -348,6 +354,10 @@ def build_backends() -> list[Backend]:
             idx_native = idx_native[:n]
             return alignement.coor_align(model, native, idx_model, idx_native)
 
+        def numpy_hbond_count(obj: Any) -> int:
+            mat = pdb_numpy_DSSP.compute_Hbond_matrix(obj.models[obj.active_model])
+            return int(np.sum(mat))
+
         backends.append(
             Backend(
                 name="pdb_numpy",
@@ -358,6 +368,7 @@ def build_backends() -> list[Backend]:
                 get_ca_coords=numpy_get_ca_coords,
                 get_chain_seq_ca=numpy_get_chain_seq_ca,
                 align_ca_self=numpy_align_ca_self,
+                hbond_count=numpy_hbond_count,
             )
         )
     except Exception:
@@ -441,6 +452,23 @@ def build_backends() -> list[Backend]:
             sup.set_atoms(fixed_ca[:n], mobile_ca[:n])
             return float(sup.rms)
 
+        def bio_hbond_count(obj: Any) -> int:
+            # BioPython has no built-in H-bond function; use NeighborSearch-based D-A distance proxy
+            from Bio.PDB import NeighborSearch
+            atoms = list(obj.get_atoms())
+            ns = NeighborSearch(atoms)
+            count = 0
+            for donor in atoms:
+                if donor.element not in ("N", "O"):
+                    continue
+                for nb in ns.search(donor.coord, 3.5, level="A"):
+                    if nb.element == "O" and nb != donor:
+                        res_d = donor.get_parent()
+                        res_a = nb.get_parent()
+                        if res_d != res_a:
+                            count += 1
+            return count
+
         backends.append(
             Backend(
                 name="biopython",
@@ -451,6 +479,7 @@ def build_backends() -> list[Backend]:
                 get_ca_coords=bio_get_ca_coords,
                 get_chain_seq_ca=bio_get_chain_seq_ca,
                 align_ca_self=bio_align_ca_self,
+                hbond_count=bio_hbond_count,
             )
         )
     except Exception:
@@ -522,6 +551,13 @@ def build_backends() -> list[Backend]:
             fitted, _ = struc.superimpose(fixed_ca[:n], mobile_ca[:n])
             return float(struc.rmsd(fixed_ca[:n], fitted))
 
+        def bt_hbond_count(obj: Any) -> int:
+            import warnings
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                triplets = struc.hbond(obj, cutoff_dist=2.5, cutoff_angle=120)
+            return int(len(triplets))
+
         backends.append(
             Backend(
                 name="biotite",
@@ -532,6 +568,7 @@ def build_backends() -> list[Backend]:
                 get_ca_coords=bt_get_ca_coords,
                 get_chain_seq_ca=bt_get_chain_seq_ca,
                 align_ca_self=bt_align_ca_self,
+                hbond_count=bt_hbond_count,
             )
         )
     except Exception:
@@ -588,6 +625,7 @@ def main() -> None:
         "dihedral_ca",
         "align_seq_chainA",
         "align_ca_self",
+        "hbond",
     ]
     rows: list[dict[str, Any]] = []
 
@@ -765,6 +803,26 @@ def main() -> None:
                         "operation": "align_ca_self",
                         "mean_s": align_mean,
                         "std_s": align_std,
+                        "runs": args.runs,
+                        "warmup": args.warmup,
+                    }
+                )
+                backend_row_indices.append(len(rows) - 1)
+
+                hbond_mean, hbond_std = benchmark_call(
+                    lambda b=backend, current=obj: b.hbond_count(current),
+                    args.warmup,
+                    args.runs,
+                )
+                per_file_op_times[(backend.name, "hbond")] = hbond_mean
+                backend_key_list.append((backend.name, "hbond"))
+                rows.append(
+                    {
+                        "library": backend.name,
+                        "file": str(file_path),
+                        "operation": "hbond",
+                        "mean_s": hbond_mean,
+                        "std_s": hbond_std,
                         "runs": args.runs,
                         "warmup": args.warmup,
                     }

@@ -111,3 +111,29 @@ python benchmark/plot_io_histogram.py \
   --input benchmark/common_speed_9X0F.csv \
   --output benchmark/common_speed_9X0F.png
 ```
+
+## 5) Full benchmark + manuscript figure (recommended for publication)
+
+Run all benchmarks and generate a two-panel PDF figure suitable for the manuscript:
+
+```bash
+bash benchmark/run_all_benchmarks.sh          # default: 10 runs, 2 warmup
+bash benchmark/run_all_benchmarks.sh 5 1       # custom:  5 runs, 1 warmup
+```
+
+This executes `compare_common_speed.py` and `compare_dockq_speed.py`, then
+calls `plot_manuscript_figure.py` to produce:
+
+- `benchmark/benchmark_common.csv` – common operations CSV
+- `benchmark/benchmark_dockq.csv` – DockQ CSV
+- `benchmark/benchmark_figure.pdf` – two-panel vector figure
+- `benchmark/benchmark_figure.png` – raster preview
+
+You can also run the plotting step alone on existing CSVs:
+
+```bash
+python benchmark/plot_manuscript_figure.py \
+  --common benchmark/benchmark_common.csv \
+  --dockq  benchmark/benchmark_dockq.csv \
+  --output benchmark/benchmark_figure.pdf
+```

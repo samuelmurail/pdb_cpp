@@ -59,6 +59,19 @@ def load_data(csv_path: Path) -> dict[str, dict[str, dict[str, list[float]]]]:
     return values
 
 
+OP_LABELS = {
+    "read":                   "read",
+    "write":                  "write",
+    "select_within10_chainA": "select\n(within 10 Å)",
+    "get_aa_seq":             "sequence",
+    "rmsd_ca_shift":          "RMSD",
+    "dihedral_ca":            "dihedral",
+    "align_seq_chainA":       "seq. align",
+    "align_ca_self":          "struct.\nalign",
+    "hbond":                  "H-bonds",
+}
+
+
 def mean_and_sem(values: list[float]) -> tuple[float, float]:
     if not values:
         return 0.0, 0.0
@@ -172,7 +185,9 @@ def main() -> None:
             title = f"{pdb_id} ({atom_count} atoms)"
 
         ax.set_xticks(x)
-        ax.set_xticklabels(operations, rotation=25, ha="right")
+        ax.set_xticklabels(
+            [OP_LABELS.get(op, op) for op in operations], rotation=25, ha="right"
+        )
         if not args.linear:
             ax.set_yscale("log")
         ax.set_title(title)

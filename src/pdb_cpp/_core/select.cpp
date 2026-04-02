@@ -26,9 +26,11 @@ const unordered_set<string> KEYWORDS = {
 // NICKNAMES
 unordered_map<string, string> NICKNAMES = {
     {"protein", "resname ALA ARG ASN ASP CYS GLN GLU GLY HIS ILE LEU LYS MET PHE PRO SER THR TRP TYR VAL"},
-    {"dna", "resname DA DC DG DT A T G C U"},
+    {"dna",     "resname DA DC DG DT"},
+    {"rna",     "resname A U G C"},
+    {"nucleic", "resname DA DC DG DT A U G C"},
     {"backbone", "resname ALA ARG ASN ASP CYS GLN GLU GLY HIS ILE LEU LYS MET PHE PRO SER THR TRP TYR VAL and name N CA C O"},
-    {"noh", "not name H*"},
+    {"noh",  "not name H*"},
     {"ions", "resname NA CL CA MG ZN MN FE CU CO NI CD K"}};
 
 

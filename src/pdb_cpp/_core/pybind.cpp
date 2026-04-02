@@ -9,6 +9,7 @@
 #include "geom.h"
 #include "seq_align.h"
 #include "format/encode.h"
+#include "hbond.h"
 
 namespace py = pybind11;
 
@@ -258,5 +259,75 @@ PYBIND11_MODULE(core, m) {
         py::arg("width"),
         py::arg("value"),
         "Decode a hybrid-36 string with fixed width.");
+
+    // HBond result struct
+    py::class_<HBond>(m, "HBond")
+        .def_readonly("donor_resid",       &HBond::donor_resid)
+        .def_readonly("donor_resname",     &HBond::donor_resname)
+        .def_readonly("donor_chain",       &HBond::donor_chain)
+        .def_readonly("donor_heavy_name",  &HBond::donor_heavy_name)
+        .def_readonly("donor_h_name",      &HBond::donor_h_name)
+        .def_readonly("donor_heavy_xyz",   &HBond::donor_heavy_xyz)
+        .def_readonly("donor_h_xyz",       &HBond::donor_h_xyz)
+        .def_readonly("acceptor_resid",    &HBond::acceptor_resid)
+        .def_readonly("acceptor_resname",  &HBond::acceptor_resname)
+        .def_readonly("acceptor_chain",    &HBond::acceptor_chain)
+        .def_readonly("acceptor_name",     &HBond::acceptor_name)
+        .def_readonly("acceptor_xyz",      &HBond::acceptor_xyz)
+        .def_readonly("dist_DA",           &HBond::dist_DA)
+        .def_readonly("dist_HA",           &HBond::dist_HA)
+        .def_readonly("angle_DHA",         &HBond::angle_DHA)
+        .def("__repr__", [](const HBond &hb) {
+            return "<HBond " +
+                hb.donor_chain + ":" + hb.donor_resname + std::to_string(hb.donor_resid) +
+                " " + hb.donor_heavy_name + "-H···" +
+                hb.acceptor_chain + ":" + hb.acceptor_resname + std::to_string(hb.acceptor_resid) +
+                " " + hb.acceptor_name +
+                " DA=" + std::to_string(hb.dist_DA).substr(0,5) +
+                " HA=" + std::to_string(hb.dist_HA).substr(0,5) +
+                " ang=" + std::to_string(hb.angle_DHA).substr(0,5) + ">";
+        });
+
+    // compute_hbonds: donors and acceptors are Model objects (sub-selections);
+    // full_model is the complete frame needed for backbone H reconstruction.
+    m.def("compute_hbonds",
+        [](const Model &donor_model,
+           const Model &acceptor_model,
+           const Model &full_model,
+           float dist_DA_cutoff,
+           float dist_HA_cutoff,
+           float angle_cutoff) {
+            return compute_hbonds(donor_model, acceptor_model, full_model,
+                                  dist_DA_cutoff, dist_HA_cutoff, angle_cutoff);
+        },
+        py::arg("donor_model"),
+        py::arg("acceptor_model"),
+        py::arg("full_model"),
+        py::arg("dist_DA_cutoff") = 3.5f,
+        py::arg("dist_HA_cutoff") = 2.5f,
+        py::arg("angle_cutoff")   = 90.0f,
+        R"doc(
+Compute hydrogen bonds between two selections using Baker & Hubbard geometric criteria.
+
+Parameters
+----------
+donor_model : Model
+    Model containing potential donor atoms (a subselection of a frame).
+acceptor_model : Model
+    Model containing potential acceptor atoms (a subselection of a frame).
+full_model : Model
+    The complete frame used to reconstruct backbone N-H positions.
+dist_DA_cutoff : float, optional
+    Maximum donor-heavy to acceptor distance in Å (default 3.5).
+dist_HA_cutoff : float, optional
+    Maximum hydrogen to acceptor distance in Å (default 2.5).
+angle_cutoff : float, optional
+    Minimum D-H···A angle in degrees (default 90).
+
+Returns
+-------
+list[HBond]
+    List of detected hydrogen bonds with full geometry information.
+)doc");
 
 }
