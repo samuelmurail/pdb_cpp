@@ -34,6 +34,59 @@ coor = Coor(pdb_id="1y0m")    # downloads mmCIF, caches in /tmp/pdb_cpp_cache/
 
 The cached file is reused on subsequent calls with the same PDB ID.
 
+### Loading through the `rcsb` module
+
+The `pdb_cpp.rcsb` module gives explicit control over which RCSB coordinate
+file is downloaded.
+
+```python
+from pdb_cpp import rcsb
+
+# Deposited asymmetric unit
+asym_unit = rcsb.load("1y0m", structure="asymmetric_unit")
+
+# Biological assembly 1 in mmCIF format
+assembly_1 = rcsb.load("5a9z", structure="biological_assembly", assembly_id=1)
+
+# Download without loading, using a custom cache directory
+local_path = rcsb.download(
+    "5a9z",
+    structure="biological_assembly",
+    assembly_id=1,
+    cache_dir="/tmp/pdb_cpp_rcsb",
+)
+```
+
+Supported `structure` values are:
+
+- `"asymmetric_unit"`: the deposited entry file, for example `1y0m.cif`
+- `"biological_assembly"`: an assembly-specific RCSB file, for example `5a9z-assembly1.cif`
+
+Supported `file_format` values are `"cif"` and `"pdb"`. For biological
+assemblies, the RCSB URL pattern differs by format:
+
+- mmCIF: `<pdb_id>-assembly<assembly_id>.cif`
+- PDB: `<pdb_id>.pdb<assembly_id>`
+
+If you prefer the older convenience API, `Coor(pdb_id="...")` still works and
+now accepts extra RCSB-related keyword arguments:
+
+```python
+from pdb_cpp import Coor
+
+coor = Coor(
+    pdb_id="5a9z",
+    rcsb_structure="biological_assembly",
+    assembly_id=1,
+    cache_dir="/tmp/pdb_cpp_rcsb",
+    force_download=False,
+)
+```
+
+This path currently reads the downloaded file as returned by RCSB. It does not
+construct assemblies locally from `_pdbx_struct_assembly_gen`; instead it relies
+on the explicit assembly files published by RCSB.
+
 ### Writing output
 
 ```python

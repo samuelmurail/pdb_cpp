@@ -13,7 +13,20 @@ coor_local = Coor("tests/input/1y0m.cif")
 coor_remote = Coor(pdb_id="1y0m")
 ```
 
-## 2) Inspect atom properties
+## 2) Load an asymmetric unit or biological assembly from RCSB
+
+```python
+from pdb_cpp import rcsb
+
+asym_unit = rcsb.load("1y0m", structure="asymmetric_unit")
+assembly_1 = rcsb.load("5a9z", structure="biological_assembly", assembly_id=1)
+
+# Download only
+path = rcsb.download("5a9z", structure="biological_assembly", assembly_id=1)
+print(path)
+```
+
+## 3) Inspect atom properties
 
 ```python
 from pdb_cpp import Coor
@@ -33,7 +46,7 @@ print(coor.beta[:5])
 print(coor.occ[:5])
 ```
 
-## 3) Extract an interface selection between two chains
+## 4) Extract an interface selection between two chains
 
 ```python
 from pdb_cpp import Coor
@@ -45,7 +58,7 @@ interface_a = coor.select_atoms("chain A and within 10.0 of chain B")
 interface_a.write("interface_A_vs_B.pdb")
 ```
 
-## 4) Select a receptor-ligand complex subset
+## 5) Select a receptor-ligand complex subset
 
 ```python
 from pdb_cpp import Coor
@@ -57,7 +70,7 @@ complex_ab = coor.select_atoms("chain A B")
 complex_ab.write("complex_AB.pdb")
 ```
 
-## 5) Clean up: remove incomplete backbone residues
+## 6) Clean up: remove incomplete backbone residues
 
 ```python
 from pdb_cpp import Coor, select
@@ -67,7 +80,7 @@ clean = select.remove_incomplete_backbone_residues(coor)
 print(f"Before: {coor.len}, After: {clean.len}")
 ```
 
-## 6) Sequence alignment for two chains
+## 7) Sequence alignment for two chains
 
 ```python
 from pdb_cpp import Coor, alignment
@@ -83,7 +96,7 @@ print(f"Score: {score}")
 alignment.print_align_seq(aln_1, aln_2)
 ```
 
-## 7) Align coordinates and compute RMSD
+## 8) Align coordinates and compute RMSD
 
 ```python
 from pdb_cpp import Coor, core, analysis
@@ -98,7 +111,7 @@ rmsd_values = analysis.rmsd(coor_1, coor_2, index_list=[idx_1, idx_2])
 print(f"RMSD: {rmsd_values[0]:.3f} Å")
 ```
 
-## 8) One-step sequence-based alignment
+## 9) One-step sequence-based alignment
 
 ```python
 from pdb_cpp import Coor, core
@@ -112,7 +125,7 @@ rmsd_list, align_idx_1, align_idx_2 = core.align_seq_based(
 print(f"RMSD: {rmsd_list[0]:.3f} Å")
 ```
 
-## 9) Chain-permutation alignment (unknown chain mapping)
+## 10) Chain-permutation alignment (unknown chain mapping)
 
 ```python
 from pdb_cpp import Coor, alignment
@@ -124,7 +137,7 @@ rmsds, mappings = alignment.align_chain_permutation(coor_1, coor_2)
 print(f"Best RMSD: {rmsds[0]:.3f} Å")
 ```
 
-## 10) TM-score for specific chain pair
+## 11) TM-score for specific chain pair
 
 ```python
 from pdb_cpp import Coor
@@ -142,7 +155,7 @@ If you use this USalign/TM-align functionality, please cite:
 - Chengxin Zhang, Morgan Shine, Anna Marie Pyle, Yang Zhang (2022) Nat Methods. 19(9), 1109-1115.
 - Chengxin Zhang, Anna Marie Pyle (2022) iScience. 25(10), 105218.
 
-## 11) DockQ with automatic chain-role inference
+## 12) DockQ with automatic chain-role inference
 
 ```python
 from pdb_cpp import Coor, analysis
@@ -156,7 +169,7 @@ print(f"Fnat: {scores['Fnat'][0]:.3f}, Fnonnat: {scores['Fnonnat'][0]:.3f}")
 print(f"LRMS: {scores['LRMS'][0]:.3f}, iRMS: {scores['iRMS'][0]:.3f}")
 ```
 
-## 12) DockQ with explicit receptor/ligand chains
+## 13) DockQ with explicit receptor/ligand chains
 
 ```python
 from pdb_cpp import Coor, analysis
@@ -179,7 +192,7 @@ If you use DockQ scoring, please cite:
 
 - DockQ, DOI: 10.1093/bioinformatics/btae586
 
-## 13) Secondary structure per model/chain
+## 14) Secondary structure per model/chain
 
 ```python
 from pdb_cpp import Coor, TMalign
@@ -191,7 +204,7 @@ for chain_id, ss_string in ss_list[0].items():
     print(f"Chain {chain_id}: {ss_string}")
 ```
 
-## 14) Distance matrix on C-alpha atoms
+## 15) Distance matrix on C-alpha atoms
 
 ```python
 from pdb_cpp import Coor, geom
@@ -202,7 +215,7 @@ dmat = geom.distance_matrix(ca, ca)
 print(f"Shape: {dmat.shape}")
 ```
 
-## 15) D/L amino acid and nucleic acid sequences
+## 16) D/L amino acid and nucleic acid sequences
 
 ```python
 from pdb_cpp import Coor

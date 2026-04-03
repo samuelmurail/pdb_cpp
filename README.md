@@ -58,6 +58,12 @@ coor = Coor("tests/input/1y0m.cif")
 # Or fetch by PDB ID (mmCIF is downloaded and cached)
 coor_pdb = Coor(pdb_id="1y0m")
 
+# Or use the RCSB helper for explicit structure choices
+from pdb_cpp import rcsb
+
+bio_assembly = rcsb.load("5a9z", structure="biological_assembly", assembly_id=1)
+asym_unit = rcsb.load("5a9z", structure="asymmetric_unit")
+
 print(coor.model_num)        # number of models
 print(coor.get_aa_seq())     # chain -> sequence
 

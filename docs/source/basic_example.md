@@ -14,7 +14,17 @@ coor = Coor("tests/input/1y0m.cif")
 
 # Load from PDB ID (downloaded as mmCIF and cached locally)
 coor_from_id = Coor(pdb_id="1y0m")
+
+# Load explicitly from the RCSB helper
+from pdb_cpp import rcsb
+
+asym_unit = rcsb.load("1y0m", structure="asymmetric_unit")
+bio_assembly = rcsb.load("5a9z", structure="biological_assembly", assembly_id=1)
 ```
+
+Use `Coor(pdb_id=...)` when you only need the deposited mmCIF entry. Use
+`pdb_cpp.rcsb` when you want explicit control over which RCSB file is fetched,
+including biological assemblies, cache location, or forced re-download.
 
 ## Inspect a structure
 
@@ -33,8 +43,8 @@ print(coor.beta[:5])             # B-factors
 print(coor.occ[:5])              # occupancies
 ```
 
-See the [Coor and Model properties table](functionality.md#2-the-coor-and-model-objects)
-for the complete list.
+See the [Functionality Guide](functionality.md) for the complete list of
+`Coor` and `Model` properties.
 
 ## Atom selections
 
@@ -45,8 +55,8 @@ interface = coor.select_atoms("chain A and within 5.0 of chain B")
 indices = coor.get_index_select("name CA and chain A")
 ```
 
-See the [Selection syntax reference](functionality.md#3-atom-selection) for
-all keywords, operators, and spatial queries.
+See the [Functionality Guide](functionality.md) for the full selection syntax,
+including keywords, operators, and spatial queries.
 
 ## Write output
 

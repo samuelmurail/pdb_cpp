@@ -1,51 +1,26 @@
 #!/usr/bin/env python3
 # coding: utf-8
 
-import os
-import tempfile
-import urllib.request
-from urllib.error import HTTPError
-
 import numpy as np
 
 from .core import Coor, Model
+from . import rcsb
 
 _coor_init = Coor.__init__
-
-
 def _fetch_mmcif(pdb_id):
-    """Fetch and cache an mmCIF file by PDB ID.
-
-    Parameters
-    ----------
-    pdb_id : str
-        PDB identifier.
-
-    Returns
-    -------
-    str
-        Local path to the cached mmCIF file.
-    """
-    pdb_id = pdb_id.lower()
-    cache_dir = os.path.join(tempfile.gettempdir(), "pdb_cpp_cache")
-    os.makedirs(cache_dir, mode=0o700, exist_ok=True)
-    local_path = os.path.join(cache_dir, f"{pdb_id}.cif")
-    if os.path.exists(local_path):
-        return local_path
-
-    url = f"https://files.rcsb.org/download/{pdb_id.upper()}.cif"
-    try:
-        with urllib.request.urlopen(url) as response:
-            data = response.read()
-    except HTTPError as exc:
-        raise ValueError(f"Failed to fetch mmCIF for PDB ID {pdb_id}") from exc
-
-    with open(local_path, "wb") as handle:
-        handle.write(data)
-    return local_path
+    """Fetch and cache the asymmetric-unit mmCIF file for a PDB ID."""
+    return rcsb.download_structure(pdb_id, structure="asymmetric_unit", file_format="cif")
 
 
-def _coor_init_with_pdb_id(self, coor_in=None, pdb_id=None):
+def _coor_init_with_pdb_id(
+    self,
+    coor_in=None,
+    pdb_id=None,
+    rcsb_structure="asymmetric_unit",
+    assembly_id=1,
+    cache_dir=None,
+    force_download=False,
+):
     """Initialize a Coor object from a file path or PDB ID.
 
     Parameters
@@ -53,7 +28,16 @@ def _coor_init_with_pdb_id(self, coor_in=None, pdb_id=None):
     coor_in : str, optional
         Path to a coordinate file.
     pdb_id : str, optional
-        PDB ID to fetch as mmCIF.
+        PDB ID to fetch from RCSB.
+    rcsb_structure : str, optional
+        Either ``"asymmetric_unit"`` or ``"biological_assembly"``.
+    assembly_id : int, optional
+        Assembly identifier when ``rcsb_structure`` is
+        ``"biological_assembly"``.
+    cache_dir : str, optional
+        Cache directory for downloaded RCSB files.
+    force_download : bool, optional
+        Re-download cached RCSB files.
 
     Returns
     -------
@@ -63,7 +47,14 @@ def _coor_init_with_pdb_id(self, coor_in=None, pdb_id=None):
     if coor_in is not None and pdb_id is not None:
         raise ValueError("Provide only one of coor_in or pdb_id")
     if pdb_id is not None:
-        local_path = _fetch_mmcif(pdb_id)
+        local_path = rcsb.download_structure(
+            pdb_id,
+            structure=rcsb_structure,
+            file_format="cif",
+            assembly_id=assembly_id,
+            cache_dir=cache_dir,
+            force_download=force_download,
+        )
         self.read(local_path)
     elif coor_in is not None:
         self.read(coor_in)

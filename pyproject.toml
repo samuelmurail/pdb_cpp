@@ -39,7 +39,7 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Bio-Informatics",
 ]
 
-license = "GPL-2.0-or-later"
+license = { text = "GPL-2.0-or-later" }
 
 [project.urls]
 Homepage = "https://pdb-cpp.readthedocs.io/en/latest/"

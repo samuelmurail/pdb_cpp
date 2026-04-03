@@ -16,5 +16,6 @@ from .core import Coor, Model
 # Importing _pyprops applies runtime patches for python-facing helpers.
 from . import _pyprops  # noqa: F401
 from . import hbond  # noqa: F401
+from . import rcsb  # noqa: F401
 
-__all__ = ["Coor", "Model", "hbond"]
+__all__ = ["Coor", "Model", "hbond", "rcsb"]

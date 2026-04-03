@@ -60,6 +60,14 @@ pdb\_cpp.hbond module
    :show-inheritance:
    :undoc-members:
 
+pdb\_cpp.rcsb module
+--------------------
+
+.. automodule:: pdb_cpp.rcsb
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
 pdb\_cpp.select module
 ----------------------
 
