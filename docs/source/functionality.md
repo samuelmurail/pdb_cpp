@@ -679,7 +679,7 @@ different residue numbering — provide dictionaries that map each residue
 
 `interface_rmsd` returns a list of floats with one entry per model. Entries
 are `None` when no interface residues are found within the cutoff distance.
-```
+
 
 ### Citation
 

@@ -52,6 +52,14 @@ pdb\_cpp.geom module
    :show-inheritance:
    :undoc-members:
 
+pdb\_cpp.hbond module
+---------------------
+
+.. automodule:: pdb_cpp.hbond
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
 pdb\_cpp.select module
 ----------------------
 
