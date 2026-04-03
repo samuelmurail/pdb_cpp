@@ -9,7 +9,7 @@
 project = 'pdb_cpp'
 copyright = '2025, Samuel Murail'
 author = 'Samuel Murail'
-release = '0.2.0'
+release = '0.3.0'
 
 # If extensions (or modules to document with autodoc) are in another
 # directory, add these directories to sys.path here. If the directory is
