@@ -13,12 +13,8 @@ Operations:
 - align_seq_chainA
 - align_ca_self
 
-Usage
------
-PYTHONPATH=src python benchmark/compare_common_speed.py
-PYTHONPATH=src python benchmark/compare_common_speed.py --runs 5 --warmup 1
-PYTHONPATH=src python benchmark/compare_common_speed.py --files tests/input/1y0m.pdb tests/input/2rri.pdb
-PYTHONPATH=src python benchmark/compare_common_speed.py --files tests/input/9X0F.cif
+The script benchmarks a fixed set of operations on a user-provided list of
+structures and writes one CSV row per backend, file, and operation.
 """
 
 from __future__ import annotations
@@ -26,7 +22,10 @@ from __future__ import annotations
 import argparse
 import csv
 import os
+import sys
+import tempfile
 import time
+import zlib
 from dataclasses import dataclass
 from pathlib import Path
 from statistics import mean, stdev
@@ -67,9 +66,10 @@ class Backend:
     write: Callable[[Any, str], None]
     select_within10_chainA: Callable[[Any], int]
     get_aa_seq_len: Callable[[Any], int]
-    get_ca_coords: Callable[[Any], np.ndarray]
-    get_chain_seq_ca: Callable[[Any, str], tuple[str, np.ndarray]]
-    align_ca_self: Callable[[str], float]
+    rmsd_ca_shift: Callable[[Any, Any], float]
+    dihedral_ca: Callable[[Any], float]
+    align_seq_chainA: Callable[[str, str], float]
+    align_ca_pair: Callable[[str, str], float]
     hbond_count: Callable[[Any], int]
 
 
@@ -95,7 +95,7 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--csv",
-        default="benchmark/common_speed_comparison.csv",
+        default="benchmark_common.csv",
         help="Output CSV file",
     )
     return parser.parse_args()
@@ -121,20 +121,40 @@ def _is_cif(path: str) -> bool:
     return Path(path).suffix.lower() in {".cif", ".mmcif"}
 
 
-def _array_to_string(chars: Any) -> str:
-    if isinstance(chars, str):
-        return chars.strip()
-    if isinstance(chars, (list, tuple)):
-        return "".join(ch for ch in chars if ch not in ("\x00", " ")).strip()
-    return str(chars).strip()
+def _report_backend_skip(name: str, exc: Exception) -> None:
+    print(f"Skipping backend '{name}': {exc}", file=sys.stderr)
 
 
-def _rmsd(coords_1: np.ndarray, coords_2: np.ndarray) -> float:
-    n = min(coords_1.shape[0], coords_2.shape[0])
-    if n == 0:
-        return 0.0
-    delta = coords_1[:n] - coords_2[:n]
-    return float(np.sqrt(np.mean(np.sum(delta * delta, axis=1))))
+def _random_rotation_matrix(rng: np.random.Generator) -> np.ndarray:
+    quat = rng.normal(size=4)
+    quat /= np.linalg.norm(quat)
+    w, x, y, z = quat
+    return np.asarray(
+        [
+            [1 - 2 * (y * y + z * z), 2 * (x * y - z * w), 2 * (x * z + y * w)],
+            [2 * (x * y + z * w), 1 - 2 * (x * x + z * z), 2 * (y * z - x * w)],
+            [2 * (x * z - y * w), 2 * (y * z + x * w), 1 - 2 * (x * x + y * y)],
+        ],
+        dtype=float,
+    )
+
+
+def _create_transformed_structure(input_path: Path, output_path: Path) -> None:
+    from Bio.PDB import MMCIFIO, MMCIFParser, PDBIO, PDBParser
+
+    rng = np.random.default_rng(zlib.crc32(str(input_path).encode("utf-8")))
+    rotation = _random_rotation_matrix(rng)
+    translation = rng.uniform(-25.0, 25.0, size=3)
+
+    parser = MMCIFParser(QUIET=True) if _is_cif(str(input_path)) else PDBParser(QUIET=True)
+    structure = parser.get_structure("transformed", str(input_path))
+    for atom in structure.get_atoms():
+        atom.transform(rotation, translation)
+
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    io = MMCIFIO() if _is_cif(str(output_path)) else PDBIO()
+    io.set_structure(structure)
+    io.save(str(output_path))
 
 
 def _dihedral_numpy(pts: np.ndarray) -> float:
@@ -158,64 +178,11 @@ def _dihedral(pts: np.ndarray) -> float:
         return _dihedral_numpy(pts)
 
 
-
-def _kabsch_rmsd(coords_1: np.ndarray, coords_2: np.ndarray) -> float:
-    n = min(coords_1.shape[0], coords_2.shape[0])
-    if n == 0:
-        return 0.0
-    p = coords_1[:n].astype(float)
-    q = coords_2[:n].astype(float)
-    p_cent = p.mean(axis=0)
-    q_cent = q.mean(axis=0)
-    p0 = p - p_cent
-    q0 = q - q_cent
-    h = p0.T @ q0
-    u, _, vt = np.linalg.svd(h)
-    if np.linalg.det(vt.T @ u.T) < 0:
-        vt[-1, :] *= -1
-    r = vt.T @ u.T
-    p_aligned = p0 @ r
-    return _rmsd(p_aligned, q0)
-
-
-def _sequence_alignment_pairs(seq_1: str, seq_2: str) -> list[tuple[int, int]]:
-    try:
-        from Bio import pairwise2
-
-        alignment = pairwise2.align.globalms(
-            seq_1, seq_2, 2, -1, -1, -0.5, one_alignment_only=True
-        )[0]
-        a1, a2 = alignment.seqA, alignment.seqB
-        pairs: list[tuple[int, int]] = []
-        i1 = 0
-        i2 = 0
-        for c1, c2 in zip(a1, a2):
-            if c1 != "-" and c2 != "-":
-                pairs.append((i1, i2))
-            if c1 != "-":
-                i1 += 1
-            if c2 != "-":
-                i2 += 1
-        return pairs
-    except Exception:
-        n = min(len(seq_1), len(seq_2))
-        return [(i, i) for i in range(n)]
-
-
-def _align_seq_rmsd(seq_1: str, coords_1: np.ndarray, seq_2: str, coords_2: np.ndarray) -> float:
-    pairs = _sequence_alignment_pairs(seq_1, seq_2)
-    if not pairs:
-        return 0.0
-    p = np.asarray([coords_1[i] for i, _ in pairs], dtype=float)
-    q = np.asarray([coords_2[j] for _, j in pairs], dtype=float)
-    return _kabsch_rmsd(p, q)
-
-
 def build_backends() -> list[Backend]:
     backends: list[Backend] = []
 
     try:
-        from pdb_cpp import Coor, core
+        from pdb_cpp import Coor, analysis as pdb_analysis, core, geom as pdb_geom
         from pdb_cpp import hbond as pdb_hbond
 
         def cpp_read(path: str):
@@ -234,38 +201,30 @@ def build_backends() -> list[Backend]:
                 return _sum_seq_len_list(obj.get_aa_sequences())
             raise AttributeError("No sequence API found on pdb_cpp Coor")
 
-        def cpp_get_ca_coords(obj: Any) -> np.ndarray:
-            # select_atoms filters in C++ first (only CA atoms), then returns xyz;
-            # avoids copying all 3 coordinate arrays for every atom in the model.
+        def cpp_rmsd_ca_shift(reference_obj: Any, mobile_obj: Any) -> float:
+            return float(pdb_analysis.rmsd(mobile_obj, reference_obj, selection="name CA")[0])
+
+        def cpp_dihedral_ca(obj: Any) -> float:
             ca = obj.select_atoms("name CA")
-            if ca.len == 0:
-                return np.zeros((0, 3), dtype=float)
-            return np.asarray(ca.xyz, dtype=float)
+            if ca.len < 4:
+                return 0.0
+            return float(pdb_geom.compute_dihedrals(np.asarray(ca.xyz[:4], dtype=np.float32))[0])
 
-        def cpp_get_chain_seq_ca(obj: Any, chain_id: str) -> tuple[str, np.ndarray]:
-            model = obj.get_Models(0)
-            names = model.get_name()
-            chains = model.get_chain()
-            resnames = model.get_resname()
-            xs = model.get_x()
-            ys = model.get_y()
-            zs = model.get_z()
-            seq = []
-            coords = []
-            for i in range(len(names)):
-                if _array_to_string(names[i]) != "CA":
-                    continue
-                if _array_to_string(chains[i]) != chain_id:
-                    continue
-                seq.append(AA3_TO_1.get(_array_to_string(resnames[i]), "X"))
-                coords.append([float(xs[i]), float(ys[i]), float(zs[i])])
-            if not coords:
-                return "", np.zeros((0, 3), dtype=float)
-            return "".join(seq), np.asarray(coords, dtype=float)
+        def cpp_align_seq_chainA(reference_path: str, mobile_path: str) -> float:
+            native = Coor(reference_path)
+            model = Coor(mobile_path)
+            rmsds, _, _ = core.align_seq_based(
+                model,
+                native,
+                chain_1=["A"],
+                chain_2=["A"],
+                back_names=["CA"],
+            )
+            return float(rmsds[0]) if rmsds else 0.0
 
-        def cpp_align_ca_self(path: str) -> float:
-            model = Coor(path)
-            native = Coor(path)
+        def cpp_align_ca_pair(reference_path: str, mobile_path: str) -> float:
+            native = Coor(reference_path)
+            model = Coor(mobile_path)
             idx_model = model.get_index_select("name CA")
             idx_native = native.get_index_select("name CA")
             if len(idx_model) == 0 or len(idx_native) == 0:
@@ -285,17 +244,20 @@ def build_backends() -> list[Backend]:
                 write=cpp_write,
                 select_within10_chainA=cpp_select_within10_chainA,
                 get_aa_seq_len=cpp_get_aa_seq_len,
-                get_ca_coords=cpp_get_ca_coords,
-                get_chain_seq_ca=cpp_get_chain_seq_ca,
-                align_ca_self=cpp_align_ca_self,
+                rmsd_ca_shift=cpp_rmsd_ca_shift,
+                dihedral_ca=cpp_dihedral_ca,
+                align_seq_chainA=cpp_align_seq_chainA,
+                align_ca_pair=cpp_align_ca_pair,
                 hbond_count=cpp_hbond_count,
             )
         )
-    except Exception:
+    except Exception as exc:
+        _report_backend_skip("pdb_cpp", exc)
         pass
 
     try:
         import pdb_numpy
+        import pdb_numpy.analysis as numpy_analysis
         from pdb_numpy import alignement, DSSP as pdb_numpy_DSSP
 
         def numpy_read(path: str):
@@ -314,43 +276,39 @@ def build_backends() -> list[Backend]:
                 return _sum_seq_len_list(obj.get_aa_sequences())
             raise AttributeError("No sequence API found on pdb_numpy Coor")
 
-        def numpy_get_ca_coords(obj: Any) -> np.ndarray:
-            idx = obj.get_index_select("name CA")
-            if len(idx) == 0:
-                return np.zeros((0, 3), dtype=float)
-            model = obj.models[obj.active_model]
-            sel = np.asarray(idx, dtype=int)
-            return np.stack(
-                [
-                    np.asarray(model.x, dtype=float)[sel],
-                    np.asarray(model.y, dtype=float)[sel],
-                    np.asarray(model.z, dtype=float)[sel],
-                ],
-                axis=1,
-            )
+        def numpy_rmsd_ca_shift(reference_obj: Any, mobile_obj: Any) -> float:
+            rmsds = numpy_analysis.rmsd(mobile_obj, reference_obj, selection="name CA")
+            return float(rmsds[0]) if rmsds else 0.0
 
-        def numpy_get_chain_seq_ca(obj: Any, chain_id: str) -> tuple[str, np.ndarray]:
-            model = obj.models[obj.active_model]
-            names = np.asarray(model.name)
-            chains = np.asarray(model.chain)
-            resnames = np.asarray(model.resname)
-            mask = (names == "CA") & (chains == chain_id)
-            if not np.any(mask):
-                return "", np.zeros((0, 3), dtype=float)
-            seq = "".join(AA3_TO_1.get(str(r), "X") for r in resnames[mask])
-            coords = np.stack(
+        def numpy_dihedral_ca(obj: Any) -> float:
+            ca = obj.select_atoms("name CA")
+            if ca.len < 4:
+                return 0.0
+            model = ca.models[ca.active_model]
+            pts = np.asarray(
                 [
-                    np.asarray(model.x, dtype=float)[mask],
-                    np.asarray(model.y, dtype=float)[mask],
-                    np.asarray(model.z, dtype=float)[mask],
+                    [float(model.x[i]), float(model.y[i]), float(model.z[i])]
+                    for i in range(min(4, model.len))
                 ],
-                axis=1,
+                dtype=float,
             )
-            return seq, coords
+            return _dihedral_numpy(pts) if pts.shape[0] >= 4 else 0.0
 
-        def numpy_align_ca_self(path: str) -> float:
-            model = pdb_numpy.Coor(path)
-            native = pdb_numpy.Coor(path)
+        def numpy_align_seq_chainA(reference_path: str, mobile_path: str) -> float:
+            native = pdb_numpy.Coor(reference_path)
+            model = pdb_numpy.Coor(mobile_path)
+            rmsds, _ = alignement.rmsd_seq_based(
+                model,
+                native,
+                chain_1=["A"],
+                chain_2=["A"],
+                back_names=["CA"],
+            )
+            return float(rmsds[0]) if rmsds else 0.0
+
+        def numpy_align_ca_pair(reference_path: str, mobile_path: str) -> float:
+            native = pdb_numpy.Coor(reference_path)
+            model = pdb_numpy.Coor(mobile_path)
             idx_model = model.get_index_select("name CA")
             idx_native = native.get_index_select("name CA")
             if len(idx_model) == 0 or len(idx_native) == 0:
@@ -371,19 +329,29 @@ def build_backends() -> list[Backend]:
                 write=numpy_write,
                 select_within10_chainA=numpy_select_within10_chainA,
                 get_aa_seq_len=numpy_get_aa_seq_len,
-                get_ca_coords=numpy_get_ca_coords,
-                get_chain_seq_ca=numpy_get_chain_seq_ca,
-                align_ca_self=numpy_align_ca_self,
+                rmsd_ca_shift=numpy_rmsd_ca_shift,
+                dihedral_ca=numpy_dihedral_ca,
+                align_seq_chainA=numpy_align_seq_chainA,
+                align_ca_pair=numpy_align_ca_pair,
                 hbond_count=numpy_hbond_count,
             )
         )
-    except Exception:
+    except Exception as exc:
+        _report_backend_skip("pdb_numpy", exc)
         pass
 
     try:
-        import numpy as np
-        from Bio.PDB import MMCIFIO, MMCIFParser, PDBIO, PDBParser, Superimposer
+        from Bio import Align
+        from Bio.PDB import MMCIFIO, MMCIFParser, NeighborSearch, PDBIO, PDBParser, Superimposer
         from Bio.PDB.Polypeptide import is_aa
+        from Bio.PDB.vectors import calc_dihedral
+
+        bio_aligner = Align.PairwiseAligner()
+        bio_aligner.mode = "global"
+        bio_aligner.match_score = 2.0
+        bio_aligner.mismatch_score = -1.0
+        bio_aligner.open_gap_score = -1.0
+        bio_aligner.extend_gap_score = -0.5
 
         def bio_read(path: str):
             parser = MMCIFParser(QUIET=True) if _is_cif(path) else PDBParser(QUIET=True)
@@ -395,25 +363,18 @@ def build_backends() -> list[Backend]:
             io.save(out_path)
 
         def bio_select_within10_chainA(obj: Any) -> int:
-            chain_a_coords = [
-                atom.coord
-                for atom in obj.get_atoms()
-                if atom.get_parent().get_parent().id == "A"
+            atoms = list(obj.get_atoms())
+            chain_a_atoms = [
+                atom for atom in atoms if atom.get_parent().get_parent().id == "A"
             ]
-            if not chain_a_coords:
+            if not chain_a_atoms:
                 return 0
-            ref = np.asarray(chain_a_coords, dtype=float)
-            all_coords = [atom.coord for atom in obj.get_atoms()]
-            all_arr = np.asarray(all_coords, dtype=float)
-
-            threshold2 = 100.0
-            selected = 0
-            chunk = 256
-            for start in range(0, all_arr.shape[0], chunk):
-                block = all_arr[start : start + chunk]
-                d2 = np.sum((block[:, None, :] - ref[None, :, :]) ** 2, axis=2)
-                selected += int(np.count_nonzero(np.any(d2 <= threshold2, axis=1)))
-            return selected
+            search = NeighborSearch(atoms)
+            selected = set()
+            for atom in chain_a_atoms:
+                for neighbor in search.search(atom.coord, 10.0, level="A"):
+                    selected.add(id(neighbor))
+            return len(selected)
 
         def bio_get_aa_seq_len(obj: Any) -> int:
             total = 0
@@ -424,15 +385,9 @@ def build_backends() -> list[Backend]:
                             total += 1
             return total
 
-        def bio_get_ca_coords(obj: Any) -> np.ndarray:
-            coords = [atom.coord for atom in obj.get_atoms() if atom.get_name() == "CA"]
-            if not coords:
-                return np.zeros((0, 3), dtype=float)
-            return np.asarray(coords, dtype=float)
-
-        def bio_get_chain_seq_ca(obj: Any, chain_id: str) -> tuple[str, np.ndarray]:
+        def bio_chain_seq_ca(obj: Any, chain_id: str) -> tuple[str, list[Any]]:
             seq = []
-            coords = []
+            atoms = []
             for atom in obj.get_atoms():
                 if atom.get_name() != "CA":
                     continue
@@ -441,14 +396,59 @@ def build_backends() -> list[Backend]:
                 if chain.id != chain_id:
                     continue
                 seq.append(AA3_TO_1.get(residue.get_resname(), "X"))
-                coords.append(atom.coord)
-            if not coords:
-                return "", np.zeros((0, 3), dtype=float)
-            return "".join(seq), np.asarray(coords, dtype=float)
+                atoms.append(atom)
+            return "".join(seq), atoms
 
-        def bio_align_ca_self(path: str) -> float:
-            fixed = bio_read(path)
-            mobile = bio_read(path)
+        def bio_rmsd_ca_shift(reference_obj: Any, mobile_obj: Any) -> float:
+            fixed_ca = [atom for atom in reference_obj.get_atoms() if atom.get_name() == "CA"]
+            mobile_ca = [atom for atom in mobile_obj.get_atoms() if atom.get_name() == "CA"]
+            n = min(len(fixed_ca), len(mobile_ca))
+            if n == 0:
+                return 0.0
+            squared_sum = 0.0
+            for fixed_atom, mobile_atom in zip(fixed_ca[:n], mobile_ca[:n]):
+                distance = fixed_atom - mobile_atom
+                squared_sum += distance * distance
+            return (squared_sum / n) ** 0.5
+
+        def bio_dihedral_ca(obj: Any) -> float:
+            ca_atoms = [atom for atom in obj.get_atoms() if atom.get_name() == "CA"]
+            if len(ca_atoms) < 4:
+                return 0.0
+            angle = calc_dihedral(
+                ca_atoms[0].get_vector(),
+                ca_atoms[1].get_vector(),
+                ca_atoms[2].get_vector(),
+                ca_atoms[3].get_vector(),
+            )
+            return float(np.degrees(angle))
+
+        def bio_align_seq_chainA(reference_path: str, mobile_path: str) -> float:
+            fixed = bio_read(reference_path)
+            mobile = bio_read(mobile_path)
+            fixed_seq, fixed_atoms = bio_chain_seq_ca(fixed, "A")
+            mobile_seq, mobile_atoms = bio_chain_seq_ca(mobile, "A")
+            if not fixed_atoms or not mobile_atoms:
+                return 0.0
+            alignment = bio_aligner.align(fixed_seq, mobile_seq)[0]
+            fixed_sel = []
+            mobile_sel = []
+            for (fixed_start, fixed_end), (mobile_start, mobile_end) in zip(
+                alignment.aligned[0], alignment.aligned[1]
+            ):
+                block_len = min(fixed_end - fixed_start, mobile_end - mobile_start)
+                for offset in range(block_len):
+                    fixed_sel.append(fixed_atoms[fixed_start + offset])
+                    mobile_sel.append(mobile_atoms[mobile_start + offset])
+            if not fixed_sel:
+                return 0.0
+            sup = Superimposer()
+            sup.set_atoms(fixed_sel, mobile_sel)
+            return float(sup.rms)
+
+        def bio_align_ca_pair(reference_path: str, mobile_path: str) -> float:
+            fixed = bio_read(reference_path)
+            mobile = bio_read(mobile_path)
             fixed_ca = [atom for atom in fixed.get_atoms() if atom.get_name() == "CA"]
             mobile_ca = [atom for atom in mobile.get_atoms() if atom.get_name() == "CA"]
             n = min(len(fixed_ca), len(mobile_ca))
@@ -482,20 +482,25 @@ def build_backends() -> list[Backend]:
                 write=bio_write,
                 select_within10_chainA=bio_select_within10_chainA,
                 get_aa_seq_len=bio_get_aa_seq_len,
-                get_ca_coords=bio_get_ca_coords,
-                get_chain_seq_ca=bio_get_chain_seq_ca,
-                align_ca_self=bio_align_ca_self,
+                rmsd_ca_shift=bio_rmsd_ca_shift,
+                dihedral_ca=bio_dihedral_ca,
+                align_seq_chainA=bio_align_seq_chainA,
+                align_ca_pair=bio_align_ca_pair,
                 hbond_count=bio_hbond_count,
             )
         )
-    except Exception:
+    except Exception as exc:
+        _report_backend_skip("biopython", exc)
         pass
 
     try:
-        import numpy as np
         import biotite.structure as struc
         import biotite.structure.io.pdb as pdb
         import biotite.structure.io.pdbx as pdbx
+        import biotite.sequence as seq
+        import biotite.sequence.align as seq_align
+
+        bt_matrix = seq_align.SubstitutionMatrix.std_protein_matrix()
 
         def bt_read(path: str):
             if _is_cif(path):
@@ -518,37 +523,61 @@ def build_backends() -> list[Backend]:
             ref = obj[obj.chain_id == "A"]
             if ref.array_length() == 0:
                 return 0
-            all_coords = obj.coord
-            ref_coords = ref.coord
-            threshold2 = 100.0
-            selected = 0
-            chunk = 256
-            for start in range(0, all_coords.shape[0], chunk):
-                block = all_coords[start : start + chunk]
-                d2 = np.sum((block[:, None, :] - ref_coords[None, :, :]) ** 2, axis=2)
-                selected += int(np.count_nonzero(np.any(d2 <= threshold2, axis=1)))
-            return selected
+            cell_list = struc.CellList(obj, 10.0)
+            masks = cell_list.get_atoms(ref.coord, 10.0, as_mask=True)
+            return int(np.count_nonzero(np.any(masks, axis=0)))
 
         def bt_get_aa_seq_len(obj: Any) -> int:
             _, res_names = struc.get_residues(obj)
             return sum(1 for name in res_names if name in AA3_TO_1)
 
-        def bt_get_ca_coords(obj: Any) -> np.ndarray:
-            mask = obj.atom_name == "CA"
-            if not np.any(mask):
-                return np.zeros((0, 3), dtype=float)
-            return np.asarray(obj.coord[mask], dtype=float)
-
-        def bt_get_chain_seq_ca(obj: Any, chain_id: str) -> tuple[str, np.ndarray]:
+        def bt_chain_seq_ca(obj: Any, chain_id: str) -> tuple[str, Any]:
             mask = (obj.atom_name == "CA") & (obj.chain_id == chain_id)
             if not np.any(mask):
-                return "", np.zeros((0, 3), dtype=float)
+                return "", obj[mask]
             seq = "".join(AA3_TO_1.get(str(r), "X") for r in obj.res_name[mask])
-            return seq, np.asarray(obj.coord[mask], dtype=float)
+            return seq, obj[mask]
 
-        def bt_align_ca_self(path: str) -> float:
-            fixed = bt_read(path)
-            mobile = bt_read(path)
+        def bt_rmsd_ca_shift(reference_obj: Any, mobile_obj: Any) -> float:
+            fixed_ca = reference_obj[reference_obj.atom_name == "CA"]
+            mobile_ca = mobile_obj[mobile_obj.atom_name == "CA"]
+            n = min(fixed_ca.array_length(), mobile_ca.array_length())
+            if n == 0:
+                return 0.0
+            return float(struc.rmsd(fixed_ca[:n], mobile_ca[:n]))
+
+        def bt_dihedral_ca(obj: Any) -> float:
+            ca = obj[obj.atom_name == "CA"]
+            if ca.array_length() < 4:
+                return 0.0
+            angle = struc.dihedral(ca.coord[0], ca.coord[1], ca.coord[2], ca.coord[3])
+            return float(np.degrees(angle))
+
+        def bt_align_seq_chainA(reference_path: str, mobile_path: str) -> float:
+            fixed = bt_read(reference_path)
+            mobile = bt_read(mobile_path)
+            fixed_seq, fixed_ca = bt_chain_seq_ca(fixed, "A")
+            mobile_seq, mobile_ca = bt_chain_seq_ca(mobile, "A")
+            if fixed_ca.array_length() == 0 or mobile_ca.array_length() == 0:
+                return 0.0
+            alignment = seq_align.align_optimal(
+                seq.ProteinSequence(fixed_seq),
+                seq.ProteinSequence(mobile_seq),
+                bt_matrix,
+                max_number=1,
+            )[0]
+            trace = alignment.trace
+            trace = trace[(trace[:, 0] >= 0) & (trace[:, 1] >= 0)]
+            if trace.shape[0] == 0:
+                return 0.0
+            fixed_sel = fixed_ca[trace[:, 0]]
+            mobile_sel = mobile_ca[trace[:, 1]]
+            fitted, _ = struc.superimpose(fixed_sel, mobile_sel)
+            return float(struc.rmsd(fixed_sel, fitted))
+
+        def bt_align_ca_pair(reference_path: str, mobile_path: str) -> float:
+            fixed = bt_read(reference_path)
+            mobile = bt_read(mobile_path)
             fixed_ca = fixed[fixed.atom_name == "CA"]
             mobile_ca = mobile[mobile.atom_name == "CA"]
             n = min(fixed_ca.array_length(), mobile_ca.array_length())
@@ -571,13 +600,15 @@ def build_backends() -> list[Backend]:
                 write=bt_write,
                 select_within10_chainA=bt_select_within10_chainA,
                 get_aa_seq_len=bt_get_aa_seq_len,
-                get_ca_coords=bt_get_ca_coords,
-                get_chain_seq_ca=bt_get_chain_seq_ca,
-                align_ca_self=bt_align_ca_self,
+                rmsd_ca_shift=bt_rmsd_ca_shift,
+                dihedral_ca=bt_dihedral_ca,
+                align_seq_chainA=bt_align_seq_chainA,
+                align_ca_pair=bt_align_ca_pair,
                 hbond_count=bt_hbond_count,
             )
         )
-    except Exception:
+    except Exception as exc:
+        _report_backend_skip("biotite", exc)
         pass
 
     return backends
@@ -640,209 +671,200 @@ def main() -> None:
     for file_path in files:
         per_file_op_times: dict[tuple[str, str], float] = {}
 
-        for backend in backends:
-            out_path = f"benchmark/tmp_io/{backend.name}_{file_path.name}"
-            backend_key_list: list[tuple[str, str]] = []
-            backend_row_indices: list[int] = []
-            try:
-                read_mean, read_std = benchmark_call(
-                    lambda b=backend, p=str(file_path): b.read(p), args.warmup, args.runs
-                )
-                per_file_op_times[(backend.name, "read")] = read_mean
-                backend_key_list.append((backend.name, "read"))
-                rows.append(
-                    {
-                        "library": backend.name,
-                        "file": str(file_path),
-                        "operation": "read",
-                        "mean_s": read_mean,
-                        "std_s": read_std,
-                        "runs": args.runs,
-                        "warmup": args.warmup,
-                    }
-                )
-                backend_row_indices.append(len(rows) - 1)
+        with tempfile.TemporaryDirectory(prefix="pdb_cpp_benchmark_") as temp_dir:
+            transformed_path = Path(temp_dir) / f"{file_path.stem}_transformed{file_path.suffix}"
+            _create_transformed_structure(file_path, transformed_path)
+            for backend in backends:
+                out_path = str(Path(temp_dir) / f"{backend.name}_{file_path.name}")
+                backend_key_list: list[tuple[str, str]] = []
+                backend_row_indices: list[int] = []
+                try:
+                    read_mean, read_std = benchmark_call(
+                        lambda b=backend, p=str(file_path): b.read(p), args.warmup, args.runs
+                    )
+                    per_file_op_times[(backend.name, "read")] = read_mean
+                    backend_key_list.append((backend.name, "read"))
+                    rows.append(
+                        {
+                            "library": backend.name,
+                            "file": str(file_path),
+                            "operation": "read",
+                            "mean_s": read_mean,
+                            "std_s": read_std,
+                            "runs": args.runs,
+                            "warmup": args.warmup,
+                        }
+                    )
+                    backend_row_indices.append(len(rows) - 1)
 
-                write_mean, write_std = benchmark_call(
-                    lambda b=backend, p=str(file_path), o=out_path: b.write(b.read(p), o),
-                    args.warmup,
-                    args.runs,
-                )
-                per_file_op_times[(backend.name, "write")] = write_mean
-                backend_key_list.append((backend.name, "write"))
-                rows.append(
-                    {
-                        "library": backend.name,
-                        "file": str(file_path),
-                        "operation": "write",
-                        "mean_s": write_mean,
-                        "std_s": write_std,
-                        "runs": args.runs,
-                        "warmup": args.warmup,
-                    }
-                )
-                backend_row_indices.append(len(rows) - 1)
+                    write_mean, write_std = benchmark_call(
+                        lambda b=backend, p=str(file_path), o=out_path: b.write(b.read(p), o),
+                        args.warmup,
+                        args.runs,
+                    )
+                    per_file_op_times[(backend.name, "write")] = write_mean
+                    backend_key_list.append((backend.name, "write"))
+                    rows.append(
+                        {
+                            "library": backend.name,
+                            "file": str(file_path),
+                            "operation": "write",
+                            "mean_s": write_mean,
+                            "std_s": write_std,
+                            "runs": args.runs,
+                            "warmup": args.warmup,
+                        }
+                    )
+                    backend_row_indices.append(len(rows) - 1)
 
-                obj = backend.read(str(file_path))
-                select_mean, select_std = benchmark_call(
-                    lambda b=backend, current=obj: b.select_within10_chainA(current),
-                    args.warmup,
-                    args.runs,
-                )
-                per_file_op_times[(backend.name, "select_within10_chainA")] = select_mean
-                backend_key_list.append((backend.name, "select_within10_chainA"))
-                rows.append(
-                    {
-                        "library": backend.name,
-                        "file": str(file_path),
-                        "operation": "select_within10_chainA",
-                        "mean_s": select_mean,
-                        "std_s": select_std,
-                        "runs": args.runs,
-                        "warmup": args.warmup,
-                    }
-                )
-                backend_row_indices.append(len(rows) - 1)
+                    obj = backend.read(str(file_path))
+                    transformed_obj = backend.read(str(transformed_path))
+                    select_mean, select_std = benchmark_call(
+                        lambda b=backend, current=obj: b.select_within10_chainA(current),
+                        args.warmup,
+                        args.runs,
+                    )
+                    per_file_op_times[(backend.name, "select_within10_chainA")] = select_mean
+                    backend_key_list.append((backend.name, "select_within10_chainA"))
+                    rows.append(
+                        {
+                            "library": backend.name,
+                            "file": str(file_path),
+                            "operation": "select_within10_chainA",
+                            "mean_s": select_mean,
+                            "std_s": select_std,
+                            "runs": args.runs,
+                            "warmup": args.warmup,
+                        }
+                    )
+                    backend_row_indices.append(len(rows) - 1)
 
-                seq_mean, seq_std = benchmark_call(
-                    lambda b=backend, current=obj: b.get_aa_seq_len(current),
-                    args.warmup,
-                    args.runs,
-                )
-                per_file_op_times[(backend.name, "get_aa_seq")] = seq_mean
-                backend_key_list.append((backend.name, "get_aa_seq"))
-                rows.append(
-                    {
-                        "library": backend.name,
-                        "file": str(file_path),
-                        "operation": "get_aa_seq",
-                        "mean_s": seq_mean,
-                        "std_s": seq_std,
-                        "runs": args.runs,
-                        "warmup": args.warmup,
-                    }
-                )
-                backend_row_indices.append(len(rows) - 1)
+                    seq_mean, seq_std = benchmark_call(
+                        lambda b=backend, current=obj: b.get_aa_seq_len(current),
+                        args.warmup,
+                        args.runs,
+                    )
+                    per_file_op_times[(backend.name, "get_aa_seq")] = seq_mean
+                    backend_key_list.append((backend.name, "get_aa_seq"))
+                    rows.append(
+                        {
+                            "library": backend.name,
+                            "file": str(file_path),
+                            "operation": "get_aa_seq",
+                            "mean_s": seq_mean,
+                            "std_s": seq_std,
+                            "runs": args.runs,
+                            "warmup": args.warmup,
+                        }
+                    )
+                    backend_row_indices.append(len(rows) - 1)
 
-                rmsd_mean, rmsd_std = benchmark_call(
-                    lambda b=backend, current=obj: _rmsd(
-                        b.get_ca_coords(current),
-                        b.get_ca_coords(current) + np.array([1.0, 0.0, 0.0]),
-                    ),
-                    args.warmup,
-                    args.runs,
-                )
-                per_file_op_times[(backend.name, "rmsd_ca_shift")] = rmsd_mean
-                backend_key_list.append((backend.name, "rmsd_ca_shift"))
-                rows.append(
-                    {
-                        "library": backend.name,
-                        "file": str(file_path),
-                        "operation": "rmsd_ca_shift",
-                        "mean_s": rmsd_mean,
-                        "std_s": rmsd_std,
-                        "runs": args.runs,
-                        "warmup": args.warmup,
-                    }
-                )
-                backend_row_indices.append(len(rows) - 1)
+                    rmsd_mean, rmsd_std = benchmark_call(
+                        lambda b=backend, reference=obj, mobile=transformed_obj: b.rmsd_ca_shift(reference, mobile),
+                        args.warmup,
+                        args.runs,
+                    )
+                    per_file_op_times[(backend.name, "rmsd_ca_shift")] = rmsd_mean
+                    backend_key_list.append((backend.name, "rmsd_ca_shift"))
+                    rows.append(
+                        {
+                            "library": backend.name,
+                            "file": str(file_path),
+                            "operation": "rmsd_ca_shift",
+                            "mean_s": rmsd_mean,
+                            "std_s": rmsd_std,
+                            "runs": args.runs,
+                            "warmup": args.warmup,
+                        }
+                    )
+                    backend_row_indices.append(len(rows) - 1)
 
-                dihedral_mean, dihedral_std = benchmark_call(
-                    lambda b=backend, current=obj: (
-                        lambda ca=b.get_ca_coords(current): (
-                            _dihedral(ca) if ca.shape[0] >= 4 else 0.0
-                        )
-                    )(),
-                    args.warmup,
-                    args.runs,
-                )
-                per_file_op_times[(backend.name, "dihedral_ca")] = dihedral_mean
-                backend_key_list.append((backend.name, "dihedral_ca"))
-                rows.append(
-                    {
-                        "library": backend.name,
-                        "file": str(file_path),
-                        "operation": "dihedral_ca",
-                        "mean_s": dihedral_mean,
-                        "std_s": dihedral_std,
-                        "runs": args.runs,
-                        "warmup": args.warmup,
-                    }
-                )
-                backend_row_indices.append(len(rows) - 1)
+                    dihedral_mean, dihedral_std = benchmark_call(
+                        lambda b=backend, current=obj: b.dihedral_ca(current),
+                        args.warmup,
+                        args.runs,
+                    )
+                    per_file_op_times[(backend.name, "dihedral_ca")] = dihedral_mean
+                    backend_key_list.append((backend.name, "dihedral_ca"))
+                    rows.append(
+                        {
+                            "library": backend.name,
+                            "file": str(file_path),
+                            "operation": "dihedral_ca",
+                            "mean_s": dihedral_mean,
+                            "std_s": dihedral_std,
+                            "runs": args.runs,
+                            "warmup": args.warmup,
+                        }
+                    )
+                    backend_row_indices.append(len(rows) - 1)
 
-                align_seq_mean, align_seq_std = benchmark_call(
-                    lambda b=backend, current=obj: (
-                        lambda seq_1, coords_1, seq_2, coords_2: _align_seq_rmsd(
-                            seq_1, coords_1, seq_2, coords_2
-                        )
-                    )(*b.get_chain_seq_ca(current, "A"), *b.get_chain_seq_ca(current, "A")),
-                    args.warmup,
-                    args.runs,
-                )
-                per_file_op_times[(backend.name, "align_seq_chainA")] = align_seq_mean
-                backend_key_list.append((backend.name, "align_seq_chainA"))
-                rows.append(
-                    {
-                        "library": backend.name,
-                        "file": str(file_path),
-                        "operation": "align_seq_chainA",
-                        "mean_s": align_seq_mean,
-                        "std_s": align_seq_std,
-                        "runs": args.runs,
-                        "warmup": args.warmup,
-                    }
-                )
-                backend_row_indices.append(len(rows) - 1)
+                    align_seq_mean, align_seq_std = benchmark_call(
+                        lambda b=backend, reference=str(file_path), mobile=str(transformed_path): b.align_seq_chainA(reference, mobile),
+                        args.warmup,
+                        args.runs,
+                    )
+                    per_file_op_times[(backend.name, "align_seq_chainA")] = align_seq_mean
+                    backend_key_list.append((backend.name, "align_seq_chainA"))
+                    rows.append(
+                        {
+                            "library": backend.name,
+                            "file": str(file_path),
+                            "operation": "align_seq_chainA",
+                            "mean_s": align_seq_mean,
+                            "std_s": align_seq_std,
+                            "runs": args.runs,
+                            "warmup": args.warmup,
+                        }
+                    )
+                    backend_row_indices.append(len(rows) - 1)
 
-                align_mean, align_std = benchmark_call(
-                    lambda b=backend, p=str(file_path): b.align_ca_self(p),
-                    args.warmup,
-                    args.runs,
-                )
-                per_file_op_times[(backend.name, "align_ca_self")] = align_mean
-                backend_key_list.append((backend.name, "align_ca_self"))
-                rows.append(
-                    {
-                        "library": backend.name,
-                        "file": str(file_path),
-                        "operation": "align_ca_self",
-                        "mean_s": align_mean,
-                        "std_s": align_std,
-                        "runs": args.runs,
-                        "warmup": args.warmup,
-                    }
-                )
-                backend_row_indices.append(len(rows) - 1)
+                    align_mean, align_std = benchmark_call(
+                        lambda b=backend, reference=str(file_path), mobile=str(transformed_path): b.align_ca_pair(reference, mobile),
+                        args.warmup,
+                        args.runs,
+                    )
+                    per_file_op_times[(backend.name, "align_ca_self")] = align_mean
+                    backend_key_list.append((backend.name, "align_ca_self"))
+                    rows.append(
+                        {
+                            "library": backend.name,
+                            "file": str(file_path),
+                            "operation": "align_ca_self",
+                            "mean_s": align_mean,
+                            "std_s": align_std,
+                            "runs": args.runs,
+                            "warmup": args.warmup,
+                        }
+                    )
+                    backend_row_indices.append(len(rows) - 1)
 
-                hbond_mean, hbond_std = benchmark_call(
-                    lambda b=backend, current=obj: b.hbond_count(current),
-                    args.warmup,
-                    args.runs,
-                )
-                per_file_op_times[(backend.name, "hbond")] = hbond_mean
-                backend_key_list.append((backend.name, "hbond"))
-                rows.append(
-                    {
-                        "library": backend.name,
-                        "file": str(file_path),
-                        "operation": "hbond",
-                        "mean_s": hbond_mean,
-                        "std_s": hbond_std,
-                        "runs": args.runs,
-                        "warmup": args.warmup,
-                    }
-                )
-                backend_row_indices.append(len(rows) - 1)
-            except Exception as exc:
-                for key in backend_key_list:
-                    per_file_op_times.pop(key, None)
-                for index in sorted(backend_row_indices, reverse=True):
-                    if 0 <= index < len(rows):
-                        rows.pop(index)
-                print(f"{backend.name}\t{file_path.name}\tskipped\tNA\tNA\tNA\tNA ({exc})")
-            finally:
-                _safe_remove(out_path)
+                    hbond_mean, hbond_std = benchmark_call(
+                        lambda b=backend, current=obj: b.hbond_count(current),
+                        args.warmup,
+                        args.runs,
+                    )
+                    per_file_op_times[(backend.name, "hbond")] = hbond_mean
+                    backend_key_list.append((backend.name, "hbond"))
+                    rows.append(
+                        {
+                            "library": backend.name,
+                            "file": str(file_path),
+                            "operation": "hbond",
+                            "mean_s": hbond_mean,
+                            "std_s": hbond_std,
+                            "runs": args.runs,
+                            "warmup": args.warmup,
+                        }
+                    )
+                    backend_row_indices.append(len(rows) - 1)
+                except Exception as exc:
+                    for key in backend_key_list:
+                        per_file_op_times.pop(key, None)
+                    for index in sorted(backend_row_indices, reverse=True):
+                        if 0 <= index < len(rows):
+                            rows.pop(index)
+                    print(f"{backend.name}\t{file_path.name}\tskipped\tNA\tNA\tNA\tNA ({exc})")
 
         for backend in backends:
             for op in operations:

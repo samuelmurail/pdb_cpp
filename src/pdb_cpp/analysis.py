@@ -5,7 +5,7 @@ import logging
 
 import numpy as np
 
-from .core import align_seq_based, coor_align, get_common_atoms
+from .core import align_seq_based, coor_align, get_common_atoms, rmsd as core_rmsd
 from .select import remove_incomplete_backbone_residues
 
 __all__ = ["rmsd", "interface_rmsd", "native_contact", "dockQ"]
@@ -53,26 +53,7 @@ def rmsd(coor_1, coor_2, selection="name CA", index_list=None, frame_ref=0):
     if len(index_1) != len(index_2):
         raise ValueError("Index lists must have the same length")
 
-    ref_model = coor_2.models[frame_ref]
-    ref_x = np.asarray(ref_model.get_x())
-    ref_y = np.asarray(ref_model.get_y())
-    ref_z = np.asarray(ref_model.get_z())
-
-    index_1 = np.asarray(index_1, dtype=int)
-    index_2 = np.asarray(index_2, dtype=int)
-
-    rmsd_list = []
-    for model in coor_1.models:
-        x = np.asarray(model.get_x())
-        y = np.asarray(model.get_y())
-        z = np.asarray(model.get_z())
-
-        dx = x[index_1] - ref_x[index_2]
-        dy = y[index_1] - ref_y[index_2]
-        dz = z[index_1] - ref_z[index_2]
-        rmsd_list.append(float(np.sqrt((dx * dx + dy * dy + dz * dz).mean())))
-
-    return rmsd_list
+    return core_rmsd(coor_1, coor_2, list(index_1), list(index_2), frame_ref=frame_ref)
 
 
 def interface_rmsd(

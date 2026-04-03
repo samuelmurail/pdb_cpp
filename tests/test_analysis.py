@@ -66,6 +66,20 @@ def test_measure_rmsd(capsys):
         assert expected_rmsd == pytest.approx(rmsd_val, 0.0001)
 
 
+def test_core_rmsd_matches_analysis():
+    coor_1 = Coor(PDB_1U85)
+    coor_2 = Coor(PDB_1UBD)
+
+    index_1, index_2 = core.get_common_atoms(
+        coor_1, coor_2, chain_1=["A"], chain_2=["C"]
+    )
+
+    core_rmsds = core.rmsd(coor_1, coor_2, index_1, index_2)
+    analysis_rmsds = analysis.rmsd(coor_1, coor_2, index_list=[index_1, index_2])
+
+    assert core_rmsds == pytest.approx(analysis_rmsds, abs=1e-6)
+
+
 def test_dockq_bad():
     model_coor = Coor(PDB_1JD4)
     native_coor = Coor(PDB_5M6N)

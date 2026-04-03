@@ -1,14 +1,7 @@
 #!/usr/bin/env python3
 # coding: utf-8
 
-"""Benchmark DockQ CLI vs pdb_cpp.analysis.dockQ.
-
-Usage examples
---------------
-python benchmark/compare_dockq_speed.py
-python benchmark/compare_dockq_speed.py --runs 10 --warmup 2 --mode end-to-end
-python benchmark/compare_dockq_speed.py --mode cached --csv benchmark/results_cached.csv
-"""
+"""Benchmark DockQ CLI vs pdb_cpp.analysis.dockQ."""
 
 from __future__ import annotations
 
@@ -60,7 +53,7 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--csv",
-        default="benchmark/dockq_vs_pdb_cpp.csv",
+        default="benchmark_dockq.csv",
         help="Output CSV path",
     )
     return parser.parse_args()

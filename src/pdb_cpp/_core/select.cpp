@@ -3,6 +3,9 @@
 #include <cstring>
 #include <sstream>
 #include <algorithm>
+#include <cmath>
+#include <cstddef>
+#include <cstdint>
 #include <unordered_map>
 #include <stdexcept>
 #include <iostream>
@@ -15,6 +18,33 @@
 #include "geom.h"
 
 using namespace std;
+
+namespace {
+
+struct CellKey {
+    int x;
+    int y;
+    int z;
+
+    bool operator==(const CellKey &other) const {
+        return x == other.x && y == other.y && z == other.z;
+    }
+};
+
+struct CellKeyHash {
+    size_t operator()(const CellKey &key) const {
+        size_t seed = std::hash<int>{}(key.x);
+        seed ^= std::hash<int>{}(key.y) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+        seed ^= std::hash<int>{}(key.z) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+        return seed;
+    }
+};
+
+inline int cell_index(float coord, float inv_cell_size) {
+    return static_cast<int>(std::floor(coord * inv_cell_size));
+}
+
+}  // namespace
 
 
 const unordered_set<string> KEYWORDS = {
@@ -397,21 +427,74 @@ vector<bool> simple_select_atoms_model(const Model &model, const string &column,
 }
 
 vector<bool> dist_under_index(const Model &model, vector<bool> selection, float distance) {
-    vector<bool> result(selection.size(), false);
-    vector<float> x = model.get_x();
-    vector<float> y = model.get_y();
-    vector<float> z = model.get_z();
-    float square_distance = distance * distance, sq_dist;
+    vector<bool> result(selection.begin(), selection.end());
+    if (selection.empty()) {
+        return result;
+    }
 
+    const vector<float> &x = model.get_x();
+    const vector<float> &y = model.get_y();
+    const vector<float> &z = model.get_z();
+    const float square_distance = distance * distance;
+
+    if (distance <= 0.0f) {
+        return result;
+    }
+
+    vector<int> selected_indices;
+    selected_indices.reserve(selection.size());
     for (size_t i = 0; i < selection.size(); ++i) {
         if (selection[i]) {
-            result[i] = true;
-        } else {
-            for (size_t j = 0; j < selection.size(); ++j) {
-                if (selection[j]) {
-                    sq_dist = calculate_square_distance(x[i], y[i], z[i], x[j], y[j], z[j]);
-                    if (sq_dist < square_distance) {
-                        result[i] = true;
+            selected_indices.push_back(static_cast<int>(i));
+        }
+    }
+    if (selected_indices.empty()) {
+        return result;
+    }
+
+    const float inv_cell_size = 1.0f / distance;
+    unordered_map<CellKey, vector<int>, CellKeyHash> grid;
+    grid.reserve(selected_indices.size());
+    for (int idx : selected_indices) {
+        CellKey key{
+            cell_index(x[idx], inv_cell_size),
+            cell_index(y[idx], inv_cell_size),
+            cell_index(z[idx], inv_cell_size),
+        };
+        grid[key].push_back(idx);
+    }
+
+    for (size_t i = 0; i < selection.size(); ++i) {
+        if (result[i]) {
+            continue;
+        }
+
+        const CellKey center{
+            cell_index(x[i], inv_cell_size),
+            cell_index(y[i], inv_cell_size),
+            cell_index(z[i], inv_cell_size),
+        };
+
+        bool found = false;
+        for (int dx = -1; dx <= 1 && !found; ++dx) {
+            for (int dy = -1; dy <= 1 && !found; ++dy) {
+                for (int dz = -1; dz <= 1; ++dz) {
+                    const CellKey neighbor{center.x + dx, center.y + dy, center.z + dz};
+                    auto it = grid.find(neighbor);
+                    if (it == grid.end()) {
+                        continue;
+                    }
+                    for (int j : it->second) {
+                        const float sq_dist = calculate_square_distance(
+                            x[i], y[i], z[i], x[j], y[j], z[j]
+                        );
+                        if (sq_dist < square_distance) {
+                            result[i] = true;
+                            found = true;
+                            break;
+                        }
+                    }
+                    if (found) {
                         break;
                     }
                 }

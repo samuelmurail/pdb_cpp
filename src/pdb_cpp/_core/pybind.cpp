@@ -225,6 +225,40 @@ ndarray, shape (N-3,)
         py::arg("index_2"),
         py::arg("frame_ref") = 0,
         "Align two coordinate structures using quaternion-based rotation");
+
+    m.def("rmsd",
+        [](const Coor &coor_1,
+           const Coor &coor_2,
+           const std::vector<int> &index_1,
+           const std::vector<int> &index_2,
+           int frame_ref) {
+            if (frame_ref < 0 || static_cast<size_t>(frame_ref) >= coor_2.model_size()) {
+                throw std::runtime_error(
+                    "Reference frame index is larger than the number of frames in the reference structure"
+                );
+            }
+            if (index_1.empty() || index_2.empty()) {
+                throw std::runtime_error("No atoms selected for RMSD calculation");
+            }
+            if (index_1.size() != index_2.size()) {
+                throw std::runtime_error("Index lists must have the same length");
+            }
+
+            const Model ref_model = coor_2.get_Models(frame_ref);
+            std::vector<float> rmsd_values;
+            rmsd_values.reserve(coor_1.model_size());
+            for (size_t model_index = 0; model_index < coor_1.model_size(); ++model_index) {
+                const Model model = coor_1.get_Models(static_cast<int>(model_index));
+                rmsd_values.push_back(::rmsd(model, ref_model, index_1, index_2));
+            }
+            return rmsd_values;
+        },
+        py::arg("coor_1"),
+        py::arg("coor_2"),
+        py::arg("index_1"),
+        py::arg("index_2"),
+        py::arg("frame_ref") = 0,
+        "Compute RMSD values for all models in coor_1 against one reference model in coor_2.");
     
     m.def("align_seq_based",
         [](Coor &coor_1,
