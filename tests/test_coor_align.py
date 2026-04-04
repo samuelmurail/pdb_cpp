@@ -7,6 +7,7 @@ Test the C++ coor_align function implementation
 import numpy as np
 import pytest
 from pdb_cpp import Coor, core
+from .datafiles import PDB_5BKG, PDB_3EAM
 
 # import pdb_numpy
 # import pdb_numpy.alignment as align
@@ -16,8 +17,8 @@ def test_coor_align_basic():
     """Test basic coor_align functionality"""
 
     # Load test structures
-    coor1 = Coor("5bkg.pdb")
-    coor2 = Coor("3eam.pdb")
+    coor1 = Coor(PDB_5BKG)
+    coor2 = Coor(PDB_3EAM)
 
     # print(f"Coor1 size: {coor1.size()}")
     # print(f"Coor2 size: {coor2.size()}")

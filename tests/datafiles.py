@@ -39,6 +39,9 @@ PDB_DIMER_DIMER_MODEL = os.path.join(TEST_FILE_PATH, "dimer_dimer_model.pdb")
 CIF_1A0A = os.path.join(TEST_FILE_PATH, "1A0A.cif")
 CIF_FOLD_2026_DNAPROT_MODEL = os.path.join(TEST_FILE_PATH, "fold_2026_03_10_11_53_model_4.cif")
 
+PDB_5BKG = os.path.join(TEST_FILE_PATH, "5BKG.pdb")
+PDB_3EAM = os.path.join(TEST_FILE_PATH, "3EAM.pdb")
+
 PDB_2MUS = os.path.join(TEST_FILE_PATH, "2mus.pdb")
 PDB_2MUS_MODEL = os.path.join(TEST_FILE_PATH, "af_2.2_2mus.pdb")
 
