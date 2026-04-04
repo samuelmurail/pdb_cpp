@@ -75,9 +75,8 @@ class Backend:
 
 DEFAULT_FILES = [
     "tests/input/1y0m.pdb",
-    "tests/input/1rxz.pdb",
     "tests/input/2mus.pdb",
-    "tests/input/9X0F.cif",
+    "tests/input/5IT7.cif",
 ]
 
 
@@ -139,12 +138,98 @@ def _random_rotation_matrix(rng: np.random.Generator) -> np.ndarray:
     )
 
 
-def _create_transformed_structure(input_path: Path, output_path: Path) -> None:
-    from Bio.PDB import MMCIFIO, MMCIFParser, PDBIO, PDBParser
+def _build_transformed_coor_with_pdb_cpp(
+    source: Any,
+    rotation: np.ndarray,
+    translation: np.ndarray,
+) -> Any:
+    from pdb_cpp.core import Coor as CoreCoor, Model as CoreModel
 
+    if isinstance(source, (str, Path)):
+        source = CoreCoor(str(source))
+
+    transformed = CoreCoor()
+    transformed.conect = dict(source.conect)
+
+    for model_index in range(source.model_size()):
+        model = source.get_Models(model_index)
+        new_model = CoreModel()
+        xs = model.get_x()
+        ys = model.get_y()
+        zs = model.get_z()
+        names = model.get_name()
+        resnames = model.get_resname()
+        resids = model.get_resid()
+        chains = model.get_chain()
+        occs = model.get_occ()
+        betas = model.get_beta()
+        alterlocs = model.get_alterloc()
+        elems = model.get_elem()
+        insertres = model.get_insertres()
+        fields = model.get_field()
+        uniqresids = model.get_uniqresid()
+        nums = model.get_num()
+
+        for atom_index in range(model.size()):
+            coord = rotation @ np.asarray(
+                [xs[atom_index], ys[atom_index], zs[atom_index]],
+                dtype=float,
+            ) + translation
+            new_model.addAtom(
+                nums[atom_index],
+                names[atom_index],
+                resnames[atom_index],
+                resids[atom_index],
+                chains[atom_index],
+                float(coord[0]),
+                float(coord[1]),
+                float(coord[2]),
+                occs[atom_index],
+                betas[atom_index],
+                alterlocs[atom_index],
+                elems[atom_index],
+                insertres[atom_index],
+                fields[atom_index],
+                uniqresids[atom_index],
+            )
+        transformed.add_Model(new_model)
+
+    return transformed
+
+
+def _create_transformed_structure_with_pdb_cpp(
+    input_path: Path,
+    output_path: Path,
+    rotation: np.ndarray,
+    translation: np.ndarray,
+) -> None:
+    transformed = _build_transformed_coor_with_pdb_cpp(
+        input_path,
+        rotation,
+        translation,
+    )
+
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    transformed.write(str(output_path))
+
+
+def _create_transformed_structure(input_path: Path, output_path: Path) -> None:
     rng = np.random.default_rng(zlib.crc32(str(input_path).encode("utf-8")))
     rotation = _random_rotation_matrix(rng)
     translation = rng.uniform(-25.0, 25.0, size=3)
+
+    try:
+        _create_transformed_structure_with_pdb_cpp(
+            input_path,
+            output_path,
+            rotation,
+            translation,
+        )
+        return
+    except Exception:
+        pass
+
+    from Bio.PDB import MMCIFIO, MMCIFParser, PDBIO, PDBParser
 
     parser = MMCIFParser(QUIET=True) if _is_cif(str(input_path)) else PDBParser(QUIET=True)
     structure = parser.get_structure("transformed", str(input_path))
@@ -210,9 +295,9 @@ def build_backends() -> list[Backend]:
                 return 0.0
             return float(pdb_geom.compute_dihedrals(np.asarray(ca.xyz[:4], dtype=np.float32))[0])
 
-        def cpp_align_seq_chainA(reference_path: str, mobile_path: str) -> float:
-            native = Coor(reference_path)
-            model = Coor(mobile_path)
+        def cpp_align_seq_chainA(reference_source: Any, mobile_source: Any) -> float:
+            native = Coor(reference_source) if isinstance(reference_source, str) else reference_source
+            model = Coor(mobile_source) if isinstance(mobile_source, str) else mobile_source
             rmsds, _, _ = core.align_seq_based(
                 model,
                 native,
@@ -222,9 +307,9 @@ def build_backends() -> list[Backend]:
             )
             return float(rmsds[0]) if rmsds else 0.0
 
-        def cpp_align_ca_pair(reference_path: str, mobile_path: str) -> float:
-            native = Coor(reference_path)
-            model = Coor(mobile_path)
+        def cpp_align_ca_pair(reference_source: Any, mobile_source: Any) -> float:
+            native = Coor(reference_source) if isinstance(reference_source, str) else reference_source
+            model = Coor(mobile_source) if isinstance(mobile_source, str) else mobile_source
             idx_model = model.get_index_select("name CA")
             idx_native = native.get_index_select("name CA")
             if len(idx_model) == 0 or len(idx_native) == 0:
@@ -674,6 +759,9 @@ def main() -> None:
         with tempfile.TemporaryDirectory(prefix="pdb_cpp_benchmark_") as temp_dir:
             transformed_path = Path(temp_dir) / f"{file_path.stem}_transformed{file_path.suffix}"
             _create_transformed_structure(file_path, transformed_path)
+            rng = np.random.default_rng(zlib.crc32(str(file_path).encode("utf-8")))
+            rotation = _random_rotation_matrix(rng)
+            translation = rng.uniform(-25.0, 25.0, size=3)
             for backend in backends:
                 out_path = str(Path(temp_dir) / f"{backend.name}_{file_path.name}")
                 backend_key_list: list[tuple[str, str]] = []
@@ -718,7 +806,18 @@ def main() -> None:
                     backend_row_indices.append(len(rows) - 1)
 
                     obj = backend.read(str(file_path))
-                    transformed_obj = backend.read(str(transformed_path))
+                    if backend.name == "pdb_cpp":
+                        transformed_obj = _build_transformed_coor_with_pdb_cpp(
+                            obj,
+                            rotation,
+                            translation,
+                        )
+                        reference_payload = obj
+                        mobile_payload = transformed_obj
+                    else:
+                        transformed_obj = backend.read(str(transformed_path))
+                        reference_payload = str(file_path)
+                        mobile_payload = str(transformed_path)
                     select_mean, select_std = benchmark_call(
                         lambda b=backend, current=obj: b.select_within10_chainA(current),
                         args.warmup,
@@ -800,7 +899,10 @@ def main() -> None:
                     backend_row_indices.append(len(rows) - 1)
 
                     align_seq_mean, align_seq_std = benchmark_call(
-                        lambda b=backend, reference=str(file_path), mobile=str(transformed_path): b.align_seq_chainA(reference, mobile),
+                        lambda b=backend, reference=reference_payload, mobile=mobile_payload, rot=rotation, trans=translation, current=obj: b.align_seq_chainA(
+                            reference,
+                            _build_transformed_coor_with_pdb_cpp(current, rot, trans) if b.name == "pdb_cpp" else mobile,
+                        ),
                         args.warmup,
                         args.runs,
                     )
@@ -820,7 +922,10 @@ def main() -> None:
                     backend_row_indices.append(len(rows) - 1)
 
                     align_mean, align_std = benchmark_call(
-                        lambda b=backend, reference=str(file_path), mobile=str(transformed_path): b.align_ca_pair(reference, mobile),
+                        lambda b=backend, reference=reference_payload, mobile=mobile_payload, rot=rotation, trans=translation, current=obj: b.align_ca_pair(
+                            reference,
+                            _build_transformed_coor_with_pdb_cpp(current, rot, trans) if b.name == "pdb_cpp" else mobile,
+                        ),
                         args.warmup,
                         args.runs,
                     )
