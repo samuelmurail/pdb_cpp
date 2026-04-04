@@ -13,8 +13,7 @@ from pdb_cpp import Coor
 
 # from pdb_cpp import select as select
 
-from .datafiles import PDB_1U85, PDB_1Y0M, PDB_2RRI
-
+from .datafiles import PDB_1U85, PDB_1Y0M, PDB_2RRI, CIF_1A0A
 
 def test_select_atoms():
     """Test select_atoms function."""
@@ -171,3 +170,25 @@ def test_select_atoms_conect_update():
     assert new.num == [1, 2]
     assert new.conect[1] == [2]
     assert new.conect[2] == [1]
+
+
+def test_select_nucleic_and_protein():
+    """Select protein and nucleic chains separately in a protein-DNA complex."""
+    test = Coor(CIF_1A0A)
+
+    # Protein selection returns only chains C and D (label_asym_id)
+    prot = test.select_atoms("protein")
+    assert prot.len == 996
+    prot_chains = set(prot.get_aa_seq().keys())
+    assert prot_chains == {"C", "D"}
+
+    # Nucleic selection returns only chains A and B (label_asym_id)
+    nuc = test.select_atoms("nucleic")
+    assert nuc.len == 691
+
+    # Combining by explicit chain returns the expected count
+    chain_ab = test.select_atoms("chain A B")
+    assert chain_ab.len == 691  # DNA chains A and B only
+
+    chain_cd = test.select_atoms("chain C D")
+    assert chain_cd.len == 996  # Protein chains C and D only

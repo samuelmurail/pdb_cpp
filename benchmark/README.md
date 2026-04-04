@@ -70,9 +70,8 @@ The benchmark then compares the original file against that transformed partner:
 Default input files are defined inside the script:
 
 - `tests/input/1y0m.pdb`
-- `tests/input/1rxz.pdb`
 - `tests/input/2mus.pdb`
-- `tests/input/9X0F.cif`
+- `external/8UXA.cif`
 
 ### Run with the default structure list
 

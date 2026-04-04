@@ -7,7 +7,7 @@ import os
 import pytest
 
 from pdb_cpp import Coor
-from .datafiles import MMCIF_1Y0M, MMCIF_2RRI, MMCIF_9X0F, PDB_5M6N, PDB_1U85
+from .datafiles import MMCIF_1Y0M, MMCIF_2RRI, MMCIF_9X0F, PDB_5M6N, PDB_1U85, CIF_1A0A, CIF_FOLD_2026_DNAPROT_MODEL
 
 
 def test_read_mmcif_basic():
@@ -152,3 +152,44 @@ def test_mmcif_no_conect():
     """mmCIF without _struct_conn should have empty conect."""
     coor = Coor(MMCIF_1Y0M)
     assert len(coor.conect) == 0
+
+
+def test_read_mmcif_protein_dna_complex_1a0a():
+    """1A0A.cif is a protein-DNA complex: two protein and two DNA chains plus water.
+
+    label_asym_id: A,B = DNA; C,D = protein; E-H = crystallographic water.
+    """
+    coor = Coor(CIF_1A0A)
+    assert coor.len == 1767
+    assert coor.model_num == 1
+
+    # Protein chains C and D are returned by get_aa_seq()
+    prot_chains = set(coor.get_aa_seq().keys())
+    assert prot_chains == {"C", "D"}
+
+    # All four macromolecular chains are returned by get_aa_na_seq()
+    macro_chains = set(coor.get_aa_na_seq().keys())
+    assert macro_chains == {"A", "B", "C", "D"}
+
+    # Atom-level selections
+    assert coor.select_atoms("protein").len == 996
+    assert coor.select_atoms("nucleic").len == 691
+
+
+def test_read_mmcif_protein_dna_model_fold2026():
+    """fold_2026_03_10_11_53_model_4.cif is an AlphaFold3 model of a protein-DNA complex.
+
+    label_asym_id: A,B = protein; C,D = DNA.
+    """
+    coor = Coor(CIF_FOLD_2026_DNAPROT_MODEL)
+    assert coor.len == 1695
+    assert coor.model_num == 1
+
+    prot_chains = set(coor.get_aa_seq().keys())
+    assert prot_chains == {"A", "B"}
+
+    macro_chains = set(coor.get_aa_na_seq().keys())
+    assert macro_chains == {"A", "B", "C", "D"}
+
+    assert coor.select_atoms("protein").len == 996
+    assert coor.select_atoms("nucleic").len == 699

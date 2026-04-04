@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # coding: utf-8
 
+import itertools
 import logging
 
 import numpy as np
@@ -8,7 +9,7 @@ import numpy as np
 from .core import align_seq_based, coor_align, get_common_atoms, rmsd as core_rmsd
 from .select import remove_incomplete_backbone_residues
 
-__all__ = ["rmsd", "interface_rmsd", "native_contact", "dockQ"]
+__all__ = ["rmsd", "interface_rmsd", "native_contact", "dockQ", "dockQ_multimer"]
 
 
 logger = logging.getLogger(__name__)
@@ -474,4 +475,127 @@ def dockQ(
         "iRMS": irmsd_list,
         "LRMS": lrmsd_list,
         "DockQ": dockq_list,
+    }
+
+
+def dockQ_multimer(
+    coor,
+    native_coor,
+    chain_map=None,
+    back_atom=None,
+):
+    """Compute DockQ over all pairwise native chain interfaces (multimer).
+
+    Scores every :math:`\\binom{n}{2}` interface between the *n* native chains
+    and returns per-interface DockQ metrics as well as *GlobalDockQ* (the
+    average DockQ over all interfaces), mirroring the DockQ v2 multimer output.
+
+    Parameters
+    ----------
+    coor : Coor
+        Model coordinates.
+    native_coor : Coor
+        Native coordinates.
+    chain_map : dict[str, str], optional
+        Mapping from **native** chain IDs to **model** chain IDs.  If ``None``
+        the function assumes that both structures share the same chain names
+        and builds an identity mapping for chains present in both.
+    back_atom : list[str], optional
+        Backbone atom names used for alignment and RMSD calculations.
+
+    Returns
+    -------
+    dict
+        Dictionary with two keys:
+
+        ``"interfaces"``
+            ``dict[(native_ch1, native_ch2), result]`` where *result* is the
+            dict returned by :func:`dockQ` for that pair (or ``None`` when the
+            interface could not be scored).
+        ``"GlobalDockQ"``
+            ``list[float]`` — average DockQ over all valid interfaces,
+            one value per model frame.
+
+    Notes
+    -----
+    The larger native chain of each pair is used as receptor to match the
+    DockQ v2 convention.  For chains of equal length the pair is presented in
+    the order they appear in the ``chain_map`` iteration order.
+    """
+    if back_atom is None:
+        back_atom = ["CA", "N", "C", "O"]
+
+    native_seq = native_coor.get_aa_seq()
+    model_seq = coor.get_aa_seq()
+
+    if chain_map is None:
+        chain_map = {ch: ch for ch in native_seq if ch in model_seq}
+        missing = [ch for ch in native_seq if ch not in model_seq]
+        if missing:
+            logger.warning(
+                "Native chains %s not found in model with matching name; "
+                "provide an explicit chain_map to include them.",
+                missing,
+            )
+
+    native_chains = list(chain_map.keys())
+    interfaces = {}
+
+    for n1, n2 in itertools.combinations(native_chains, 2):
+        m1 = chain_map[n1]
+        m2 = chain_map[n2]
+
+        # Assign the larger native chain as receptor (DockQ v2 convention)
+        n1_len = len(native_seq.get(n1, "").replace("-", ""))
+        n2_len = len(native_seq.get(n2, "").replace("-", ""))
+        if n1_len >= n2_len:
+            rec_n, lig_n, rec_m, lig_m = n1, n2, m1, m2
+        else:
+            rec_n, lig_n, rec_m, lig_m = n2, n1, m2, m1
+
+        logger.info(
+            "Scoring interface native(%s, %s) -> model(%s, %s)",
+            rec_n, lig_n, rec_m, lig_m,
+        )
+
+        try:
+            result = dockQ(
+                coor,
+                native_coor,
+                rec_chains=[rec_m],
+                lig_chains=[lig_m],
+                native_rec_chains=[rec_n],
+                native_lig_chains=[lig_n],
+                back_atom=back_atom,
+            )
+            interfaces[(n1, n2)] = {
+                **result,
+                "model_rec_chain": rec_m,
+                "model_lig_chain": lig_m,
+            }
+        except Exception as exc:
+            logger.warning(
+                "Could not compute DockQ for interface (%s, %s): %s", n1, n2, exc
+            )
+            interfaces[(n1, n2)] = None
+
+    valid = [
+        v for v in interfaces.values()
+        if v is not None and any(ir is not None for ir in v["iRMS"])
+    ]
+    if valid:
+        n_frames = len(valid[0]["DockQ"])
+        global_dockq = [
+            sum(v["DockQ"][i] for v in valid) / len(valid)
+            for i in range(n_frames)
+        ]
+    else:
+        logger.warning("No valid interfaces found; GlobalDockQ is undefined.")
+        global_dockq = []
+
+    logger.info("GlobalDockQ (avg over %d interfaces): %.3f", len(valid), global_dockq[0] if global_dockq else float("nan"))
+
+    return {
+        "interfaces": interfaces,
+        "GlobalDockQ": global_dockq,
     }

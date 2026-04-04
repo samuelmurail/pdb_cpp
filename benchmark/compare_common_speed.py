@@ -33,6 +33,13 @@ from typing import Any, Callable
 import numpy as np
 
 
+DEFAULT_FILES = [
+    "tests/input/1y0m.pdb",
+    "tests/input/2mus.pdb",
+    "tests/input/5IT7.cif",
+    #"external/8UXA.cif",
+]
+
 AA3_TO_1 = {
     "ALA": "A",
     "ARG": "R",
@@ -73,11 +80,105 @@ class Backend:
     hbond_count: Callable[[Any], int]
 
 
-DEFAULT_FILES = [
-    "tests/input/1y0m.pdb",
-    "tests/input/2mus.pdb",
-    "tests/input/5IT7.cif",
-]
+# ---------------------------------------------------------------------------
+# Biopython helpers for large PDB files (SloppyStructureBuilder / SloppyPDBIO)
+# Based on https://biopython.org/wiki/Reading_large_PDB_files
+# ---------------------------------------------------------------------------
+try:
+    import Bio.PDB
+    import Bio.PDB.StructureBuilder
+    from Bio.PDB.Residue import Residue as _BioResidue
+
+    class SloppyStructureBuilder(Bio.PDB.StructureBuilder.StructureBuilder):
+        """Handle resSeq > 9999 by incrementing internally instead of wrapping.
+
+        Avoids the 'Blank altlocs in duplicate residue' error for large MD files.
+        """
+
+        def __init__(self, verbose: bool = False) -> None:
+            Bio.PDB.StructureBuilder.StructureBuilder.__init__(self)
+            self.max_resseq = -1
+            self.verbose = verbose
+
+        def init_residue(self, resname, field, resseq, icode):
+            if field != " ":
+                if field == "H":
+                    field = "H_" + resname
+            res_id = (field, resseq, icode)
+
+            if resseq > self.max_resseq:
+                self.max_resseq = resseq
+
+            if field == " ":
+                fudged_resseq = False
+                while self.chain.has_id(res_id) or resseq == 0:
+                    self.max_resseq += 1
+                    resseq = self.max_resseq
+                    res_id = (field, resseq, icode)
+                    fudged_resseq = True
+                if fudged_resseq and self.verbose:
+                    sys.stderr.write(
+                        "Residues are wrapping (Residue "
+                        + "('%s', %i, '%s') at line %i)."
+                        % (field, resseq, icode, self.line_counter)
+                        + " assigning new resid %d.\n" % self.max_resseq
+                    )
+            residue = _BioResidue(res_id, resname, self.segid)
+            self.chain.add(residue)
+            self.residue = residue
+
+    class SloppyPDBIO(Bio.PDB.PDBIO):
+        """PDBIO that wraps atom serial (mod 100,000) and resSeq (mod 10,000).
+
+        Keeps output files valid PDB format when atom/residue counts overflow.
+        """
+
+        _ATOM_FORMAT_STRING = (
+            "%s%5i %-4s%c%3s %c%4i%c   "
+            + "%8.3f%8.3f%8.3f%6.2f%6.2f      %4s%2s%2s\n"
+        )
+
+        def _get_atom_line(
+            self,
+            atom,
+            hetfield,
+            segid,
+            atom_number,
+            resname,
+            resseq,
+            icode,
+            chain_id,
+            element="  ",
+            charge="  ",
+        ):
+            record_type = "HETATM" if hetfield != " " else "ATOM  "
+            name = atom.get_fullname()
+            altloc = atom.get_altloc()
+            x, y, z = atom.get_coord()
+            bfactor = atom.get_bfactor()
+            occupancy = atom.get_occupancy()
+            args = (
+                record_type,
+                atom_number % 100000,
+                name,
+                altloc,
+                resname,
+                chain_id,
+                resseq % 10000,
+                icode,
+                x,
+                y,
+                z,
+                occupancy,
+                bfactor,
+                segid,
+                element,
+                charge,
+            )
+            return self._ATOM_FORMAT_STRING % args
+
+except ImportError:
+    pass
 
 
 def parse_args() -> argparse.Namespace:
@@ -231,7 +332,13 @@ def _create_transformed_structure(input_path: Path, output_path: Path) -> None:
 
     from Bio.PDB import MMCIFIO, MMCIFParser, PDBIO, PDBParser
 
-    parser = MMCIFParser(QUIET=True) if _is_cif(str(input_path)) else PDBParser(QUIET=True)
+    if _is_cif(str(input_path)):
+        parser = MMCIFParser(QUIET=True)
+    else:
+        try:
+            parser = PDBParser(PERMISSIVE=True, structure_builder=SloppyStructureBuilder())
+        except NameError:
+            parser = PDBParser(QUIET=True)
     structure = parser.get_structure("transformed", str(input_path))
     for atom in structure.get_atoms():
         atom.transform(rotation, translation)
@@ -439,11 +546,26 @@ def build_backends() -> list[Backend]:
         bio_aligner.extend_gap_score = -0.5
 
         def bio_read(path: str):
-            parser = MMCIFParser(QUIET=True) if _is_cif(path) else PDBParser(QUIET=True)
+            if _is_cif(path):
+                try:
+                    parser = MMCIFParser(QUIET=True, structure_builder=SloppyStructureBuilder())
+                except (NameError, TypeError):
+                    parser = MMCIFParser(QUIET=True)
+            else:
+                try:
+                    parser = PDBParser(PERMISSIVE=True, structure_builder=SloppyStructureBuilder())
+                except NameError:
+                    parser = PDBParser(QUIET=True)
             return parser.get_structure("model", path)
 
         def bio_write(obj: Any, out_path: str):
-            io = MMCIFIO() if _is_cif(out_path) else PDBIO()
+            if _is_cif(out_path):
+                io: Any = MMCIFIO()
+            else:
+                try:
+                    io = SloppyPDBIO()
+                except NameError:
+                    io = PDBIO()
             io.set_structure(obj)
             io.save(out_path)
 
@@ -714,6 +836,29 @@ def benchmark_call(fn: Callable[[], Any], warmup: int, runs: int) -> tuple[float
     return mean(times), stdev(times)
 
 
+def _print_result_line(
+    backend_name: str,
+    file_name: str,
+    op: str,
+    mean_s: float,
+    std_s: float,
+    per_file_op_times: dict,
+) -> None:
+    """Print a single benchmark result row immediately after it is measured."""
+    base = per_file_op_times.get(("pdb_cpp", op))
+    if base is not None and mean_s > 0:
+        speedup = base / mean_s
+        superior = "YES" if base <= mean_s else "NO"
+        speedup_txt = f"{speedup:.2f}x"
+    else:
+        speedup_txt = "NA"
+        superior = "NA"
+    print(
+        f"{backend_name}\t{file_name}\t{op}\t{mean_s:.6f}\t{std_s:.6f}\t{speedup_txt}\t{superior}",
+        flush=True,
+    )
+
+
 def main() -> None:
     args = parse_args()
     if args.runs < 1:
@@ -764,14 +909,45 @@ def main() -> None:
             translation = rng.uniform(-25.0, 25.0, size=3)
             for backend in backends:
                 out_path = str(Path(temp_dir) / f"{backend.name}_{file_path.name}")
-                backend_key_list: list[tuple[str, str]] = []
-                backend_row_indices: list[int] = []
+
+                def _record(op_name: str, fn: Callable[[], Any]) -> None:
+                    """Run *fn*, record the result and print immediately.
+
+                    A failure prints a single NA row and does not affect any
+                    other operation.
+                    """
+                    try:
+                        t_mean, t_std = benchmark_call(fn, args.warmup, args.runs)
+                        per_file_op_times[(backend.name, op_name)] = t_mean
+                        rows.append(
+                            {
+                                "library": backend.name,
+                                "file": str(file_path),
+                                "operation": op_name,
+                                "mean_s": t_mean,
+                                "std_s": t_std,
+                                "runs": args.runs,
+                                "warmup": args.warmup,
+                            }
+                        )
+                        _print_result_line(
+                            backend.name, file_path.name, op_name,
+                            t_mean, t_std, per_file_op_times,
+                        )
+                    except Exception as exc:
+                        print(
+                            f"{backend.name}\t{file_path.name}\t{op_name}"
+                            f"\tNA\tNA\tNA\tNA ({exc})",
+                            flush=True,
+                        )
+
+                # --- read (prerequisite — skip backend entirely on failure) ---
                 try:
                     read_mean, read_std = benchmark_call(
-                        lambda b=backend, p=str(file_path): b.read(p), args.warmup, args.runs
+                        lambda b=backend, p=str(file_path): b.read(p),
+                        args.warmup, args.runs,
                     )
                     per_file_op_times[(backend.name, "read")] = read_mean
-                    backend_key_list.append((backend.name, "read"))
                     rows.append(
                         {
                             "library": backend.name,
@@ -783,34 +959,30 @@ def main() -> None:
                             "warmup": args.warmup,
                         }
                     )
-                    backend_row_indices.append(len(rows) - 1)
-
-                    write_mean, write_std = benchmark_call(
-                        lambda b=backend, p=str(file_path), o=out_path: b.write(b.read(p), o),
-                        args.warmup,
-                        args.runs,
+                    _print_result_line(
+                        backend.name, file_path.name, "read",
+                        read_mean, read_std, per_file_op_times,
                     )
-                    per_file_op_times[(backend.name, "write")] = write_mean
-                    backend_key_list.append((backend.name, "write"))
-                    rows.append(
-                        {
-                            "library": backend.name,
-                            "file": str(file_path),
-                            "operation": "write",
-                            "mean_s": write_mean,
-                            "std_s": write_std,
-                            "runs": args.runs,
-                            "warmup": args.warmup,
-                        }
+                except Exception as exc:
+                    print(
+                        f"{backend.name}\t{file_path.name}\tread"
+                        f"\tNA\tNA\tNA\tNA ({exc})",
+                        flush=True,
                     )
-                    backend_row_indices.append(len(rows) - 1)
+                    continue  # cannot proceed without a working read
 
+                # --- write ---
+                _record(
+                    "write",
+                    lambda b=backend, p=str(file_path), o=out_path: b.write(b.read(p), o),
+                )
+
+                # --- prepare obj / transformed_obj (shared by remaining ops) ---
+                try:
                     obj = backend.read(str(file_path))
                     if backend.name == "pdb_cpp":
                         transformed_obj = _build_transformed_coor_with_pdb_cpp(
-                            obj,
-                            rotation,
-                            translation,
+                            obj, rotation, translation,
                         )
                         reference_payload = obj
                         mobile_payload = transformed_obj
@@ -818,183 +990,58 @@ def main() -> None:
                         transformed_obj = backend.read(str(transformed_path))
                         reference_payload = str(file_path)
                         mobile_payload = str(transformed_path)
-                    select_mean, select_std = benchmark_call(
-                        lambda b=backend, current=obj: b.select_within10_chainA(current),
-                        args.warmup,
-                        args.runs,
-                    )
-                    per_file_op_times[(backend.name, "select_within10_chainA")] = select_mean
-                    backend_key_list.append((backend.name, "select_within10_chainA"))
-                    rows.append(
-                        {
-                            "library": backend.name,
-                            "file": str(file_path),
-                            "operation": "select_within10_chainA",
-                            "mean_s": select_mean,
-                            "std_s": select_std,
-                            "runs": args.runs,
-                            "warmup": args.warmup,
-                        }
-                    )
-                    backend_row_indices.append(len(rows) - 1)
-
-                    seq_mean, seq_std = benchmark_call(
-                        lambda b=backend, current=obj: b.get_aa_seq_len(current),
-                        args.warmup,
-                        args.runs,
-                    )
-                    per_file_op_times[(backend.name, "get_aa_seq")] = seq_mean
-                    backend_key_list.append((backend.name, "get_aa_seq"))
-                    rows.append(
-                        {
-                            "library": backend.name,
-                            "file": str(file_path),
-                            "operation": "get_aa_seq",
-                            "mean_s": seq_mean,
-                            "std_s": seq_std,
-                            "runs": args.runs,
-                            "warmup": args.warmup,
-                        }
-                    )
-                    backend_row_indices.append(len(rows) - 1)
-
-                    rmsd_mean, rmsd_std = benchmark_call(
-                        lambda b=backend, reference=obj, mobile=transformed_obj: b.rmsd_ca_shift(reference, mobile),
-                        args.warmup,
-                        args.runs,
-                    )
-                    per_file_op_times[(backend.name, "rmsd_ca_shift")] = rmsd_mean
-                    backend_key_list.append((backend.name, "rmsd_ca_shift"))
-                    rows.append(
-                        {
-                            "library": backend.name,
-                            "file": str(file_path),
-                            "operation": "rmsd_ca_shift",
-                            "mean_s": rmsd_mean,
-                            "std_s": rmsd_std,
-                            "runs": args.runs,
-                            "warmup": args.warmup,
-                        }
-                    )
-                    backend_row_indices.append(len(rows) - 1)
-
-                    dihedral_mean, dihedral_std = benchmark_call(
-                        lambda b=backend, current=obj: b.dihedral_ca(current),
-                        args.warmup,
-                        args.runs,
-                    )
-                    per_file_op_times[(backend.name, "dihedral_ca")] = dihedral_mean
-                    backend_key_list.append((backend.name, "dihedral_ca"))
-                    rows.append(
-                        {
-                            "library": backend.name,
-                            "file": str(file_path),
-                            "operation": "dihedral_ca",
-                            "mean_s": dihedral_mean,
-                            "std_s": dihedral_std,
-                            "runs": args.runs,
-                            "warmup": args.warmup,
-                        }
-                    )
-                    backend_row_indices.append(len(rows) - 1)
-
-                    align_seq_mean, align_seq_std = benchmark_call(
-                        lambda b=backend, reference=reference_payload, mobile=mobile_payload, rot=rotation, trans=translation, current=obj: b.align_seq_chainA(
-                            reference,
-                            _build_transformed_coor_with_pdb_cpp(current, rot, trans) if b.name == "pdb_cpp" else mobile,
-                        ),
-                        args.warmup,
-                        args.runs,
-                    )
-                    per_file_op_times[(backend.name, "align_seq_chainA")] = align_seq_mean
-                    backend_key_list.append((backend.name, "align_seq_chainA"))
-                    rows.append(
-                        {
-                            "library": backend.name,
-                            "file": str(file_path),
-                            "operation": "align_seq_chainA",
-                            "mean_s": align_seq_mean,
-                            "std_s": align_seq_std,
-                            "runs": args.runs,
-                            "warmup": args.warmup,
-                        }
-                    )
-                    backend_row_indices.append(len(rows) - 1)
-
-                    align_mean, align_std = benchmark_call(
-                        lambda b=backend, reference=reference_payload, mobile=mobile_payload, rot=rotation, trans=translation, current=obj: b.align_ca_pair(
-                            reference,
-                            _build_transformed_coor_with_pdb_cpp(current, rot, trans) if b.name == "pdb_cpp" else mobile,
-                        ),
-                        args.warmup,
-                        args.runs,
-                    )
-                    per_file_op_times[(backend.name, "align_ca_self")] = align_mean
-                    backend_key_list.append((backend.name, "align_ca_self"))
-                    rows.append(
-                        {
-                            "library": backend.name,
-                            "file": str(file_path),
-                            "operation": "align_ca_self",
-                            "mean_s": align_mean,
-                            "std_s": align_std,
-                            "runs": args.runs,
-                            "warmup": args.warmup,
-                        }
-                    )
-                    backend_row_indices.append(len(rows) - 1)
-
-                    hbond_mean, hbond_std = benchmark_call(
-                        lambda b=backend, current=obj: b.hbond_count(current),
-                        args.warmup,
-                        args.runs,
-                    )
-                    per_file_op_times[(backend.name, "hbond")] = hbond_mean
-                    backend_key_list.append((backend.name, "hbond"))
-                    rows.append(
-                        {
-                            "library": backend.name,
-                            "file": str(file_path),
-                            "operation": "hbond",
-                            "mean_s": hbond_mean,
-                            "std_s": hbond_std,
-                            "runs": args.runs,
-                            "warmup": args.warmup,
-                        }
-                    )
-                    backend_row_indices.append(len(rows) - 1)
                 except Exception as exc:
-                    for key in backend_key_list:
-                        per_file_op_times.pop(key, None)
-                    for index in sorted(backend_row_indices, reverse=True):
-                        if 0 <= index < len(rows):
-                            rows.pop(index)
-                    print(f"{backend.name}\t{file_path.name}\tskipped\tNA\tNA\tNA\tNA ({exc})")
+                    print(
+                        f"{backend.name}\t{file_path.name}\tsetup"
+                        f"\tNA\tNA\tNA\tNA ({exc})",
+                        flush=True,
+                    )
+                    continue  # cannot proceed without loaded objects
 
-        for backend in backends:
-            for op in operations:
-                key = (backend.name, op)
-                if key not in per_file_op_times:
-                    continue
-                current = per_file_op_times[key]
-                base = per_file_op_times.get(("pdb_cpp", op))
-                speedup = base / current if base and current > 0 else None
-                superior = "NA"
-                if base is not None:
-                    superior = "YES" if base <= current else "NO"
-                speedup_txt = "NA" if speedup is None else f"{speedup:.2f}x"
-                matching = [
-                    item["std_s"]
-                    for item in rows
-                    if item["library"] == backend.name
-                    and item["file"] == str(file_path)
-                    and item["operation"] == op
-                ]
-                if not matching:
-                    continue
-                std = matching[0]
-                print(
-                    f"{backend.name}\t{file_path.name}\t{op}\t{current:.6f}\t{std:.6f}\t{speedup_txt}\t{superior}"
+                # --- per-operation benchmarks (each isolated) ---
+                _record(
+                    "select_within10_chainA",
+                    lambda b=backend, current=obj: b.select_within10_chainA(current),
+                )
+
+                _record(
+                    "get_aa_seq",
+                    lambda b=backend, current=obj: b.get_aa_seq_len(current),
+                )
+
+                _record(
+                    "rmsd_ca_shift",
+                    lambda b=backend, reference=obj, mobile=transformed_obj: b.rmsd_ca_shift(reference, mobile),
+                )
+
+                _record(
+                    "dihedral_ca",
+                    lambda b=backend, current=obj: b.dihedral_ca(current),
+                )
+
+                _record(
+                    "align_seq_chainA",
+                    lambda b=backend, ref=reference_payload, mob=mobile_payload,
+                           rot=rotation, trans=translation, current=obj: b.align_seq_chainA(
+                        ref,
+                        _build_transformed_coor_with_pdb_cpp(current, rot, trans)
+                        if b.name == "pdb_cpp" else mob,
+                    ),
+                )
+
+                _record(
+                    "align_ca_self",
+                    lambda b=backend, ref=reference_payload, mob=mobile_payload,
+                           rot=rotation, trans=translation, current=obj: b.align_ca_pair(
+                        ref,
+                        _build_transformed_coor_with_pdb_cpp(current, rot, trans)
+                        if b.name == "pdb_cpp" else mob,
+                    ),
+                )
+
+                _record(
+                    "hbond",
+                    lambda b=backend, current=obj: b.hbond_count(current),
                 )
 
     csv_path = Path(args.csv)

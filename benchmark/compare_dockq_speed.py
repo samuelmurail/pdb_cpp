@@ -35,6 +35,15 @@ DEFAULT_PAIRS: list[dict[str, Any]] = [
         "native": "tests/input/5m6n.pdb",
         "dockq_args": ["--allowed_mismatches", "999", "--mapping", "AB:AB"],
     },
+    {
+        # Protein-DNA complex (AlphaFold3 model vs crystal structure 1A0A).
+        # DockQ CLI scores all 6 interfaces (protein+DNA); pdb_cpp scores the
+        # protein-protein subcomplex only (no nucleic-acid support yet).
+        "name": "fold_2026_vs_1A0A",
+        "model": "tests/input/fold_2026_03_10_11_53_model_4.cif",
+        "native": "tests/input/1A0A.cif",
+        "dockq_args": [],
+    },
 ]
 
 
