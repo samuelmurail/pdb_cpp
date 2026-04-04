@@ -538,7 +538,7 @@ def dockQ_multimer(
                 missing,
             )
 
-    native_chains = list(chain_map.keys())
+    native_chains = sorted(chain_map.keys())
     interfaces = {}
 
     for n1, n2 in itertools.combinations(native_chains, 2):

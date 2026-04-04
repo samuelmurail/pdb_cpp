@@ -41,10 +41,10 @@ DOCKQ_MULTIMER_REFERENCES = {
         "GlobalDockQ": 1.000,
         "n_interfaces": 4,
         "interfaces": {
-            ("B", "A"): {"DockQ": 1.000, "Fnat": 1.000},
-            ("H", "A"): {"DockQ": 1.000, "Fnat": 1.000},
-            ("L", "A"): {"DockQ": 1.000, "Fnat": 1.000},
-            ("L", "H"): {"DockQ": 1.000, "Fnat": 1.000},
+            ("A", "B"): {"DockQ": 1.000, "Fnat": 1.000},
+            ("A", "H"): {"DockQ": 1.000, "Fnat": 1.000},
+            ("A", "L"): {"DockQ": 1.000, "Fnat": 1.000},
+            ("H", "L"): {"DockQ": 1.000, "Fnat": 1.000},
         },
     },
     "1a2k_BAC_ABC": {
