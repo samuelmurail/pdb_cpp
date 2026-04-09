@@ -15,6 +15,72 @@ __all__ = ["rmsd", "interface_rmsd", "native_contact", "dockQ", "dockQ_multimer"
 logger = logging.getLogger(__name__)
 
 
+def _sequence_identity(seq1, seq2):
+    """Return position-wise sequence identity normalised by the longer sequence.
+
+    Tries offsets of ±2 residues so that short N/C-terminal extensions in
+    either sequence do not cause a spurious identity of zero.
+    """
+    s1 = seq1.replace("-", "").upper()
+    s2 = seq2.replace("-", "").upper()
+    if not s1 or not s2:
+        return 0.0
+    denom = max(len(s1), len(s2))
+    best = 0.0
+    for offset in range(-2, 3):  # -2, -1, 0, +1, +2
+        a, b = (s1[offset:], s2) if offset >= 0 else (s1, s2[-offset:])
+        matches = sum(x == y for x, y in zip(a, b))
+        best = max(best, matches / denom)
+    return best
+
+
+def _count_clashes(coor, rec_chains, lig_chains, clash_cutoff=2.0):
+    """Count (receptor, ligand) residue pairs with any atom within *clash_cutoff* Å."""
+    rec_sel = " ".join(rec_chains)
+    lig_sel = " ".join(lig_chains)
+    clashes_list = []
+    for frame_index in range(len(coor.models)):
+        close = coor.select_atoms(
+            f"(chain {rec_sel} and within {clash_cutoff} of chain {lig_sel}) or "
+            f"(chain {lig_sel} and within {clash_cutoff} of chain {rec_sel})",
+            frame=frame_index,
+        )
+        rec_close = close.select_atoms(
+            f"chain {rec_sel} and within {clash_cutoff} of chain {lig_sel}"
+        )
+        count = 0
+        for residue in np.unique(rec_close.uniq_resid):
+            lig_close = close.select_atoms(
+                f"chain {lig_sel} and within {clash_cutoff} of residue {residue}"
+            )
+            count += len(np.unique(lig_close.uniq_resid))
+        clashes_list.append(count)
+    return clashes_list
+
+
+def _check_interface_viable(coor, native_coor, rec_m, lig_m, rec_n, lig_n, back_atom, cutoff=10.0):
+    """Cheap pre-check: return (True, "") when the interface is scoreable.
+
+    Avoids the expensive ``dockQ`` call (and its logged warnings) when it
+    would obviously fail because:
+    - a model chain has no protein backbone atoms, or
+    - the native structure has no interface residues between the two chains.
+    """
+    back_list = " ".join(back_atom)
+    model_rec = coor.select_atoms(f"protein and chain {rec_m} and name {back_list}")
+    model_lig = coor.select_atoms(f"protein and chain {lig_m} and name {back_list}")
+    if len(np.unique(model_rec.models[0].uniq_resid)) == 0:
+        return False, f"no backbone atoms in model chain {rec_m}"
+    if len(np.unique(model_lig.models[0].uniq_resid)) == 0:
+        return False, f"no backbone atoms in model chain {lig_m}"
+    nat_interface = native_coor.select_atoms(
+        f"chain {rec_n} and within {cutoff} of chain {lig_n}"
+    )
+    if len(np.unique(nat_interface.models[0].uniq_resid)) == 0:
+        return False, f"no interface residues between native chains {rec_n} and {lig_n}"
+    return True, ""
+
+
 def rmsd(coor_1, coor_2, selection="name CA", index_list=None, frame_ref=0):
     """Compute RMSD between two sets of coordinates.
 
@@ -453,6 +519,9 @@ def dockQ(
     )
     logger.info("Fnat: %.3f      Fnonnat: %.3f", fnat_list[0], fnonnat_list[0])
 
+    clashes_list = _count_clashes(interface_coor, rec_chains, lig_chains)
+    logger.info("Clashes: %d", clashes_list[0])
+
     def scale_rms(rms, d):
         if rms is None:
             return 0.0
@@ -475,6 +544,7 @@ def dockQ(
         "iRMS": irmsd_list,
         "LRMS": lrmsd_list,
         "DockQ": dockq_list,
+        "clashes": clashes_list,
     }
 
 
@@ -529,14 +599,86 @@ def dockQ_multimer(
     model_seq = coor.get_aa_seq()
 
     if chain_map is None:
-        chain_map = {ch: ch for ch in native_seq if ch in model_seq}
-        missing = [ch for ch in native_seq if ch not in model_seq]
-        if missing:
-            logger.warning(
-                "Native chains %s not found in model with matching name; "
-                "provide an explicit chain_map to include them.",
-                missing,
-            )
+        native_chains_ordered = sorted(native_seq.keys())
+        model_chains_list = list(model_seq.keys())
+
+        # Build sequence clusters: for each native chain, find compatible model chains.
+        clusters = {}
+        for nat_chain in native_chains_ordered:
+            nat_s = native_seq[nat_chain].replace("-", "").upper()
+            candidates = [
+                mc for mc in model_chains_list
+                if _sequence_identity(nat_s, model_seq[mc].replace("-", "").upper()) >= 0.9
+            ]
+            if not candidates:
+                # Fall back to the single best-matching model chain.
+                candidates = [max(
+                    model_chains_list,
+                    key=lambda mc, ns=nat_s: _sequence_identity(
+                        ns, model_seq[mc].replace("-", "").upper()
+                    ),
+                )]
+            clusters[nat_chain] = candidates
+
+        def _gen_maps(nat_chains, used):
+            if not nat_chains:
+                yield {}
+                return
+            nat = nat_chains[0]
+            for mod in clusters[nat]:
+                if mod not in used:
+                    for rest in _gen_maps(nat_chains[1:], used | {mod}):
+                        yield {nat: mod, **rest}
+
+        def _score_map(candidate_map):
+            try:
+                trial = dockQ_multimer(
+                    coor, native_coor, chain_map=candidate_map, back_atom=back_atom
+                )
+                valid_ifaces = [
+                    v for v in trial["interfaces"].values()
+                    if v is not None and any(ir is not None for ir in v["iRMS"])
+                ]
+                return sum(v["DockQ"][0] for v in valid_ifaces)
+            except Exception as exc:
+                logger.debug("Candidate chain map %s failed: %s", candidate_map, exc)
+                return -1.0
+
+        # Try the identity mapping first (native chain X → model chain X when
+        # available, otherwise the first sequence-compatible candidate).  This
+        # covers the common case cheaply and gives a good baseline for pruning.
+        identity_map = {
+            nat: (nat if nat in clusters[nat] else clusters[nat][0])
+            for nat in native_chains_ordered
+        }
+        best_total = _score_map(identity_map)
+        best_map = identity_map if best_total >= 0 else None
+        logger.info("Identity mapping %s scores %.3f", identity_map, best_total)
+
+        # Count total permutations; if only one exists the loop below is a no-op.
+        _MAX_PERMUTATIONS = 720
+        n_tried = 0
+        for candidate_map in _gen_maps(native_chains_ordered, set()):
+            if candidate_map == identity_map:
+                continue  # already scored above
+            n_tried += 1
+            if n_tried > _MAX_PERMUTATIONS:
+                logger.warning(
+                    "Stopping chain-map search after %d permutations; "
+                    "provide an explicit chain_map for an exhaustive search.",
+                    _MAX_PERMUTATIONS,
+                )
+                break
+            total = _score_map(candidate_map)
+            if total > best_total:
+                best_total = total
+                best_map = candidate_map
+
+        if best_map is None:
+            best_map = {ch: ch for ch in native_seq if ch in model_seq}
+            logger.warning("No valid chain mapping found; falling back to identity mapping.")
+        chain_map = best_map
+        logger.info("Optimal chain mapping: %s (sum DockQ: %.3f)", chain_map, best_total)
 
     native_chains = sorted(chain_map.keys())
     interfaces = {}
@@ -558,6 +700,14 @@ def dockQ_multimer(
             rec_n, lig_n, rec_m, lig_m,
         )
 
+        viable, reason = _check_interface_viable(
+            coor, native_coor, rec_m, lig_m, rec_n, lig_n, back_atom
+        )
+        if not viable:
+            logger.info("Skipping interface (%s, %s): %s", n1, n2, reason)
+            interfaces[(n1, n2)] = None
+            continue
+
         try:
             result = dockQ(
                 coor,
@@ -574,7 +724,7 @@ def dockQ_multimer(
                 "model_lig_chain": lig_m,
             }
         except Exception as exc:
-            logger.warning(
+            logger.info(
                 "Could not compute DockQ for interface (%s, %s): %s", n1, n2, exc
             )
             interfaces[(n1, n2)] = None
@@ -598,4 +748,5 @@ def dockQ_multimer(
     return {
         "interfaces": interfaces,
         "GlobalDockQ": global_dockq,
+        "chain_map": chain_map,
     }

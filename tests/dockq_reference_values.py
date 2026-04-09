@@ -57,6 +57,18 @@ DOCKQ_MULTIMER_REFERENCES = {
             ("B", "C"): {"DockQ": 0.540, "iRMS": 2.104, "LRMS": 8.132, "Fnat": 0.760},
         },
     },
+    "1a2k_auto_mapping": {
+        # chain_map discovered automatically: A→B, B→A, C→C
+        # Same optimal result as 1a2k_BAC_ABC (explicit mapping).
+        "GlobalDockQ": 0.676,
+        "n_interfaces": 3,
+        "chain_map": {"A": "B", "B": "A", "C": "C"},
+        "interfaces": {
+            ("A", "B"): {"DockQ": 0.978, "iRMS": 0.375, "LRMS": 0.000, "Fnat": 0.992},
+            ("A", "C"): {"DockQ": 0.511, "iRMS": 1.237, "LRMS": 6.864, "Fnat": 0.333},
+            ("B", "C"): {"DockQ": 0.540, "iRMS": 2.104, "LRMS": 8.132, "Fnat": 0.760},
+        },
+    },
     # Protein-DNA complex: fold_2026_03_10_11_53_model_4.cif (AlphaFold3 model)
     # vs 1A0A.cif (crystal structure). chain_map restricted to protein chains only.
     # Native label chains: C,D = protein. Model label chains: A,B = protein.

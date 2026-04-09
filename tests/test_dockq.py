@@ -147,3 +147,59 @@ def test_dockq_multimer_1a0a_protein_only():
     assert iface["iRMS"][0] == pytest.approx(iref["iRMS"], abs=0.005)
     assert iface["LRMS"][0] == pytest.approx(iref["LRMS"], abs=0.005)
     assert iface["Fnat"][0] == pytest.approx(iref["Fnat"], abs=0.005)
+
+
+def test_dockq_output_includes_clashes():
+    """dockQ result dict must include a 'clashes' key with non-negative counts."""
+    model_coor = Coor(DOCKQ_MODEL)
+    native_coor = Coor(DOCKQ_NATIVE)
+
+    result = analysis.dockQ(model_coor, native_coor)
+
+    assert "clashes" in result
+    assert len(result["clashes"]) == len(result["DockQ"])
+    assert all(c >= 0 for c in result["clashes"])
+
+
+def test_dockq_multimer_1a2k_auto_mapping():
+    """dockQ_multimer without chain_map must find the optimal A→B, B→A, C→C mapping."""
+    model_coor = Coor(PDB_1A2K_MODEL)
+    native_coor = Coor(PDB_1A2K)
+    ref = DOCKQ_MULTIMER_REFERENCES["1a2k_auto_mapping"]
+
+    result = analysis.dockQ_multimer(model_coor, native_coor)  # no chain_map
+
+    # Returned chain_map must be the optimal permutation.
+    assert result["chain_map"] == ref["chain_map"]
+
+    valid_ifaces = [
+        k for k, v in result["interfaces"].items()
+        if v is not None and v["iRMS"][0] is not None
+    ]
+    assert len(valid_ifaces) == ref["n_interfaces"]
+
+    assert result["GlobalDockQ"][0] == pytest.approx(ref["GlobalDockQ"], abs=0.005)
+
+    for iface_key, iref in ref["interfaces"].items():
+        iface = result["interfaces"][iface_key]
+        assert iface is not None, f"Interface {iface_key} missing from results"
+        assert iface["DockQ"][0] == pytest.approx(iref["DockQ"], abs=0.005)
+        assert iface["iRMS"][0] == pytest.approx(iref["iRMS"], abs=0.005)
+        assert iface["LRMS"][0] == pytest.approx(iref["LRMS"], abs=0.005)
+        assert iface["Fnat"][0] == pytest.approx(iref["Fnat"], abs=0.005)
+
+
+def test_dockq_multimer_returns_chain_map():
+    """dockQ_multimer result must always include a 'chain_map' key."""
+    model_coor = Coor(PDB_DIMER_DIMER_MODEL)
+    native_coor = Coor(PDB_DIMER_DIMER)
+
+    # With explicit chain_map
+    explicit_map = {"A": "A", "B": "B", "H": "H", "L": "L"}
+    result_explicit = analysis.dockQ_multimer(model_coor, native_coor, chain_map=explicit_map)
+    assert result_explicit["chain_map"] == explicit_map
+
+    # Without chain_map (auto-detected)
+    result_auto = analysis.dockQ_multimer(model_coor, native_coor)
+    assert "chain_map" in result_auto
+    assert set(result_auto["chain_map"].keys()) == set(explicit_map.keys())

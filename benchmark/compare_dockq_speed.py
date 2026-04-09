@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # coding: utf-8
 
-"""Benchmark DockQ CLI vs pdb_cpp.analysis.dockQ."""
+"""Benchmark DockQ CLI vs pdb_cpp.analysis.dockQ / dockQ_multimer."""
 
 from __future__ import annotations
 
@@ -16,24 +16,54 @@ from typing import Any
 from pdb_cpp import Coor, analysis
 
 
+# ---------------------------------------------------------------------------
+# Dimer pairs — benchmarked with analysis.dockQ (single interface)
+# ---------------------------------------------------------------------------
 DEFAULT_PAIRS: list[dict[str, Any]] = [
     {
         "name": "1rxz_colabfold_vs_1rxz",
         "model": "tests/input/1rxz_colabfold_model_1.pdb",
         "native": "tests/input/1rxz.pdb",
         "dockq_args": [],
+        "use_multimer": False,
+        "chain_map": None,
     },
     {
         "name": "model_vs_native",
         "model": "tests/input/model.pdb",
         "native": "tests/input/native.pdb",
         "dockq_args": ["--allowed_mismatches", "5"],
+        "use_multimer": False,
+        "chain_map": None,
     },
     {
         "name": "1jd4_vs_5m6n",
         "model": "tests/input/1jd4.pdb",
         "native": "tests/input/5m6n.pdb",
         "dockq_args": ["--allowed_mismatches", "999", "--mapping", "AB:AB"],
+        "use_multimer": False,
+        "chain_map": None,
+    },
+    # ------------------------------------------------------------------
+    # Multimer pairs — benchmarked with analysis.dockQ_multimer
+    # ------------------------------------------------------------------
+    {
+        "name": "1a2k_multimer_auto_map",
+        "model": "tests/input/1a2k_model.pdb",
+        "native": "tests/input/1a2k.pdb",
+        # DockQ CLI finds the optimal BAC:ABC mapping automatically.
+        "dockq_args": [],
+        "use_multimer": True,
+        # chain_map=None → auto-discovered by pdb_cpp
+        "chain_map": None,
+    },
+    {
+        "name": "dimer_dimer_identity",
+        "model": "tests/input/dimer_dimer_model.pdb",
+        "native": "tests/input/dimer_dimer.pdb",
+        "dockq_args": [],
+        "use_multimer": True,
+        "chain_map": None,
     },
     {
         # Protein-DNA complex (AlphaFold3 model vs crystal structure 1A0A).
@@ -43,6 +73,9 @@ DEFAULT_PAIRS: list[dict[str, Any]] = [
         "model": "tests/input/fold_2026_03_10_11_53_model_4.cif",
         "native": "tests/input/1A0A.cif",
         "dockq_args": [],
+        "use_multimer": True,
+        # native label C,D = protein; model label A,B = protein
+        "chain_map": {"C": "A", "D": "B"},
     },
 ]
 
@@ -80,6 +113,8 @@ def run_dockq(model_path: str, native_path: str, dockq_args: list[str]) -> None:
 def run_pdb_cpp(
     model_path: str,
     native_path: str,
+    use_multimer: bool,
+    chain_map: dict[str, str] | None,
     mode: str,
     cached_model: Coor | None,
     cached_native: Coor | None,
@@ -87,25 +122,33 @@ def run_pdb_cpp(
     if mode == "cached":
         if cached_model is None or cached_native is None:
             raise ValueError("Cached mode requires preloaded coordinates")
-        analysis.dockQ(cached_model, cached_native)
+        if use_multimer:
+            analysis.dockQ_multimer(cached_model, cached_native, chain_map=chain_map)
+        else:
+            analysis.dockQ(cached_model, cached_native)
         return
 
     model_coor = Coor(model_path)
     native_coor = Coor(native_path)
-    analysis.dockQ(model_coor, native_coor)
+    if use_multimer:
+        analysis.dockQ_multimer(model_coor, native_coor, chain_map=chain_map)
+    else:
+        analysis.dockQ(model_coor, native_coor)
 
 
 def benchmark_pair(pair: dict[str, Any], runs: int, warmup: int, mode: str) -> dict[str, Any]:
     model_path = pair["model"]
     native_path = pair["native"]
     dockq_args = pair["dockq_args"]
+    use_multimer = pair.get("use_multimer", False)
+    chain_map = pair.get("chain_map", None)
 
     cached_model = Coor(model_path) if mode == "cached" else None
     cached_native = Coor(native_path) if mode == "cached" else None
 
     for _ in range(warmup):
         run_dockq(model_path, native_path, dockq_args)
-        run_pdb_cpp(model_path, native_path, mode, cached_model, cached_native)
+        run_pdb_cpp(model_path, native_path, use_multimer, chain_map, mode, cached_model, cached_native)
 
     dockq_times = []
     cpp_times = []
@@ -116,7 +159,7 @@ def benchmark_pair(pair: dict[str, Any], runs: int, warmup: int, mode: str) -> d
         dockq_times.append(time.perf_counter() - t0)
 
         t1 = time.perf_counter()
-        run_pdb_cpp(model_path, native_path, mode, cached_model, cached_native)
+        run_pdb_cpp(model_path, native_path, use_multimer, chain_map, mode, cached_model, cached_native)
         cpp_times.append(time.perf_counter() - t1)
 
     dockq_mean = stats.mean(dockq_times)
@@ -127,6 +170,7 @@ def benchmark_pair(pair: dict[str, Any], runs: int, warmup: int, mode: str) -> d
 
     return {
         "pair": pair["name"],
+        "pdb_cpp_function": "dockQ_multimer" if use_multimer else "dockQ",
         "dockq_mean_s": dockq_mean,
         "dockq_median_s": dockq_median,
         "pdb_cpp_mean_s": cpp_mean,
@@ -142,6 +186,7 @@ def write_csv(rows: list[dict[str, Any]], csv_path: Path) -> None:
     csv_path.parent.mkdir(parents=True, exist_ok=True)
     fieldnames = [
         "pair",
+        "pdb_cpp_function",
         "dockq_mean_s",
         "dockq_median_s",
         "pdb_cpp_mean_s",
@@ -158,10 +203,11 @@ def write_csv(rows: list[dict[str, Any]], csv_path: Path) -> None:
 
 
 def print_table(rows: list[dict[str, Any]]) -> None:
-    print("pair\tDockQ_mean\tDockQ_median\tpdb_cpp_mean\tpdb_cpp_median\tspeedup")
+    print("pair\tpdb_cpp_fn\tDockQ_mean\tDockQ_median\tpdb_cpp_mean\tpdb_cpp_median\tspeedup")
     for row in rows:
         print(
             f"{row['pair']}\t"
+            f"{row['pdb_cpp_function']}\t"
             f"{row['dockq_mean_s']:.6f}\t"
             f"{row['dockq_median_s']:.6f}\t"
             f"{row['pdb_cpp_mean_s']:.6f}\t"
