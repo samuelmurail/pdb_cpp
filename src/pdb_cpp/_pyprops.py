@@ -16,6 +16,7 @@ def _coor_init_with_pdb_id(
     self,
     coor_in=None,
     pdb_id=None,
+    format="",
     rcsb_structure="asymmetric_unit",
     assembly_id=1,
     cache_dir=None,
@@ -29,6 +30,9 @@ def _coor_init_with_pdb_id(
         Path to a coordinate file.
     pdb_id : str, optional
         PDB ID to fetch from RCSB.
+    format : str, optional
+        Force a specific file format: ``'pdb'``, ``'cif'``, ``'pqr'``, or
+        ``'gro'``. Defaults to ``""`` (infer from file extension).
     rcsb_structure : str, optional
         Either ``"asymmetric_unit"`` or ``"biological_assembly"``.
     assembly_id : int, optional
@@ -55,9 +59,9 @@ def _coor_init_with_pdb_id(
             cache_dir=cache_dir,
             force_download=force_download,
         )
-        self.read(local_path)
+        self.read(local_path, format)
     elif coor_in is not None:
-        self.read(coor_in)
+        self.read(coor_in, format)
 
 
 Coor.__init__ = _coor_init_with_pdb_id

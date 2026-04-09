@@ -26,6 +26,28 @@ coor = Coor("structure.cif")   # auto-detects format by extension
 coor = Coor("structure.pdb")
 ```
 
+The format can also be forced explicitly with the `format` keyword.
+This is useful when the file extension is absent or misleading — for
+example a compressed pipeline that writes to a generic filename:
+
+```python
+from pdb_cpp import Coor
+
+# Via the constructor
+coor = Coor("structure.dat", format="pdb")   # treat as PDB
+coor = Coor("structure.dat", format="cif")   # treat as mmCIF
+coor = Coor("structure.dat", format="pqr")   # treat as PQR
+coor = Coor("structure.dat", format="gro")   # treat as GROMACS GRO
+
+# Via read() on an existing object
+coor = Coor()
+coor.read("structure.dat", format="cif")
+```
+
+Accepted `format` values: `"pdb"`, `"cif"`, `"pqr"`, `"gro"`.
+`format` defaults to `""`, which means *infer from extension* — the same
+behaviour as before.
+
 ### Fetching from the PDB archive
 
 ```python

@@ -186,3 +186,68 @@ def test_pdb_to_pqr_to_pdb(tmp_path):
     pdb2 = Coor(pdb_path)
     assert pdb2.len == pdb.len
     np.testing.assert_allclose(pdb.xyz, pdb2.xyz, atol=0.01)
+
+
+# ---------------------------------------------------------------------------
+# format= parameter (explicit format override)
+# ---------------------------------------------------------------------------
+
+
+def test_read_format_pdb_explicit(tmp_path):
+    """read() with format='pdb' parses a .pdb file correctly."""
+    coor = Coor()
+    coor.read(PDB_1Y0M, format="pdb")
+    assert coor.len == 648
+    assert coor.resname_str[0] == "THR"
+
+
+def test_read_format_cif_explicit(tmp_path):
+    """read() with format='cif' parses a .cif file correctly."""
+    coor = Coor()
+    coor.read(MMCIF_1Y0M, format="cif")
+    assert coor.len == 648
+    assert coor.resname_str[0] == "THR"
+
+
+def test_read_format_pdb_wrong_extension(tmp_path):
+    """format= overrides a misleading file extension (PDB content, .txt name)."""
+    src = Coor(PDB_1Y0M)
+    fake_path = str(tmp_path / "structure.txt")
+    import shutil
+    shutil.copy(PDB_1Y0M, fake_path)
+
+    coor = Coor()
+    assert coor.read(fake_path, format="pdb")
+    assert coor.len == 648
+
+
+def test_read_format_cif_wrong_extension(tmp_path):
+    """format= overrides a misleading file extension (mmCIF content, .txt name)."""
+    fake_path = str(tmp_path / "structure.txt")
+    import shutil
+    shutil.copy(MMCIF_1Y0M, fake_path)
+
+    coor = Coor()
+    assert coor.read(fake_path, format="cif")
+    assert coor.len == 648
+
+
+def test_read_format_pqr_explicit():
+    """read() with format='pqr' parses a .pqr file correctly."""
+    coor = Coor()
+    coor.read(PQR_1Y0M, format="pqr")
+    assert coor.len == 1362
+
+
+def test_read_format_gro_explicit():
+    """read() with format='gro' parses a .gro file correctly."""
+    coor = Coor()
+    coor.read(GRO_1Y0M, format="gro")
+    assert coor.len == 648
+
+
+def test_read_format_unknown_returns_false(tmp_path):
+    """read() with an unknown format returns False without raising."""
+    coor = Coor()
+    result = coor.read(PDB_1Y0M, format="xyz")
+    assert result is False

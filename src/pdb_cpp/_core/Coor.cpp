@@ -32,7 +32,7 @@ void Coor::clear()
     active_model = 0;
 }
 
-bool Coor::read(const string &filename) {
+bool Coor::read(const string &filename, const string &format) {
 
     ifstream file(filename);
     if (!file) {
@@ -41,23 +41,31 @@ bool Coor::read(const string &filename) {
     }
     clear();
 
-    if (endswith(filename, ".pdb")) {
-        // cout << "Reading PDB file: " << filename << endl;
+    string fmt = format;
+    if (fmt.empty()) {
+        if (endswith(filename, ".pdb")) fmt = "pdb";
+        else if (endswith(filename, ".cif")) fmt = "cif";
+        else if (endswith(filename, ".pqr")) fmt = "pqr";
+        else if (endswith(filename, ".gro")) fmt = "gro";
+    }
+
+    if (fmt == "pdb") {
         *this = PDB_parse(filename);
         return model_size() > 0;
     }
-    if (endswith(filename, ".cif")) {
+    if (fmt == "cif") {
         *this = MMCIF_parse(filename);
         return model_size() > 0;
     }
-    if (endswith(filename, ".pqr")) {
+    if (fmt == "pqr") {
         *this = PQR_parse(filename);
         return model_size() > 0;
     }
-    if (endswith(filename, ".gro")) {
+    if (fmt == "gro") {
         *this = GRO_parse(filename);
         return model_size() > 0;
     }
+    cerr << "Error: unknown format '" << fmt << "' for file " << filename << endl;
     return false;
 }
 

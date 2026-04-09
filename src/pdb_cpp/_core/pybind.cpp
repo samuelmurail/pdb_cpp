@@ -55,8 +55,17 @@ PYBIND11_MODULE(core, m) {
     py::class_<Coor>(m, "Coor")
         .def_property("active_model", &Coor::get_active_model, &Coor::set_active_model)
         .def(py::init<>())
-        .def(py::init<const std::string&>())  // constructor from filename
-        .def("read", &Coor::read)
+        .def(py::init(
+            [](const std::string &filename, const std::string &format) {
+                Coor c;
+                c.read(filename, format);
+                return c;
+            }),
+            py::arg("filename"), py::arg("format") = "",
+            "Construct a Coor from a file; format can be 'pdb', 'cif', 'pqr', or 'gro' (default: infer from extension)")
+        .def("read", &Coor::read,
+            py::arg("filename"), py::arg("format") = "",
+            "Read a structure file; format can be 'pdb', 'cif', 'pqr', or 'gro' (default: infer from extension)")
         .def("write", &Coor::write)
         .def("clear", &Coor::clear)
         .def("size", &Coor::size)

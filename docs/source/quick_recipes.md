@@ -13,6 +13,26 @@ coor_local = Coor("tests/input/1y0m.cif")
 coor_remote = Coor(pdb_id="1y0m")
 ```
 
+## 1b) Force a specific file format
+
+When the file extension is absent or misleading, pass `format=` to override
+auto-detection. This works on both the constructor and `read()`:
+
+```python
+from pdb_cpp import Coor
+
+# Constructor
+coor = Coor("structure.dat", format="cif")   # mmCIF content, wrong extension
+coor = Coor("structure.dat", format="pdb")   # PDB content, wrong extension
+
+# read() on an existing object
+coor = Coor()
+coor.read("structure.dat", format="pqr")
+```
+
+Accepted values: `"pdb"`, `"cif"`, `"pqr"`, `"gro"`.
+Omit `format` (or pass `format=""`) to infer from the file extension as usual.
+
 ## 2) Load an asymmetric unit or biological assembly from RCSB
 
 ```python

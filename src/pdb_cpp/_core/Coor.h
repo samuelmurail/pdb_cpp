@@ -25,7 +25,7 @@ public:
 
     // === Public interface ===
 
-    bool read(const std::string& filename);
+    bool read(const std::string& filename, const std::string& format = "");
     bool write(const std::string & filename) const;
     //bool loadPDB(const string& filename);
     void clear();
