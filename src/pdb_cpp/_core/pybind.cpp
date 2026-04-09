@@ -296,6 +296,29 @@ ndarray, shape (N-3,)
         py::arg("frame_ref") = 0,
         "Align two coordinate structures using sequence based alignment");
 
+    m.def("align_index_based",
+        [](Coor &coor_1,
+           const Coor &coor_2,
+           const std::vector<int> &index_1,
+           const std::vector<int> &index_2,
+           int frame_ref) {
+            return align_index_based(
+                coor_1,
+                coor_2,
+                index_1,
+                index_2,
+                frame_ref
+            );
+        },
+        py::arg("coor_1"),
+        py::arg("coor_2"),
+        py::arg("index_1"),
+        py::arg("index_2"),
+        py::arg("frame_ref") = 0,
+        "Align two coordinate structures using pre-computed atom index pairs, "
+        "skipping the sequence-alignment step. Accepts non-sequential / "
+        "non-contiguous index lists. Returns (rmsds, index_1, index_2).");
+
     m.def("align_chain_permutation",
         [](const Coor &coor_1,
            const Coor &coor_2,

@@ -40,6 +40,14 @@ std::tuple<std::vector<float>, std::vector<int>, std::vector<int>> align_seq_bas
     const int frame_ref=0
 );
 
+std::tuple<std::vector<float>, std::vector<int>, std::vector<int>> align_index_based(
+    Coor &coor_1,
+    const Coor &coor_2,
+    const std::vector<int> &index_1,
+    const std::vector<int> &index_2,
+    const int frame_ref=0
+);
+
 std::pair<std::vector<float>, std::pair<std::vector<int>, std::vector<int>>> align_chain_permutation(
     const Coor &coor_1,
     const Coor &coor_2,

@@ -6,8 +6,9 @@ import logging
 
 import numpy as np
 
-from .core import align_seq_based, coor_align, get_common_atoms, rmsd as core_rmsd
+from .core import align_seq_based, align_index_based, coor_align, get_common_atoms, rmsd as core_rmsd
 from .select import remove_incomplete_backbone_residues
+from .alignment import align_seq as _align_seq
 
 __all__ = ["rmsd", "interface_rmsd", "native_contact", "dockQ", "dockQ_multimer"]
 
@@ -16,22 +17,24 @@ logger = logging.getLogger(__name__)
 
 
 def _sequence_identity(seq1, seq2):
-    """Return position-wise sequence identity normalised by the longer sequence.
+    """Return sequence identity using Smith-Waterman alignment.
 
-    Tries offsets of ±2 residues so that short N/C-terminal extensions in
-    either sequence do not cause a spurious identity of zero.
+    Aligns the two sequences with the C++ Smith-Waterman implementation and
+    returns the fraction of identical positions within the aligned region
+    (positions where neither sequence has a gap).  Normalising by the aligned
+    length rather than the full sequence length means that N/C-terminal
+    extensions do not artificially reduce the score.
     """
     s1 = seq1.replace("-", "").upper()
     s2 = seq2.replace("-", "").upper()
     if not s1 or not s2:
         return 0.0
-    denom = max(len(s1), len(s2))
-    best = 0.0
-    for offset in range(-2, 3):  # -2, -1, 0, +1, +2
-        a, b = (s1[offset:], s2) if offset >= 0 else (s1, s2[-offset:])
-        matches = sum(x == y for x, y in zip(a, b))
-        best = max(best, matches / denom)
-    return best
+    a1, a2, _ = _align_seq(s1, s2)
+    aligned = [(c1, c2) for c1, c2 in zip(a1, a2) if c1 != "-" and c2 != "-"]
+    if not aligned:
+        return 0.0
+    matches = sum(c1 == c2 for c1, c2 in aligned)
+    return matches / len(aligned)
 
 
 def _count_clashes(coor, rec_chains, lig_chains, clash_cutoff=2.0):
@@ -130,6 +133,7 @@ def interface_rmsd(
     lig_chains_native,
     cutoff=10.0,
     back_atom=None,
+    index_pair=None,
 ):
     """Compute the interface RMSD between two models.
 
@@ -152,21 +156,31 @@ def interface_rmsd(
         Interface distance cutoff in Angstrom.
     back_atom : list[str], optional
         Backbone atom names used for RMSD (default: ``["CA", "N", "C", "O"]``).
+    index_pair : tuple[list[int], list[int]], optional
+        Pre-computed ``(model_indices, native_indices)`` of the interface
+        backbone atoms.  When supplied the function skips the chain-selection
+        and residue-mapping steps entirely, calling :func:`align_index_based`
+        directly.  This correctly handles non-sequential or non-contiguous
+        index lists (e.g. when model chains are numbered from 1 on every chain
+        and thus have overlapping ``resid`` values).
 
     Returns
     -------
     list[float]
         Interface RMSD values for each model. Returns ``None`` entries when
         no interface residues are found.
-
-    Notes
-    -----
-    Both coordinate objects must contain equivalent residues and chain order
-    for the selected interface residues.
     """
 
     if back_atom is None:
         back_atom = ["CA", "N", "C", "O"]
+
+    # Fast path: caller provides pre-matched atom indices.
+    if index_pair is not None:
+        iface_model_idx, iface_native_idx = index_pair
+        if not iface_model_idx:
+            return [None] * len(coor.models)
+        rmsds, _, _ = align_index_based(coor, coor_native, iface_model_idx, iface_native_idx)
+        return rmsds
 
     lig_interface = coor_native.select_atoms(
         f"chain {' '.join(lig_chains_native)} and within {cutoff} of chain {' '.join(rec_chains_native)}"
@@ -208,9 +222,8 @@ def interface_rmsd(
             "The number of atoms in the interface is not the same in the two models"
         )
 
-    coor_align(coor, coor_native, index, index_native, frame_ref=0)
-
-    return rmsd(coor, coor_native, index_list=[index, index_native])
+    rmsds, _, _ = align_index_based(coor, coor_native, index, index_native)
+    return rmsds
 
 
 def native_contact(
@@ -422,10 +435,10 @@ def dockQ(
     logger.info("Native receptor chains : %s", " ".join(native_rec_chains))
 
     clean_coor = coor.select_atoms(
-        f"protein and not altloc B C D and chain {' '.join(rec_chains + lig_chains)}"
+        f"protein and not altloc B C D and not name H* and chain {' '.join(rec_chains + lig_chains)}"
     )
     clean_native_coor = native_coor.select_atoms(
-        f"protein and not altloc B C D and chain {' '.join(native_rec_chains + native_lig_chains)}"
+        f"protein and not altloc B C D and not name H* and chain {' '.join(native_rec_chains + native_lig_chains)}"
     )
 
     clean_coor = remove_incomplete_backbone_residues(clean_coor, back_atom)
@@ -496,16 +509,38 @@ def dockQ(
         residue_id_map[model_residue_id] = mapped_id
         native_residue_id_map[native_residue_id] = mapped_id
 
-    irmsd_list = interface_rmsd(
-        interface_coor,
-        interface_native_coor,
-        native_rec_chains,
-        native_lig_chains,
-        cutoff=10.0,
-        back_atom=back_atom,
+    # Build interface atom index pairs from the sequence-aligned indices.
+    # Filtering to interface residues here (native side within 10 Å of partner)
+    # lets us pass them directly to interface_rmsd via index_pair, which calls
+    # align_index_based.  This is correct even when model chains restart
+    # residue numbering from 1 (e.g. CASP models) because we work with atom
+    # indices, not residue selections.
+    nat_lig_iface = clean_native_coor.select_atoms(
+        f"chain {' '.join(native_lig_chains)} "
+        f"and within 10.0 of chain {' '.join(native_rec_chains)}"
     )
-    logger.info("Interface   RMSD: %s A", irmsd_list[0])
+    nat_rec_iface = clean_native_coor.select_atoms(
+        f"chain {' '.join(native_rec_chains)} "
+        f"and within 10.0 of chain {' '.join(native_lig_chains)}"
+    )
+    iface_native_uids = set(
+        list(nat_lig_iface.models[0].uniq_resid)
+        + list(nat_rec_iface.models[0].uniq_resid)
+    )
 
+    native_all_uids = np.asarray(clean_native_coor.models[0].uniq_resid)
+    all_model_idx = align_rec_index + lig_index
+    all_native_idx = align_rec_native_index + lig_native_index
+    iface_model_idx = [
+        mi for mi, ni in zip(all_model_idx, all_native_idx)
+        if native_all_uids[ni] in iface_native_uids
+    ]
+    iface_native_idx = [
+        ni for mi, ni in zip(all_model_idx, all_native_idx)
+        if native_all_uids[ni] in iface_native_uids
+    ]
+
+    # Fnat is computed on clean_coor (before interface_rmsd aligns it in-place).
     fnat_list, fnonnat_list = native_contact(
         interface_coor,
         interface_native_coor,
@@ -520,6 +555,17 @@ def dockQ(
     logger.info("Fnat: %.3f      Fnonnat: %.3f", fnat_list[0], fnonnat_list[0])
 
     clashes_list = _count_clashes(interface_coor, rec_chains, lig_chains)
+
+    irmsd_list = interface_rmsd(
+        clean_coor,
+        clean_native_coor,
+        native_rec_chains,
+        native_lig_chains,
+        cutoff=10.0,
+        back_atom=back_atom,
+        index_pair=(iface_model_idx, iface_native_idx) if iface_model_idx else None,
+    )
+    logger.info("Interface   RMSD: %s A", irmsd_list[0])
     logger.info("Clashes: %d", clashes_list[0])
 
     def scale_rms(rms, d):
@@ -600,35 +646,9 @@ def dockQ_multimer(
 
     if chain_map is None:
         native_chains_ordered = sorted(native_seq.keys())
-        model_chains_list = list(model_seq.keys())
+        model_chains_list = sorted(model_seq.keys())
 
-        # Build sequence clusters: for each native chain, find compatible model chains.
-        clusters = {}
-        for nat_chain in native_chains_ordered:
-            nat_s = native_seq[nat_chain].replace("-", "").upper()
-            candidates = [
-                mc for mc in model_chains_list
-                if _sequence_identity(nat_s, model_seq[mc].replace("-", "").upper()) >= 0.9
-            ]
-            if not candidates:
-                # Fall back to the single best-matching model chain.
-                candidates = [max(
-                    model_chains_list,
-                    key=lambda mc, ns=nat_s: _sequence_identity(
-                        ns, model_seq[mc].replace("-", "").upper()
-                    ),
-                )]
-            clusters[nat_chain] = candidates
-
-        def _gen_maps(nat_chains, used):
-            if not nat_chains:
-                yield {}
-                return
-            nat = nat_chains[0]
-            for mod in clusters[nat]:
-                if mod not in used:
-                    for rest in _gen_maps(nat_chains[1:], used | {mod}):
-                        yield {nat: mod, **rest}
+        _MAX_PERMUTATIONS = 720
 
         def _score_map(candidate_map):
             try:
@@ -644,41 +664,125 @@ def dockQ_multimer(
                 logger.debug("Candidate chain map %s failed: %s", candidate_map, exc)
                 return -1.0
 
-        # Try the identity mapping first (native chain X → model chain X when
-        # available, otherwise the first sequence-compatible candidate).  This
-        # covers the common case cheaply and gives a good baseline for pruning.
-        identity_map = {
-            nat: (nat if nat in clusters[nat] else clusters[nat][0])
-            for nat in native_chains_ordered
-        }
-        best_total = _score_map(identity_map)
-        best_map = identity_map if best_total >= 0 else None
-        logger.info("Identity mapping %s scores %.3f", identity_map, best_total)
+        if len(model_chains_list) < len(native_chains_ordered):
+            # Model has fewer chains than the native (e.g. modelling a subcomplex
+            # against a full biological assembly).  Mirror DockQ v2's strategy:
+            # cluster by *model* chain, find the best subset of native chains to
+            # assign to each model chain, then invert to native→model.
+            # Native chains that appear in no model cluster are simply excluded.
+            clusters = {}
+            for mod_chain in model_chains_list:
+                mod_s = model_seq[mod_chain].replace("-", "").upper()
+                candidates = [
+                    nc for nc in native_chains_ordered
+                    if _sequence_identity(mod_s, native_seq[nc].replace("-", "").upper()) >= 0.9
+                ]
+                if not candidates:
+                    candidates = [max(
+                        native_chains_ordered,
+                        key=lambda nc, ms=mod_s: _sequence_identity(
+                            ms, native_seq[nc].replace("-", "").upper()
+                        ),
+                    )]
+                clusters[mod_chain] = candidates
 
-        # Count total permutations; if only one exists the loop below is a no-op.
-        _MAX_PERMUTATIONS = 720
-        n_tried = 0
-        for candidate_map in _gen_maps(native_chains_ordered, set()):
-            if candidate_map == identity_map:
-                continue  # already scored above
-            n_tried += 1
-            if n_tried > _MAX_PERMUTATIONS:
-                logger.warning(
-                    "Stopping chain-map search after %d permutations; "
-                    "provide an explicit chain_map for an exhaustive search.",
-                    _MAX_PERMUTATIONS,
-                )
-                break
-            total = _score_map(candidate_map)
-            if total > best_total:
-                best_total = total
-                best_map = candidate_map
+            def _gen_maps_inv(mod_chains, used):
+                """Yield model→native dicts; each native chain used at most once."""
+                if not mod_chains:
+                    yield {}
+                    return
+                mod = mod_chains[0]
+                for nat in clusters[mod]:
+                    if nat not in used:
+                        for rest in _gen_maps_inv(mod_chains[1:], used | {nat}):
+                            yield {mod: nat, **rest}
 
-        if best_map is None:
-            best_map = {ch: ch for ch in native_seq if ch in model_seq}
-            logger.warning("No valid chain mapping found; falling back to identity mapping.")
-        chain_map = best_map
-        logger.info("Optimal chain mapping: %s (sum DockQ: %.3f)", chain_map, best_total)
+            best_total = -1.0
+            best_map = None
+            n_tried = 0
+            for m2n in _gen_maps_inv(model_chains_list, set()):
+                n_tried += 1
+                if n_tried > _MAX_PERMUTATIONS:
+                    logger.warning(
+                        "Stopping chain-map search after %d permutations; "
+                        "provide an explicit chain_map for an exhaustive search.",
+                        _MAX_PERMUTATIONS,
+                    )
+                    break
+                n2m = {v: k for k, v in m2n.items()}
+                total = _score_map(n2m)
+                if total > best_total:
+                    best_total = total
+                    best_map = n2m
+
+            if best_map is None:
+                best_map = {ch: ch for ch in native_seq if ch in model_seq}
+                logger.warning("No valid chain mapping found; falling back to identity mapping.")
+            chain_map = best_map
+            logger.info("Optimal chain mapping: %s (sum DockQ: %.3f)", chain_map, best_total)
+
+        else:
+            # Standard case: model has >= native chains.
+            # Build sequence clusters: for each native chain, find compatible model chains.
+            clusters = {}
+            for nat_chain in native_chains_ordered:
+                nat_s = native_seq[nat_chain].replace("-", "").upper()
+                candidates = [
+                    mc for mc in model_chains_list
+                    if _sequence_identity(nat_s, model_seq[mc].replace("-", "").upper()) >= 0.9
+                ]
+                if not candidates:
+                    # Fall back to the single best-matching model chain.
+                    candidates = [max(
+                        model_chains_list,
+                        key=lambda mc, ns=nat_s: _sequence_identity(
+                            ns, model_seq[mc].replace("-", "").upper()
+                        ),
+                    )]
+                clusters[nat_chain] = candidates
+
+            def _gen_maps(nat_chains, used):
+                if not nat_chains:
+                    yield {}
+                    return
+                nat = nat_chains[0]
+                for mod in clusters[nat]:
+                    if mod not in used:
+                        for rest in _gen_maps(nat_chains[1:], used | {mod}):
+                            yield {nat: mod, **rest}
+
+            # Try the identity mapping first (native chain X → model chain X when
+            # available, otherwise the first sequence-compatible candidate).
+            identity_map = {
+                nat: (nat if nat in clusters[nat] else clusters[nat][0])
+                for nat in native_chains_ordered
+            }
+            best_total = _score_map(identity_map)
+            best_map = identity_map if best_total >= 0 else None
+            logger.info("Identity mapping %s scores %.3f", identity_map, best_total)
+
+            n_tried = 0
+            for candidate_map in _gen_maps(native_chains_ordered, set()):
+                if candidate_map == identity_map:
+                    continue  # already scored above
+                n_tried += 1
+                if n_tried > _MAX_PERMUTATIONS:
+                    logger.warning(
+                        "Stopping chain-map search after %d permutations; "
+                        "provide an explicit chain_map for an exhaustive search.",
+                        _MAX_PERMUTATIONS,
+                    )
+                    break
+                total = _score_map(candidate_map)
+                if total > best_total:
+                    best_total = total
+                    best_map = candidate_map
+
+            if best_map is None:
+                best_map = {ch: ch for ch in native_seq if ch in model_seq}
+                logger.warning("No valid chain mapping found; falling back to identity mapping.")
+            chain_map = best_map
+            logger.info("Optimal chain mapping: %s (sum DockQ: %.3f)", chain_map, best_total)
 
     native_chains = sorted(chain_map.keys())
     interfaces = {}
@@ -686,6 +790,17 @@ def dockQ_multimer(
     for n1, n2 in itertools.combinations(native_chains, 2):
         m1 = chain_map[n1]
         m2 = chain_map[n2]
+
+        # Skip if both native chains map to the same model chain (can happen
+        # when model has fewer chains than native, e.g. a subcomplex model vs.
+        # a full biological assembly). There is no inter-chain interface to score.
+        if m1 == m2:
+            logger.info(
+                "Skipping interface (%s, %s): both map to the same model chain %s",
+                n1, n2, m1,
+            )
+            interfaces[(n1, n2)] = None
+            continue
 
         # Assign the larger native chain as receptor (DockQ v2 convention)
         n1_len = len(native_seq.get(n1, "").replace("-", ""))

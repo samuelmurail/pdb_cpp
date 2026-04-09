@@ -114,7 +114,7 @@ python benchmark/compare_dockq_speed.py \
   --runs 5 \
   --warmup 1 \
   --mode end-to-end \
-  --csv benchmark_dockq.csv
+  --csv external/benchmark_dockq.csv
 ```
 
 `--mode cached` reuses preloaded `Coor` objects for the `pdb_cpp` side of the benchmark.
@@ -123,8 +123,8 @@ python benchmark/compare_dockq_speed.py \
 
 ```bash
 python benchmark/plot_dockq_benchmark.py \
-  --input benchmark_dockq.csv \
-  --output benchmark_dockq.png
+  --input external/benchmark_dockq.csv \
+  --output external/benchmark_dockq.png
 ```
 
 ## Output files

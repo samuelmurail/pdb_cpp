@@ -49,24 +49,24 @@ DOCKQ_MULTIMER_REFERENCES = {
     },
     "1a2k_BAC_ABC": {
         # chain_map (native→model): A→B, B→A, C→C
-        "GlobalDockQ": 0.676,
+        "GlobalDockQ": 0.681,
         "n_interfaces": 3,
         "interfaces": {
-            ("A", "B"): {"DockQ": 0.978, "iRMS": 0.375, "LRMS": 0.000, "Fnat": 0.992},
+            ("A", "B"): {"DockQ": 0.997, "iRMS": 0.000, "LRMS": 0.000, "Fnat": 0.992},
             ("A", "C"): {"DockQ": 0.511, "iRMS": 1.237, "LRMS": 6.864, "Fnat": 0.333},
-            ("B", "C"): {"DockQ": 0.540, "iRMS": 2.104, "LRMS": 8.132, "Fnat": 0.760},
+            ("B", "C"): {"DockQ": 0.533, "iRMS": 2.104, "LRMS": 8.131, "Fnat": 0.740},
         },
     },
     "1a2k_auto_mapping": {
         # chain_map discovered automatically: A→B, B→A, C→C
         # Same optimal result as 1a2k_BAC_ABC (explicit mapping).
-        "GlobalDockQ": 0.676,
+        "GlobalDockQ": 0.681,
         "n_interfaces": 3,
         "chain_map": {"A": "B", "B": "A", "C": "C"},
         "interfaces": {
-            ("A", "B"): {"DockQ": 0.978, "iRMS": 0.375, "LRMS": 0.000, "Fnat": 0.992},
+            ("A", "B"): {"DockQ": 0.997, "iRMS": 0.000, "LRMS": 0.000, "Fnat": 0.992},
             ("A", "C"): {"DockQ": 0.511, "iRMS": 1.237, "LRMS": 6.864, "Fnat": 0.333},
-            ("B", "C"): {"DockQ": 0.540, "iRMS": 2.104, "LRMS": 8.132, "Fnat": 0.760},
+            ("B", "C"): {"DockQ": 0.533, "iRMS": 2.104, "LRMS": 8.131, "Fnat": 0.740},
         },
     },
     # Protein-DNA complex: fold_2026_03_10_11_53_model_4.cif (AlphaFold3 model)

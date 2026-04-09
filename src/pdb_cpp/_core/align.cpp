@@ -531,6 +531,32 @@ tuple<vector<float>, vector<int>, vector<int>> align_seq_based(
 
 }
 
+tuple<vector<float>, vector<int>, vector<int>> align_index_based(
+    Coor &coor_1,
+    const Coor &coor_2,
+    const vector<int> &index_1,
+    const vector<int> &index_2,
+    const int frame_ref
+) {
+    coor_align(
+        coor_1,
+        coor_2,
+        index_1,
+        index_2,
+        frame_ref);
+
+    Model ref_model = coor_2.get_Models(frame_ref);
+    vector<float> rmsd_vec;
+    rmsd_vec.reserve(coor_1.model_size());
+    for (size_t i = 0; i < coor_1.model_size(); ++i) {
+        Model model_1 = coor_1.get_Models(i);
+        rmsd_vec.push_back(rmsd(model_1, ref_model, index_1, index_2));
+    }
+
+    return make_tuple(rmsd_vec, index_1, index_2);
+
+}
+
 pair<vector<float>, pair<vector<int>, vector<int>>> align_chain_permutation(
     const Coor &coor_1,
     const Coor &coor_2,
