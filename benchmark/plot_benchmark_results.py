@@ -17,6 +17,18 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
+matplotlib.rcParams.update(
+    {
+        "font.size": 10,
+        "axes.titlesize": 11,
+        "axes.labelsize": 10,
+        "xtick.labelsize": 9,
+        "ytick.labelsize": 9,
+        "legend.fontsize": 9,
+    }
+)
+
+
 COLORS = {
     "pdb_cpp": "#0072B2",
     "pdb_numpy": "#56B4E9",
@@ -116,13 +128,18 @@ def draw_panel(ax: plt.Axes, data: dict, file_key: str, show_ylabel: bool) -> No
     title = file_path.stem.upper()
     if atom_count:
         title += f" ({atom_count:,} atoms)"
-    ax.set_title(title, fontsize=8, fontweight="bold")
+    ax.set_title(title, fontsize=11, fontweight="bold")
     ax.set_yscale("log")
     if show_ylabel:
-        ax.set_ylabel("Execution time (s)", fontsize=7)
+        ax.set_ylabel("Execution time (s)", fontsize=10)
     ax.set_xticks(x)
-    ax.set_xticklabels([OP_LABELS.get(op, op) for op in operations], rotation=45, ha="right", fontsize=6)
-    ax.tick_params(axis="y", labelsize=6)
+    ax.set_xticklabels(
+        [OP_LABELS.get(op, op) for op in operations],
+        rotation=45,
+        ha="right",
+        fontsize=9,
+    )
+    ax.tick_params(axis="y", labelsize=9)
     ax.grid(True, axis="y", alpha=0.2, linewidth=0.4)
 
 
@@ -135,12 +152,22 @@ def main() -> None:
 
     data = load_common(input_path)
     file_keys = sorted(data, key=lambda path: _atom_count(Path(path)))
-    fig, axes = plt.subplots(1, len(file_keys), figsize=(4.2 * len(file_keys), 4.8), constrained_layout=True)
+    fig, axes = plt.subplots(
+        1,
+        len(file_keys),
+        figsize=(4.8 * len(file_keys), 5.6),
+        constrained_layout=True,
+    )
     if len(file_keys) == 1:
         axes = [axes]
     for idx, (ax, file_key) in enumerate(zip(axes, file_keys)):
         draw_panel(ax, data, file_key, show_ylabel=(idx == 0))
-    axes[0].legend(fontsize=7, loc="upper left", framealpha=0.8)
+    axes[0].legend(
+        fontsize=9,
+        loc="center",
+        bbox_to_anchor=(0.5, 0.78),
+        framealpha=0.85,
+    )
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(output_path, dpi=300, bbox_inches="tight")

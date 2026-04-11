@@ -76,7 +76,7 @@ Default input files are defined inside the script:
 ### Run with the default structure list
 
 ```bash
-python benchmark/compare_common_speed.py --runs 5 --warmup 1 --csv benchmark_common.csv
+python benchmark/compare_common_speed.py --runs 5 --warmup 1 --csv external/benchmark_common.csv
 ```
 
 ### Run with a custom structure list
@@ -86,15 +86,15 @@ python benchmark/compare_common_speed.py \
   --runs 5 \
   --warmup 1 \
   --files tests/input/1y0m.pdb tests/input/9X0F.cif \
-  --csv benchmark_common.csv
+  --csv external/benchmark_common.csv
 ```
 
 ### Plot the common benchmark
 
 ```bash
 python benchmark/plot_benchmark_results.py \
-  --input benchmark_common.csv \
-  --output benchmark_common.png
+  --input external/benchmark_common.csv \
+  --output external/benchmark_common.png
 ```
 
 ## 2. DockQ benchmark
