@@ -97,6 +97,14 @@ scores = analysis.dockQ(model, native)
 print(f"DockQ: {scores['DockQ'][0]:.3f}")
 ```
 
+For multimer scoring from the command line, use the installed
+`pdb_cpp_dockq` executable. It calls `analysis.dockQ_multimer()` and uses
+the same automatic native-to-model chain mapping as the benchmark script:
+
+```bash
+pdb_cpp_dockq tests/input/1a2k_model.pdb tests/input/1a2k.pdb
+```
+
 ## Secondary structure
 
 ```python

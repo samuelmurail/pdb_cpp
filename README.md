@@ -167,6 +167,17 @@ print(scores["Fnat"][0], scores["Fnonnat"][0])
 print(scores["LRMS"][0], scores["iRMS"][0], scores["rRMS"][0])
 ```
 
+Command-line usage is available through the installed `pdb_cpp_dockq` bin,
+which uses `analysis.dockQ_multimer()` and therefore supports the same
+automatic native-to-model chain mapping used in the benchmark script:
+
+```bash
+pdb_cpp_dockq tests/input/1a2k_model.pdb tests/input/1a2k.pdb
+
+# Optional explicit native:model mapping
+pdb_cpp_dockq tests/input/1a2k_model.pdb tests/input/1a2k.pdb --chain-map A:B,B:A,C:C
+```
+
 If you use DockQ scoring in `pdb_cpp`, please cite:
 
 - DockQ, DOI: 10.1093/bioinformatics/btae586
