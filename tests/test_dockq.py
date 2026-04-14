@@ -3,6 +3,8 @@
 
 """DockQ reference-value regression tests."""
 
+import json
+
 from .datafiles import (
     DOCKQ_MODEL,
     DOCKQ_NATIVE,
@@ -19,6 +21,7 @@ from .datafiles import (
 )
 from .dockq_reference_values import DOCKQ_REFERENCES, DOCKQ_MULTIMER_REFERENCES
 from pdb_cpp import Coor, analysis
+from pdb_cpp.cli_dockq import main as dockq_cli_main
 import pytest
 
 
@@ -203,3 +206,18 @@ def test_dockq_multimer_returns_chain_map():
     result_auto = analysis.dockQ_multimer(model_coor, native_coor)
     assert "chain_map" in result_auto
     assert set(result_auto["chain_map"].keys()) == set(explicit_map.keys())
+
+
+def test_dockq_cli_uses_multimer_auto_mapping(capsys):
+    ref = DOCKQ_MULTIMER_REFERENCES["1a2k_auto_mapping"]
+
+    exit_code = dockq_cli_main([PDB_1A2K_MODEL, PDB_1A2K, "--json"])
+    captured = capsys.readouterr()
+    payload = json.loads(captured.out)
+
+    assert exit_code == 0
+    assert payload["chain_map"] == ref["chain_map"]
+    assert payload["GlobalDockQ"][0] == pytest.approx(ref["GlobalDockQ"], abs=0.005)
+    assert payload["interfaces"]["A-B"]["DockQ"][0] == pytest.approx(
+        ref["interfaces"][("A", "B")]["DockQ"], abs=0.005
+    )

@@ -36,6 +36,14 @@ pdb\_cpp.analysis module
    :show-inheritance:
    :undoc-members:
 
+pdb\_cpp.cli\_dockq module
+--------------------------
+
+.. automodule:: pdb_cpp.cli_dockq
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
 pdb\_cpp.core module
 --------------------
 

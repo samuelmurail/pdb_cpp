@@ -208,11 +208,27 @@ scores = analysis.dockQ(
 print(f"DockQ: {scores['DockQ'][0]:.3f}")
 ```
 
+## 14) DockQ multimer from the command line
+
+The installed `pdb_cpp_dockq` bin uses `analysis.dockQ_multimer()` directly,
+including its automatic chain-map search:
+
+```bash
+pdb_cpp_dockq tests/input/1a2k_model.pdb tests/input/1a2k.pdb
+```
+
+Provide an explicit native:model map when you want to override the automatic
+mapping:
+
+```bash
+pdb_cpp_dockq tests/input/1a2k_model.pdb tests/input/1a2k.pdb --chain-map A:B,B:A,C:C
+```
+
 If you use DockQ scoring, please cite:
 
 - DockQ, DOI: 10.1093/bioinformatics/btae586
 
-## 14) Secondary structure per model/chain
+## 15) Secondary structure per model/chain
 
 ```python
 from pdb_cpp import Coor, TMalign
@@ -224,7 +240,7 @@ for chain_id, ss_string in ss_list[0].items():
     print(f"Chain {chain_id}: {ss_string}")
 ```
 
-## 15) Distance matrix on C-alpha atoms
+## 16) Distance matrix on C-alpha atoms
 
 ```python
 from pdb_cpp import Coor, geom

@@ -690,6 +690,22 @@ scores = analysis.dockQ(
 )
 ```
 
+### Command-line multimer scoring
+
+The installed `pdb_cpp_dockq` executable runs `analysis.dockQ_multimer()`.
+This is the same multimer code path used in the benchmark script, including
+automatic native-to-model chain-map discovery when `--chain-map` is omitted.
+
+```bash
+pdb_cpp_dockq tests/input/1a2k_model.pdb tests/input/1a2k.pdb
+```
+
+To provide an explicit mapping, pass native:model pairs:
+
+```bash
+pdb_cpp_dockq tests/input/1a2k_model.pdb tests/input/1a2k.pdb --chain-map A:B,B:A,C:C
+```
+
 ### DockQ output dictionary
 
 | Key        | Type          | Description                          |
