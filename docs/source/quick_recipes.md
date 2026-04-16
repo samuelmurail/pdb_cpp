@@ -254,16 +254,16 @@ print(f"Shape: {dmat.shape}")
 ## 17) Compute protein-protein interface SASA
 
 ```python
-from pdb_cpp import Coor, sasa
+from pdb_cpp import Coor, analysis
 
 coor = Coor("tests/input/1a2k.pdb")
 
-interface = sasa.buried_surface_area(
+interface = analysis.buried_surface_area(
     coor,
     receptor_sel="chain A",
     ligand_sel="chain B",
     by_residue=True,
-)
+)[0]
 
 print(f"Buried surface: {interface['buried_surface']:.2f} A^2")
 print(f"Interface area: {interface['interface_area']:.2f} A^2")

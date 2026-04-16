@@ -4,19 +4,336 @@
 import itertools
 import logging
 import math
+import tempfile
 from collections import Counter
 from concurrent.futures import ThreadPoolExecutor
 
 import numpy as np
 
-from .core import align_seq_based, align_index_based, coor_align, get_common_atoms, rmsd as core_rmsd
+from .core import Coor as CoreCoor, align_seq_based, align_index_based, coor_align, compute_sasa as core_compute_sasa, get_common_atoms, rmsd as core_rmsd
 from .select import remove_incomplete_backbone_residues
 from .alignment import align_seq as _align_seq
 
-__all__ = ["rmsd", "interface_rmsd", "native_contact", "dockQ", "dockQ_multimer"]
+__all__ = ["rmsd", "interface_rmsd", "native_contact", "dockQ", "dockQ_multimer", "sasa", "buried_surface_area"]
 
 
 logger = logging.getLogger(__name__)
+
+
+def _coor_from_model(model):
+    coor = CoreCoor()
+    coor.add_Model(model)
+    return coor
+
+
+def _group_atom_areas_by_residue(model, atom_areas):
+    residue_lookup = {}
+    residue_areas = []
+
+    for atom_index, atom_area in enumerate(atom_areas):
+        key = (
+            model.chain_str[atom_index],
+            model.resid[atom_index],
+            model.insertres_str[atom_index],
+            model.uniq_resid[atom_index],
+            model.resname_str[atom_index],
+        )
+        if key not in residue_lookup:
+            residue_lookup[key] = len(residue_areas)
+            residue_areas.append(
+                {
+                    "chain": model.chain_str[atom_index],
+                    "resid": model.resid[atom_index],
+                    "insertres": model.insertres_str[atom_index],
+                    "uniq_resid": model.uniq_resid[atom_index],
+                    "resname": model.resname_str[atom_index],
+                    "area": 0.0,
+                }
+            )
+        residue_areas[residue_lookup[key]]["area"] += float(atom_area)
+
+    return residue_areas
+
+
+def _residue_key(entry):
+    return (
+        entry["chain"],
+        entry["resid"],
+        entry["insertres"],
+        entry["uniq_resid"],
+        entry["resname"],
+    )
+
+
+def _residue_number_string(entry):
+    return f"{entry['resid']}{entry['insertres']}".strip()
+
+
+def _model_residue_template(model):
+    residue_entries = []
+    seen = set()
+    for atom_index in range(model.len):
+        entry = {
+            "chain": model.chain_str[atom_index],
+            "resid": model.resid[atom_index],
+            "insertres": model.insertres_str[atom_index],
+            "uniq_resid": model.uniq_resid[atom_index],
+            "resname": model.resname_str[atom_index],
+        }
+        key = _residue_key(entry)
+        if key in seen:
+            continue
+        seen.add(key)
+        residue_entries.append(entry)
+    return residue_entries
+
+
+def _compute_freesasa_result(subset_coor, by_residue):
+    try:
+        import freesasa  # type: ignore[import-not-found]
+    except ImportError as exc:
+        raise ImportError(
+            "FreeSASA backend requested, but the 'freesasa' package is not installed"
+        ) from exc
+
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        pdb_path = f"{tmp_dir}/subset.pdb"
+        subset_coor.write(pdb_path)
+        structure = freesasa.Structure(pdb_path)
+        result = freesasa.calc(structure)
+
+    output = {"total": float(result.totalArea())}
+    if by_residue:
+        residue_areas = result.residueAreas()
+        entries = []
+        for entry in _model_residue_template(subset_coor.models[0]):
+            area = residue_areas.get(entry["chain"], {}).get(_residue_number_string(entry))
+            entries.append({**entry, "area": float(area.total) if area is not None else 0.0})
+        output["residue_areas"] = entries
+
+    return output
+
+
+def _compute_native_result(model, probe_radius, n_points, include_hydrogen, by_atom, by_residue):
+    need_atom_areas = by_atom or by_residue
+    result = core_compute_sasa(
+        model,
+        probe_radius=probe_radius,
+        n_points=n_points,
+        include_hydrogen=include_hydrogen,
+        by_atom=need_atom_areas,
+    )
+
+    if by_residue:
+        result["residue_areas"] = _group_atom_areas_by_residue(model, result["atom_areas"])
+
+    if not by_atom and "atom_areas" in result:
+        del result["atom_areas"]
+
+    return result
+
+
+def _build_residue_burial(isolated_entries, complex_lookup, partner):
+    residue_burial = []
+    for entry in isolated_entries:
+        complex_area = float(complex_lookup.get(_residue_key(entry), 0.0))
+        isolated_area = float(entry["area"])
+        residue_burial.append(
+            {
+                "partner": partner,
+                "chain": entry["chain"],
+                "resid": entry["resid"],
+                "insertres": entry["insertres"],
+                "uniq_resid": entry["uniq_resid"],
+                "resname": entry["resname"],
+                "isolated_area": isolated_area,
+                "complex_area": complex_area,
+                "buried_area": isolated_area - complex_area,
+            }
+        )
+    return residue_burial
+
+
+def sasa(
+    coor,
+    selection=None,
+    probe_radius=1.4,
+    n_points=960,
+    include_hydrogen=False,
+    by_atom=False,
+    by_residue=False,
+    backend="native",
+):
+    """Compute SASA for each model in a Coor object.
+
+    Parameters
+    ----------
+    coor : Coor
+        Structure containing one or more models.
+    selection : str, optional
+        Atom selection applied independently to each model. When omitted, the
+        whole model is used.
+    probe_radius : float, default=1.4
+        Solvent probe radius in Angstrom.
+    n_points : int, default=960
+        Number of Shrake-Rupley sphere points per atom for the native backend.
+    include_hydrogen : bool, default=False
+        Whether to include hydrogen-like atoms for the native backend.
+    by_atom : bool, default=False
+        Include per-atom areas.
+    by_residue : bool, default=False
+        Include per-residue areas.
+    backend : {"native", "freesasa"}, default="native"
+        SASA backend.
+
+    Returns
+    -------
+    list[dict]
+        One SASA result dictionary per model.
+    """
+
+    results = []
+    for frame_index in range(coor.model_num):
+        if selection is None:
+            subset_model = coor.models[frame_index]
+            subset_coor = _coor_from_model(subset_model)
+        else:
+            subset_coor = coor.select_atoms(selection, frame=frame_index)
+            subset_model = subset_coor.models[0]
+
+        if subset_model.len == 0:
+            raise ValueError("No atoms selected for SASA calculation")
+
+        if backend == "native":
+            result = _compute_native_result(
+                subset_model,
+                probe_radius,
+                n_points,
+                include_hydrogen,
+                by_atom,
+                by_residue,
+            )
+        elif backend == "freesasa":
+            if by_atom:
+                raise ValueError("The freesasa backend does not provide atom_areas in analysis.sasa")
+            result = _compute_freesasa_result(subset_coor, by_residue)
+        else:
+            raise ValueError("backend must be either 'native' or 'freesasa'")
+
+        result["backend"] = backend
+        results.append(result)
+
+    return results
+
+
+def buried_surface_area(
+    coor,
+    receptor_sel,
+    ligand_sel,
+    probe_radius=1.4,
+    n_points=960,
+    include_hydrogen=False,
+    by_residue=False,
+    backend="native",
+):
+    """Compute buried interface surface for each model in a Coor object.
+
+    Returns
+    -------
+    list[dict]
+        One interface SASA result per model.
+    """
+
+    results = []
+    for frame_index in range(coor.model_num):
+        receptor_indices = set(coor.get_index_select(receptor_sel, frame=frame_index))
+        ligand_indices = set(coor.get_index_select(ligand_sel, frame=frame_index))
+
+        if not receptor_indices:
+            raise ValueError("Receptor selection is empty")
+        if not ligand_indices:
+            raise ValueError("Ligand selection is empty")
+        if receptor_indices & ligand_indices:
+            raise ValueError("Receptor and ligand selections must not overlap")
+
+        receptor_coor = coor.select_atoms(receptor_sel, frame=frame_index)
+        ligand_coor = coor.select_atoms(ligand_sel, frame=frame_index)
+        complex_coor = coor.select_atoms(
+            f"({receptor_sel}) or ({ligand_sel})",
+            frame=frame_index,
+        )
+
+        if backend == "native":
+            receptor_result = _compute_native_result(
+                receptor_coor.models[0],
+                probe_radius,
+                n_points,
+                include_hydrogen,
+                False,
+                by_residue,
+            )
+            ligand_result = _compute_native_result(
+                ligand_coor.models[0],
+                probe_radius,
+                n_points,
+                include_hydrogen,
+                False,
+                by_residue,
+            )
+            complex_result = _compute_native_result(
+                complex_coor.models[0],
+                probe_radius,
+                n_points,
+                include_hydrogen,
+                False,
+                by_residue,
+            )
+        elif backend == "freesasa":
+            receptor_result = _compute_freesasa_result(receptor_coor, by_residue)
+            ligand_result = _compute_freesasa_result(ligand_coor, by_residue)
+            complex_result = _compute_freesasa_result(complex_coor, by_residue)
+        else:
+            raise ValueError("backend must be either 'native' or 'freesasa'")
+
+        receptor_sasa = receptor_result["total"]
+        ligand_sasa = ligand_result["total"]
+        complex_sasa = complex_result["total"]
+        buried_surface = receptor_sasa + ligand_sasa - complex_sasa
+
+        result = {
+            "receptor_sasa": receptor_sasa,
+            "ligand_sasa": ligand_sasa,
+            "complex_sasa": complex_sasa,
+            "buried_surface": buried_surface,
+            "interface_area": buried_surface / 2.0,
+            "probe_radius": probe_radius,
+            "n_points": n_points,
+            "backend": backend,
+        }
+
+        if by_residue:
+            complex_lookup = {
+                _residue_key(entry): float(entry["area"])
+                for entry in complex_result["residue_areas"]
+            }
+            receptor_burial = _build_residue_burial(
+                receptor_result["residue_areas"],
+                complex_lookup,
+                partner="receptor",
+            )
+            ligand_burial = _build_residue_burial(
+                ligand_result["residue_areas"],
+                complex_lookup,
+                partner="ligand",
+            )
+            result["receptor_residue_sasa"] = receptor_result["residue_areas"]
+            result["ligand_residue_sasa"] = ligand_result["residue_areas"]
+            result["complex_residue_sasa"] = complex_result["residue_areas"]
+            result["residue_buried_surface"] = receptor_burial + ligand_burial
+
+        results.append(result)
+
+    return results
 
 
 def _count_chain_combinations(clusters):

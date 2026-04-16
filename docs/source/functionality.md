@@ -260,26 +260,24 @@ print(f"{low_b.len} atoms with B < 30")
 
 ## 3.1 SASA and interface SASA
 
-`Model.sasa()` computes solvent-accessible surface area using the native
-Shrake-Rupley implementation. It returns a dictionary with at least `total`,
-and can optionally include `atom_areas` and `residue_areas`.
+`analysis.sasa()` computes solvent-accessible surface area for each model in a
+`Coor` object. It returns one dictionary per model, each with at least
+`total`, and optionally `atom_areas` and `residue_areas`.
 
 ### SASA for one chain or selection
 
 ```python
-from pdb_cpp import Coor
+from pdb_cpp import Coor, analysis
 
 coor = Coor("tests/input/1a2k.pdb")
-chain_a = coor.select_atoms("chain A").models[0]
-
-result = chain_a.sasa(by_residue=True)
+result = analysis.sasa(coor, selection="chain A", by_residue=True)[0]
 print(f"Total SASA: {result['total']:.2f} A^2")
 print(result["residue_areas"][:3])
 ```
 
 ### Protein-protein interface SASA
 
-Use `pdb_cpp.sasa.buried_surface_area()` to evaluate two partners inside one
+Use `pdb_cpp.analysis.buried_surface_area()` to evaluate two partners inside one
 complex. This helper computes three SASA values internally:
 
 - receptor alone
@@ -292,16 +290,16 @@ The returned interface metrics follow the standard convention:
 - `interface_area = buried_surface / 2`
 
 ```python
-from pdb_cpp import Coor, sasa
+from pdb_cpp import Coor, analysis
 
 coor = Coor("tests/input/1a2k.pdb")
 
-interface = sasa.buried_surface_area(
+interface = analysis.buried_surface_area(
     coor,
     receptor_sel="chain A",
     ligand_sel="chain B",
     by_residue=True,
-)
+)[0]
 
 print(f"Complex SASA   : {interface['complex_sasa']:.2f} A^2")
 print(f"Receptor SASA  : {interface['receptor_sasa']:.2f} A^2")

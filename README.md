@@ -215,23 +215,23 @@ Default cutoffs follow Baker & Hubbard (1984):
 ## SASA and buried interface area
 
 ```python
-from pdb_cpp import Coor, sasa
+from pdb_cpp import Coor, analysis
 
 coor = Coor("tests/input/1a2k.pdb")
 
-# Low-level SASA on a selected Model
-chain_a = coor.select_atoms("chain A").models[0]
-print(chain_a.sasa()["total"])
-print(chain_a.sasa(by_residue=True)["residue_areas"])
+# SASA returns one result per model
+chain_a = analysis.sasa(coor, selection="chain A", by_residue=True)[0]
+print(chain_a["total"])
+print(chain_a["residue_areas"])
 
 # Protein-protein buried surface from two selections
-metrics = sasa.buried_surface_area(coor, "chain A", "chain B", by_residue=True)
+metrics = analysis.buried_surface_area(coor, "chain A", "chain B", by_residue=True)[0]
 print(metrics["buried_surface"])
 print(metrics["interface_area"])
 print(metrics["residue_buried_surface"])
 ```
 
-For a protein-protein interface, call `sasa.buried_surface_area()` on the two
+For a protein-protein interface, call `analysis.buried_surface_area()` on the two
 partner selections. The returned values follow:
 
 - `buried_surface = sasa_receptor + sasa_ligand - sasa_complex`
@@ -240,16 +240,16 @@ partner selections. The returned values follow:
 Example:
 
 ```python
-from pdb_cpp import Coor, sasa
+from pdb_cpp import Coor, analysis
 
 coor = Coor("tests/input/1a2k.pdb")
 
-interface = sasa.buried_surface_area(
+interface = analysis.buried_surface_area(
 	coor,
 	receptor_sel="chain A",
 	ligand_sel="chain B",
 	by_residue=True,
-)
+)[0]
 
 print(f"Complex SASA   : {interface['complex_sasa']:.2f} A^2")
 print(f"Receptor SASA  : {interface['receptor_sasa']:.2f} A^2")
