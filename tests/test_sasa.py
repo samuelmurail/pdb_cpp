@@ -2,7 +2,6 @@
 # coding: utf-8
 
 import math
-import importlib.util
 
 import numpy as np
 import pytest
@@ -75,40 +74,6 @@ def test_buried_surface_can_return_residue_decomposition():
         abs=1e-5,
     )
     assert all(entry["buried_area"] > 0.0 for entry in metrics["residue_buried_surface"])
-
-
-def test_invalid_sasa_backend_raises():
-    coor = Coor(PDB_SASA_DIMER)
-
-    with pytest.raises(ValueError, match="backend"):
-        analysis.buried_surface_area(coor, "chain A", "chain B", backend="bad-backend")
-
-
-@pytest.mark.skipif(importlib.util.find_spec("freesasa") is None, reason="freesasa not installed")
-def test_freesasa_backend_matches_direct_freesasa_totals(tmp_path):
-    import freesasa
-
-    coor = Coor(PDB_SASA_DIMER)
-    metrics = analysis.buried_surface_area(coor, "chain A", "chain B", backend="freesasa", by_residue=True)[0]
-
-    rec = tmp_path / "rec.pdb"
-    lig = tmp_path / "lig.pdb"
-    com = tmp_path / "com.pdb"
-    coor.select_atoms("chain A").write(str(rec))
-    coor.select_atoms("chain B").write(str(lig))
-    coor.select_atoms("(chain A) or (chain B)").write(str(com))
-
-    rec_total = freesasa.calc(freesasa.Structure(str(rec))).totalArea()
-    lig_total = freesasa.calc(freesasa.Structure(str(lig))).totalArea()
-    com_total = freesasa.calc(freesasa.Structure(str(com))).totalArea()
-
-    assert metrics["receptor_sasa"] == pytest.approx(rec_total, abs=1e-8)
-    assert metrics["ligand_sasa"] == pytest.approx(lig_total, abs=1e-8)
-    assert metrics["complex_sasa"] == pytest.approx(com_total, abs=1e-8)
-    assert sum(entry["buried_area"] for entry in metrics["residue_buried_surface"]) == pytest.approx(
-        metrics["buried_surface"],
-        abs=1e-8,
-    )
 
 
 def test_sasa_selection_returns_one_result_per_model():

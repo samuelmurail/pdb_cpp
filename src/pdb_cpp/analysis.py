@@ -4,7 +4,6 @@
 import itertools
 import logging
 import math
-import tempfile
 from collections import Counter
 from concurrent.futures import ThreadPoolExecutor
 
@@ -69,51 +68,6 @@ def _residue_number_string(entry):
     return f"{entry['resid']}{entry['insertres']}".strip()
 
 
-def _model_residue_template(model):
-    residue_entries = []
-    seen = set()
-    for atom_index in range(model.len):
-        entry = {
-            "chain": model.chain_str[atom_index],
-            "resid": model.resid[atom_index],
-            "insertres": model.insertres_str[atom_index],
-            "uniq_resid": model.uniq_resid[atom_index],
-            "resname": model.resname_str[atom_index],
-        }
-        key = _residue_key(entry)
-        if key in seen:
-            continue
-        seen.add(key)
-        residue_entries.append(entry)
-    return residue_entries
-
-
-def _compute_freesasa_result(subset_coor, by_residue):
-    try:
-        import freesasa  # type: ignore[import-not-found]
-    except ImportError as exc:
-        raise ImportError(
-            "FreeSASA backend requested, but the 'freesasa' package is not installed"
-        ) from exc
-
-    with tempfile.TemporaryDirectory() as tmp_dir:
-        pdb_path = f"{tmp_dir}/subset.pdb"
-        subset_coor.write(pdb_path)
-        structure = freesasa.Structure(pdb_path)
-        result = freesasa.calc(structure)
-
-    output = {"total": float(result.totalArea())}
-    if by_residue:
-        residue_areas = result.residueAreas()
-        entries = []
-        for entry in _model_residue_template(subset_coor.models[0]):
-            area = residue_areas.get(entry["chain"], {}).get(_residue_number_string(entry))
-            entries.append({**entry, "area": float(area.total) if area is not None else 0.0})
-        output["residue_areas"] = entries
-
-    return output
-
-
 def _compute_native_result(model, probe_radius, n_points, include_hydrogen, by_atom, by_residue):
     need_atom_areas = by_atom or by_residue
     result = core_compute_sasa(
@@ -162,7 +116,6 @@ def sasa(
     include_hydrogen=False,
     by_atom=False,
     by_residue=False,
-    backend="native",
 ):
     """Compute SASA for each model in a Coor object.
 
@@ -183,8 +136,6 @@ def sasa(
         Include per-atom areas.
     by_residue : bool, default=False
         Include per-residue areas.
-    backend : {"native", "freesasa"}, default="native"
-        SASA backend.
 
     Returns
     -------
@@ -204,23 +155,14 @@ def sasa(
         if subset_model.len == 0:
             raise ValueError("No atoms selected for SASA calculation")
 
-        if backend == "native":
-            result = _compute_native_result(
-                subset_model,
-                probe_radius,
-                n_points,
-                include_hydrogen,
-                by_atom,
-                by_residue,
-            )
-        elif backend == "freesasa":
-            if by_atom:
-                raise ValueError("The freesasa backend does not provide atom_areas in analysis.sasa")
-            result = _compute_freesasa_result(subset_coor, by_residue)
-        else:
-            raise ValueError("backend must be either 'native' or 'freesasa'")
-
-        result["backend"] = backend
+        result = _compute_native_result(
+            subset_model,
+            probe_radius,
+            n_points,
+            include_hydrogen,
+            by_atom,
+            by_residue,
+        )
         results.append(result)
 
     return results
@@ -234,7 +176,6 @@ def buried_surface_area(
     n_points=960,
     include_hydrogen=False,
     by_residue=False,
-    backend="native",
 ):
     """Compute buried interface surface for each model in a Coor object.
 
@@ -263,37 +204,30 @@ def buried_surface_area(
             frame=frame_index,
         )
 
-        if backend == "native":
-            receptor_result = _compute_native_result(
-                receptor_coor.models[0],
-                probe_radius,
-                n_points,
-                include_hydrogen,
-                False,
-                by_residue,
-            )
-            ligand_result = _compute_native_result(
-                ligand_coor.models[0],
-                probe_radius,
-                n_points,
-                include_hydrogen,
-                False,
-                by_residue,
-            )
-            complex_result = _compute_native_result(
-                complex_coor.models[0],
-                probe_radius,
-                n_points,
-                include_hydrogen,
-                False,
-                by_residue,
-            )
-        elif backend == "freesasa":
-            receptor_result = _compute_freesasa_result(receptor_coor, by_residue)
-            ligand_result = _compute_freesasa_result(ligand_coor, by_residue)
-            complex_result = _compute_freesasa_result(complex_coor, by_residue)
-        else:
-            raise ValueError("backend must be either 'native' or 'freesasa'")
+        receptor_result = _compute_native_result(
+            receptor_coor.models[0],
+            probe_radius,
+            n_points,
+            include_hydrogen,
+            False,
+            by_residue,
+        )
+        ligand_result = _compute_native_result(
+            ligand_coor.models[0],
+            probe_radius,
+            n_points,
+            include_hydrogen,
+            False,
+            by_residue,
+        )
+        complex_result = _compute_native_result(
+            complex_coor.models[0],
+            probe_radius,
+            n_points,
+            include_hydrogen,
+            False,
+            by_residue,
+        )
 
         receptor_sasa = receptor_result["total"]
         ligand_sasa = ligand_result["total"]
@@ -308,7 +242,6 @@ def buried_surface_area(
             "interface_area": buried_surface / 2.0,
             "probe_radius": probe_radius,
             "n_points": n_points,
-            "backend": backend,
         }
 
         if by_residue:
