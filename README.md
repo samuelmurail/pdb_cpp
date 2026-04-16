@@ -168,8 +168,8 @@ print(scores["LRMS"][0], scores["iRMS"][0], scores["rRMS"][0])
 ```
 
 Command-line usage is available through the installed `pdb_cpp_dockq` bin,
-which uses `analysis.dockQ_multimer()` and therefore supports the same
-automatic native-to-model chain mapping used in the benchmark script:
+which uses `analysis.dockQ_multimer()` and therefore supports the 
+automatic native-to-model chain mapping:
 
 ```bash
 pdb_cpp_dockq tests/input/1a2k_model.pdb tests/input/1a2k.pdb
@@ -221,14 +221,6 @@ ca = coor.select_atoms("name CA")
 dist = geom.distance_matrix(ca, ca)
 print(dist.shape)
 ```
-
-## Benchmarks
-
-Benchmark scripts are available in [benchmark/README.md](https://github.com/samuelmurail/pdb_cpp/blob/master/benchmark/README.md):
-
-- DockQ vs `pdb_cpp` implementation
-- I/O read/write speed
-- Common operation speed comparisons (`pdb_cpp`, `pdb_numpy`, `biopython`, `biotite`)
 
 ## Documentation
 
