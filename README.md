@@ -21,6 +21,7 @@
 - TM-align/TM-score through the bundled USalign/TM-align core
 - DockQ metrics (`DockQ`, `Fnat`, `Fnonnat`, `LRMS`, `iRMS`, `rRMS`)
 - Hydrogen bond detection (Baker & Hubbard geometric method, no explicit H required)
+- Solvent-accessible surface area (Shrake-Rupley) on `Model`, plus buried protein-protein surface helper
 - Secondary structure assignment
 - Core geometric helpers (e.g., distance matrix)
 
@@ -210,6 +211,61 @@ rna_bonds = hbond.hbonds(coor, donor_sel="protein", acceptor_sel="nucleic")
 
 Default cutoffs follow Baker & Hubbard (1984):
 `dist_DA_cutoff=3.5 Å`, `dist_HA_cutoff=2.5 Å`, `angle_cutoff=90°`.
+
+## SASA and buried interface area
+
+```python
+from pdb_cpp import Coor, sasa
+
+coor = Coor("tests/input/1a2k.pdb")
+
+# Low-level SASA on a selected Model
+chain_a = coor.select_atoms("chain A").models[0]
+print(chain_a.sasa()["total"])
+print(chain_a.sasa(by_residue=True)["residue_areas"])
+
+# Protein-protein buried surface from two selections
+metrics = sasa.buried_surface_area(coor, "chain A", "chain B", by_residue=True)
+print(metrics["buried_surface"])
+print(metrics["interface_area"])
+print(metrics["residue_buried_surface"])
+```
+
+For a protein-protein interface, call `sasa.buried_surface_area()` on the two
+partner selections. The returned values follow:
+
+- `buried_surface = sasa_receptor + sasa_ligand - sasa_complex`
+- `interface_area = buried_surface / 2`
+
+Example:
+
+```python
+from pdb_cpp import Coor, sasa
+
+coor = Coor("tests/input/1a2k.pdb")
+
+interface = sasa.buried_surface_area(
+	coor,
+	receptor_sel="chain A",
+	ligand_sel="chain B",
+	by_residue=True,
+)
+
+print(f"Complex SASA   : {interface['complex_sasa']:.2f} A^2")
+print(f"Receptor SASA  : {interface['receptor_sasa']:.2f} A^2")
+print(f"Ligand SASA    : {interface['ligand_sasa']:.2f} A^2")
+print(f"Buried surface : {interface['buried_surface']:.2f} A^2")
+print(f"Interface area : {interface['interface_area']:.2f} A^2")
+
+for residue in interface["residue_buried_surface"]:
+	print(
+		residue["partner"],
+		residue["chain"],
+		residue["resname"],
+		residue["resid"],
+		residue["buried_area"],
+	)
+```
 
 ## Geometry utilities
 

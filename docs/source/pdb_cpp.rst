@@ -76,6 +76,14 @@ pdb\_cpp.rcsb module
    :show-inheritance:
    :undoc-members:
 
+pdb\_cpp.sasa module
+--------------------
+
+.. automodule:: pdb_cpp.sasa
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
 pdb\_cpp.select module
 ----------------------
 

@@ -53,6 +53,8 @@ GRO_2RRI = os.path.join(TEST_FILE_PATH, "2rri.gro")
 # MMCIF_3FTK = os.path.join(TEST_FILE_PATH, "3ftk.cif")
 
 PDB_2OL9 = os.path.join(TEST_FILE_PATH, "2ol9.pdb")
+PDB_SASA_SINGLE = os.path.join(TEST_FILE_PATH, "sasa_single_atom.pdb")
+PDB_SASA_DIMER = os.path.join(TEST_FILE_PATH, "sasa_dimer.pdb")
 # MMCIF_2OL9 = os.path.join(TEST_FILE_PATH, "2ol9.cif")
 
 # PDB_1RXZ_Colabfold_1 = os.path.join(

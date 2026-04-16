@@ -251,6 +251,32 @@ dmat = geom.distance_matrix(ca, ca)
 print(f"Shape: {dmat.shape}")
 ```
 
+## 17) Compute protein-protein interface SASA
+
+```python
+from pdb_cpp import Coor, sasa
+
+coor = Coor("tests/input/1a2k.pdb")
+
+interface = sasa.buried_surface_area(
+    coor,
+    receptor_sel="chain A",
+    ligand_sel="chain B",
+    by_residue=True,
+)
+
+print(f"Buried surface: {interface['buried_surface']:.2f} A^2")
+print(f"Interface area: {interface['interface_area']:.2f} A^2")
+
+for residue in interface["residue_buried_surface"]:
+    print(residue["partner"], residue["chain"], residue["resid"], residue["buried_area"])
+```
+
+Convention:
+
+- `buried_surface = receptor_sasa + ligand_sasa - complex_sasa`
+- `interface_area = buried_surface / 2`
+
 ## 16) D/L amino acid and nucleic acid sequences
 
 ```python

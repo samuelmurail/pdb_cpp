@@ -166,6 +166,7 @@ available on both classes via Python property accessors.
 | Method                              | Returns         | Description                                      |
 |-------------------------------------|-----------------|--------------------------------------------------|
 | `select_atoms(selection)`           | `list[bool]`    | Boolean mask of atoms matching selection          |
+| `sasa(...)`                         | `dict`          | SASA total with optional per-atom/per-residue data |
 | `addAtom(...)`                      | `bool`          | Add a single atom (see below)                    |
 | `clear()`                           | —               | Remove all atoms from this model                 |
 | `get_centroid(indices=None)`        | `ndarray(3,)`   | Centroid of all atoms, or of given indices        |
@@ -254,6 +255,76 @@ mask = np.array(coor.beta) < 30.0          # low B-factor atoms
 low_b = coor.select_bool_index(mask.tolist())
 print(f"{low_b.len} atoms with B < 30")
 ```
+
+---
+
+## 3.1 SASA and interface SASA
+
+`Model.sasa()` computes solvent-accessible surface area using the native
+Shrake-Rupley implementation. It returns a dictionary with at least `total`,
+and can optionally include `atom_areas` and `residue_areas`.
+
+### SASA for one chain or selection
+
+```python
+from pdb_cpp import Coor
+
+coor = Coor("tests/input/1a2k.pdb")
+chain_a = coor.select_atoms("chain A").models[0]
+
+result = chain_a.sasa(by_residue=True)
+print(f"Total SASA: {result['total']:.2f} A^2")
+print(result["residue_areas"][:3])
+```
+
+### Protein-protein interface SASA
+
+Use `pdb_cpp.sasa.buried_surface_area()` to evaluate two partners inside one
+complex. This helper computes three SASA values internally:
+
+- receptor alone
+- ligand alone
+- receptor + ligand together as the complex
+
+The returned interface metrics follow the standard convention:
+
+- `buried_surface = sasa_receptor + sasa_ligand - sasa_complex`
+- `interface_area = buried_surface / 2`
+
+```python
+from pdb_cpp import Coor, sasa
+
+coor = Coor("tests/input/1a2k.pdb")
+
+interface = sasa.buried_surface_area(
+    coor,
+    receptor_sel="chain A",
+    ligand_sel="chain B",
+    by_residue=True,
+)
+
+print(f"Complex SASA   : {interface['complex_sasa']:.2f} A^2")
+print(f"Receptor SASA  : {interface['receptor_sasa']:.2f} A^2")
+print(f"Ligand SASA    : {interface['ligand_sasa']:.2f} A^2")
+print(f"Buried surface : {interface['buried_surface']:.2f} A^2")
+print(f"Interface area : {interface['interface_area']:.2f} A^2")
+
+for residue in interface["residue_buried_surface"]:
+    print(
+        residue["partner"],
+        residue["chain"],
+        residue["resname"],
+        residue["resid"],
+        residue["buried_area"],
+    )
+```
+
+The `residue_buried_surface` list contains one entry per residue from the
+receptor and ligand selections, with:
+
+- `isolated_area`: SASA of that residue in the isolated partner
+- `complex_area`: SASA of that residue inside the full complex
+- `buried_area`: difference between the two
 
 ### CONECT records
 

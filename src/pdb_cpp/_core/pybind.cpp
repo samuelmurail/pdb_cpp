@@ -1,3 +1,5 @@
+#include <cstring>
+
 #include <pybind11/pybind11.h>
 #include <pybind11/numpy.h>
 #include <pybind11/stl.h>
@@ -10,6 +12,7 @@
 #include "seq_align.h"
 #include "format/encode.h"
 #include "hbond.h"
+#include "sasa.h"
 
 namespace py = pybind11;
 
@@ -29,6 +32,39 @@ PYBIND11_MODULE(core, m) {
         .def("size", &Model::size)
         .def("addAtom", &Model::addAtom)
         .def("select_atoms", &Model::select_atoms)
+        .def(
+            "sasa",
+            [](const Model &model,
+               float probe_radius,
+               std::size_t n_points,
+               bool include_hydrogen,
+               bool by_atom) {
+                SasaResult result;
+                {
+                    py::gil_scoped_release release;
+                    result = compute_sasa(model, probe_radius, n_points, include_hydrogen);
+                }
+
+                py::dict out;
+                out["total"] = result.total;
+                out["probe_radius"] = probe_radius;
+                out["n_points"] = n_points;
+                out["include_hydrogen"] = include_hydrogen;
+                if (by_atom) {
+                    py::array_t<double> atom_areas(result.atom_areas.size());
+                    std::memcpy(
+                        atom_areas.mutable_data(),
+                        result.atom_areas.data(),
+                        result.atom_areas.size() * sizeof(double));
+                    out["atom_areas"] = atom_areas;
+                }
+                return out;
+            },
+            py::arg("probe_radius") = 1.4f,
+            py::arg("n_points") = 960,
+            py::arg("include_hydrogen") = false,
+            py::arg("by_atom") = false,
+            "Compute solvent-accessible surface area with a Shrake-Rupley sampler")
         
 
         .def("get_x", &Model::get_x)

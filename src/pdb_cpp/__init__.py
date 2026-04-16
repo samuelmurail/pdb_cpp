@@ -17,5 +17,6 @@ from .core import Coor, Model
 from . import _pyprops  # noqa: F401
 from . import hbond  # noqa: F401
 from . import rcsb  # noqa: F401
+from . import sasa  # noqa: F401
 
-__all__ = ["Coor", "Model", "hbond", "rcsb"]
+__all__ = ["Coor", "Model", "hbond", "rcsb", "sasa"]

@@ -26,6 +26,7 @@ ext_modules = [
         ["src/pdb_cpp/_core/pybind.cpp",
          "src/pdb_cpp/_core/Coor.cpp",
          "src/pdb_cpp/_core/Model.cpp",
+         "src/pdb_cpp/_core/sasa.cpp",
          "src/pdb_cpp/_core/format/pdb.cpp",
          "src/pdb_cpp/_core/format/encode.cpp",
          "src/pdb_cpp/_core/format/mmcif.cpp",
