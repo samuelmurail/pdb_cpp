@@ -20,7 +20,7 @@ from . import sasa as _sasa_module
 from .dockq import dockQ, dockQ_multimer, interface_rmsd, native_contact, rmsd
 from .hbonds import hbonds as compute_hbonds
 from .salt_bridge import salt_bridges
-from .sasa import buried_surface_area
+from .sasa import buried_surface_area, shape_complementarity
 
 
 class _CallableNamespace:
@@ -50,6 +50,7 @@ __all__ = [
     "dockQ",
     "dockQ_multimer",
     "buried_surface_area",
+    "shape_complementarity",
     "compute_hbonds",
     "salt_bridges",
 ]

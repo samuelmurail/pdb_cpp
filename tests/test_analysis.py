@@ -23,6 +23,7 @@ def test_analysis_submodule_imports():
 
     assert dockq.rmsd is analysis.rmsd
     assert sasa.sasa is analysis.sasa.sasa
+    assert sasa.shape_complementarity is analysis.shape_complementarity
     assert hbonds.hbonds is not None
 
 

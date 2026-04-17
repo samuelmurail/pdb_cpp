@@ -65,6 +65,7 @@ Interface-oriented tools live directly in the analysis submodules:
 - `pdb_cpp.analysis.hbonds.hbonds()` for hydrogen bonds
 - `pdb_cpp.analysis.salt_bridge.salt_bridges()` for ionic contacts / salt bridges
 - `pdb_cpp.analysis.sasa.buried_surface_area()` for buried surface and interface area
+- `pdb_cpp.analysis.sasa.shape_complementarity()` for Lawrence-Colman style interface shape complementarity
 
 ```python
 from pdb_cpp import Coor
@@ -369,6 +370,48 @@ receptor and ligand selections, with:
 For residue-level SASA, each residue entry also contains `polar_area` and
 `apolar_area`; interface residue burial entries additionally expose
 `buried_polar_area` and `buried_apolar_area`.
+
+### Shape complementarity
+
+`pdb_cpp.analysis.sasa.shape_complementarity()` estimates a Lawrence-Colman style
+shape complementarity score from rolling-probe surface dots and opposing
+surface normals. Each accessible interface-facing dot on one partner is matched
+to its nearest dot on the other partner within a configurable interface radius
+using a voxel hash, and the score aggregates `dot(n_a, -n_b)` over the matched
+interface dots.
+
+```python
+from pdb_cpp import Coor
+from pdb_cpp.analysis import sasa
+
+coor = Coor("tests/input/1a2k.pdb")
+
+sc = sasa.shape_complementarity(
+    coor,
+    receptor_sel="chain A",
+    ligand_sel="chain B",
+    dots_per_sq_angstrom=12.0,
+    search_radius=1.5,
+)[0]
+
+print(f"Sc: {sc['shape_complementarity']:.3f}")
+print(f"Interface dot pairs: {sc['interface_dot_pairs']}")
+print(f"Mean paired distance: {sc['mean_interface_distance']:.3f} A")
+```
+
+Scores are bounded to `[-1, 1]`, with values closer to `1` indicating more
+complementary opposing surface normals.
+
+Important parameters:
+
+- `dots_per_sq_angstrom`: sampling density of the rolling-probe surface
+- `search_radius`: maximum nearest-dot pairing distance across the interface
+- `reducer`: use `"trimmed_mean"` (default) or `"median"` to aggregate interface dot scores
+- `trim_fraction`: fraction removed from each tail when `reducer="trimmed_mean"`
+
+The returned dictionary also includes the per-frame `receptor_shape_complementarity`,
+`ligand_shape_complementarity`, `interface_dot_pairs`, and
+`mean_interface_distance` diagnostics.
 
 ### CONECT records
 

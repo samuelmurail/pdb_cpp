@@ -143,3 +143,67 @@ def test_analysis_sasa_module_imports_work():
     result = analysis_sasa.sasa(coor)[0]
 
     assert result["total"] == pytest.approx(result["polar"] + result["apolar"], abs=1e-5)
+
+
+def test_shape_complementarity_simple_dimer_is_positive_and_symmetric():
+    coor = Coor(PDB_SASA_DIMER)
+
+    forward = analysis_sasa.shape_complementarity(
+        coor,
+        "chain A",
+        "chain B",
+        dots_per_sq_angstrom=6.0,
+        search_radius=1.0,
+    )[0]
+    reverse = analysis_sasa.shape_complementarity(
+        coor,
+        "chain B",
+        "chain A",
+        dots_per_sq_angstrom=6.0,
+        search_radius=1.0,
+    )[0]
+
+    assert -1.0 <= forward["shape_complementarity"] <= 1.0
+    assert forward["shape_complementarity"] == pytest.approx(
+        reverse["shape_complementarity"],
+        abs=1e-6,
+    )
+    assert forward["interface_dot_pairs"] > 0
+    assert 0.0 <= forward["mean_interface_distance"] <= 1.0
+
+
+def test_shape_complementarity_flat_analysis_alias_matches_module():
+    coor = Coor(PDB_SASA_DIMER)
+
+    flat_result = analysis.shape_complementarity(
+        coor,
+        "chain A",
+        "chain B",
+        dots_per_sq_angstrom=6.0,
+        search_radius=1.0,
+    )[0]
+    module_result = analysis_sasa.shape_complementarity(
+        coor,
+        "chain A",
+        "chain B",
+        dots_per_sq_angstrom=6.0,
+        search_radius=1.0,
+    )[0]
+
+    assert flat_result["shape_complementarity"] == pytest.approx(
+        module_result["shape_complementarity"],
+        abs=1e-6,
+    )
+
+
+def test_shape_complementarity_raises_without_interface_pairs():
+    coor = Coor(PDB_SASA_DIMER)
+
+    with pytest.raises(ValueError, match="No opposing interface surface dots"):
+        analysis_sasa.shape_complementarity(
+            coor,
+            "chain A",
+            "chain B",
+            dots_per_sq_angstrom=6.0,
+            search_radius=0.01,
+        )

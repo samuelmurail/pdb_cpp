@@ -286,6 +286,32 @@ Convention:
 FreeSASA-like polar/apolar split through `polar` / `apolar` totals and the
 corresponding interface fields.
 
+## 17b) Estimate protein-protein shape complementarity
+
+```python
+from pdb_cpp import Coor
+from pdb_cpp.analysis import sasa
+
+coor = Coor("tests/input/1a2k.pdb")
+
+sc = sasa.shape_complementarity(
+    coor,
+    receptor_sel="chain A",
+    ligand_sel="chain B",
+    dots_per_sq_angstrom=12.0,
+    search_radius=1.5,
+)[0]
+
+print(f"Sc: {sc['shape_complementarity']:.3f}")
+print(f"Receptor Sc: {sc['receptor_shape_complementarity']:.3f}")
+print(f"Ligand Sc: {sc['ligand_shape_complementarity']:.3f}")
+print(f"Interface dot pairs: {sc['interface_dot_pairs']}")
+print(f"Mean paired distance: {sc['mean_interface_distance']:.3f} A")
+```
+
+This uses rolling-probe surface dots and a voxel-hash nearest-neighbor search
+to estimate Lawrence-Colman style interface shape complementarity.
+
 ## 16) D/L amino acid and nucleic acid sequences
 
 ```python

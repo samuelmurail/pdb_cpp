@@ -21,7 +21,7 @@
 - TM-align/TM-score through the bundled USalign/TM-align core
 - DockQ metrics (`DockQ`, `Fnat`, `Fnonnat`, `LRMS`, `iRMS`, `rRMS`)
 - Hydrogen bond detection (Baker & Hubbard geometric method, no explicit H required)
-- Solvent-accessible surface area (Shrake-Rupley) on `Model`, plus buried protein-protein surface helper
+- Solvent-accessible surface area (Shrake-Rupley) on `Model`, plus buried protein-protein surface and shape-complementarity helpers
 - Secondary structure assignment
 - Core geometric helpers (e.g., distance matrix)
 
@@ -265,6 +265,25 @@ for residue in interface["residue_buried_surface"]:
 		residue["resid"],
 		residue["buried_area"],
 	)
+```
+
+Shape complementarity can be estimated directly from rolling-probe surface dots:
+
+```python
+from pdb_cpp import Coor, analysis
+
+coor = Coor("tests/input/1a2k.pdb")
+
+sc = analysis.shape_complementarity(
+	coor,
+	receptor_sel="chain A",
+	ligand_sel="chain B",
+	dots_per_sq_angstrom=12.0,
+	search_radius=1.5,
+)[0]
+
+print(sc["shape_complementarity"])
+print(sc["interface_dot_pairs"])
 ```
 
 ## Geometry utilities
