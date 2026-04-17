@@ -68,6 +68,14 @@ pdb\_cpp.hbond module
    :show-inheritance:
    :undoc-members:
 
+pdb\_cpp.interaction module
+---------------------------
+
+.. automodule:: pdb_cpp.interaction
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
 pdb\_cpp.rcsb module
 --------------------
 
@@ -80,6 +88,14 @@ pdb\_cpp.sasa module
 --------------------
 
 .. automodule:: pdb_cpp.sasa
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
+pdb\_cpp.salt\_bridge module
+-----------------------------
+
+.. automodule:: pdb_cpp.salt_bridge
    :members:
    :show-inheritance:
    :undoc-members:

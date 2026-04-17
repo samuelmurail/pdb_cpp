@@ -61,6 +61,15 @@ class _FieldProxy:
     def __repr__(self):
         return repr(list(self._raw()))
 
+    def __eq__(self, other):
+        left = list(self._raw())
+        if isinstance(other, _FieldProxy):
+            return left == list(other._raw())
+        return left == other
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
     def __array__(self, dtype=None):
         arr = self._get_array()
         return arr.astype(dtype) if dtype is not None else arr

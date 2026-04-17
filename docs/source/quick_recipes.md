@@ -254,11 +254,11 @@ print(f"Shape: {dmat.shape}")
 ## 17) Compute protein-protein interface SASA
 
 ```python
-from pdb_cpp import Coor, analysis
+from pdb_cpp import Coor, interaction
 
 coor = Coor("tests/input/1a2k.pdb")
 
-interface = analysis.buried_surface_area(
+interface = interaction.interface_sasa(
     coor,
     receptor_sel="chain A",
     ligand_sel="chain B",
@@ -347,16 +347,15 @@ ligand = coor.select_atoms("not protein")
 ligand.write("ligand_only.pdb")
 ```
 
-## 19) Hydrogen bond detection
+## 19) Interaction analysis: hydrogen bonds and salt bridges
 
 ```python
-from pdb_cpp import Coor
-from pdb_cpp import hbond
+from pdb_cpp import Coor, interaction
 
 coor = Coor("tests/input/2rri.cif")
 
 # All protein–protein H-bonds (one list per model)
-all_bonds = hbond.hbonds(coor)
+all_bonds = interaction.hbonds(coor)
 print(f"Model 0: {len(all_bonds[0])} H-bonds")
 
 # Inspect an individual bond
@@ -370,5 +369,9 @@ inter = [b for b in all_bonds[0] if b.donor_chain != b.acceptor_chain]
 print(f"{len(inter)} inter-chain H-bonds in model 0")
 
 # Protein donors → nucleic-acid acceptors (protein–RNA interface)
-rna_bonds = hbond.hbonds(coor, donor_sel="protein", acceptor_sel="nucleic")
+rna_bonds = interaction.hbonds(coor, donor_sel="protein", acceptor_sel="nucleic")
+
+# Protein cations → nucleic phosphate anions (salt bridges)
+salt = interaction.salt_bridges(coor, cation_sel="protein", anion_sel="nucleic")
+print(f"Model 0: {len(salt[0])} salt bridges")
 ```

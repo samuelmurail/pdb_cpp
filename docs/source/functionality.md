@@ -56,6 +56,36 @@ coor = Coor(pdb_id="1y0m")    # downloads mmCIF, caches in /tmp/pdb_cpp_cache/
 
 The cached file is reused on subsequent calls with the same PDB ID.
 
+---
+
+## Interaction analysis
+
+Interface-oriented tools are grouped under `pdb_cpp.interaction`:
+
+- `interaction.hbonds()` for hydrogen bonds
+- `interaction.salt_bridges()` for ionic contacts / salt bridges
+- `interaction.interface_sasa()` for buried surface and interface area
+
+The older module paths remain available (`pdb_cpp.hbond`,
+`pdb_cpp.salt_bridge`, `pdb_cpp.analysis.buried_surface_area`), but
+`pdb_cpp.interaction` is the recommended namespace for new code.
+
+```python
+from pdb_cpp import Coor, interaction
+
+coor = Coor("tests/input/1A0A.cif")
+
+hb = interaction.hbonds(coor, donor_sel="protein", acceptor_sel="nucleic")
+sb = interaction.salt_bridges(coor, cation_sel="protein", anion_sel="nucleic")
+iface = interaction.interface_sasa(
+    coor,
+    receptor_sel="chain C D",
+    ligand_sel="chain A B",
+)[0]
+
+print(len(hb[0]), len(sb[0]), iface["interface_area"])
+```
+
 ### Loading through the `rcsb` module
 
 The `pdb_cpp.rcsb` module gives explicit control over which RCSB coordinate
