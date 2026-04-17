@@ -42,6 +42,18 @@ _VDW_RADII = {
 	"ZN": 1.39,
 }
 
+_NEIGHBOR_OFFSETS = (
+	(-1, -1, -1), (-1, -1, 0), (-1, -1, 1),
+	(-1, 0, -1), (-1, 0, 0), (-1, 0, 1),
+	(-1, 1, -1), (-1, 1, 0), (-1, 1, 1),
+	(0, -1, -1), (0, -1, 0), (0, -1, 1),
+	(0, 0, -1), (0, 0, 0), (0, 0, 1),
+	(0, 1, -1), (0, 1, 0), (0, 1, 1),
+	(1, -1, -1), (1, -1, 0), (1, -1, 1),
+	(1, 0, -1), (1, 0, 0), (1, 0, 1),
+	(1, 1, -1), (1, 1, 0), (1, 1, 1),
+)
+
 
 def _coor_from_model(model):
 	coor = CoreCoor()
@@ -215,25 +227,31 @@ def _surface_interface_mask(points, blocker_coords, blocker_radii):
 
 	max_blocker_radius = float(np.max(blocker_radii))
 	blocker_cells = _build_point_hash(blocker_coords, max_blocker_radius)
+	point_cells = _build_point_hash(points, max_blocker_radius)
+	blocker_radii_sq = blocker_radii * blocker_radii
 	interface_mask = np.zeros(len(points), dtype=bool)
 
-	for point_index, point in enumerate(points):
-		base_cell = _make_cell_key(point[0], point[1], point[2], max_blocker_radius)
-		for dx in (-1, 0, 1):
-			for dy in (-1, 0, 1):
-				for dz in (-1, 0, 1):
-					neighbor_key = (base_cell[0] + dx, base_cell[1] + dy, base_cell[2] + dz)
-					for blocker_index in blocker_cells.get(neighbor_key, ()): 
-						delta = point - blocker_coords[blocker_index]
-						if float(np.dot(delta, delta)) < float(blocker_radii[blocker_index] ** 2):
-							interface_mask[point_index] = True
-							break
-					if interface_mask[point_index]:
-						break
-				if interface_mask[point_index]:
-					break
-			if interface_mask[point_index]:
-				break
+	for cell_key, point_indices in point_cells.items():
+		candidate_indices = []
+		for dx, dy, dz in _NEIGHBOR_OFFSETS:
+			candidate_indices.extend(
+				blocker_cells.get((cell_key[0] + dx, cell_key[1] + dy, cell_key[2] + dz), ())
+			)
+		if not candidate_indices:
+			continue
+
+		point_indices = np.asarray(point_indices, dtype=int)
+		candidate_indices = np.asarray(candidate_indices, dtype=int)
+		candidate_points = blocker_coords[candidate_indices]
+		candidate_radii_sq = blocker_radii_sq[candidate_indices]
+
+		chunk_size = 256
+		for start in range(0, len(point_indices), chunk_size):
+			chunk_indices = point_indices[start : start + chunk_size]
+			chunk_points = points[chunk_indices]
+			deltas = chunk_points[:, None, :] - candidate_points[None, :, :]
+			distance_sq = np.einsum("ijk,ijk->ij", deltas, deltas, optimize=True)
+			interface_mask[chunk_indices] = np.any(distance_sq < candidate_radii_sq[None, :], axis=1)
 
 	return interface_mask
 
@@ -259,40 +277,54 @@ def _nearest_surface_scores(
 
 	search_radius_sq = search_radius * search_radius
 	target_cells = _build_point_hash(target_points, search_radius)
-	scores = []
-	weights = []
-	distances = []
+	source_cells = _build_point_hash(source_points, search_radius)
+	score_chunks = []
+	weight_chunks = []
+	distance_chunks = []
 
-	for point_index, point in enumerate(source_points):
-		base_cell = _make_cell_key(point[0], point[1], point[2], search_radius)
+	for cell_key, source_indices in source_cells.items():
 		candidate_indices = []
-		for dx in (-1, 0, 1):
-			for dy in (-1, 0, 1):
-				for dz in (-1, 0, 1):
-					neighbor_key = (base_cell[0] + dx, base_cell[1] + dy, base_cell[2] + dz)
-					candidate_indices.extend(target_cells.get(neighbor_key, ()))
-
+		for dx, dy, dz in _NEIGHBOR_OFFSETS:
+			candidate_indices.extend(
+				target_cells.get((cell_key[0] + dx, cell_key[1] + dy, cell_key[2] + dz), ())
+			)
 		if not candidate_indices:
 			continue
 
+		source_indices = np.asarray(source_indices, dtype=int)
+		candidate_indices = np.asarray(candidate_indices, dtype=int)
 		candidate_points = target_points[candidate_indices]
-		deltas = candidate_points - point
-		distance_sq = np.sum(deltas * deltas, axis=1)
-		nearest_offset = int(np.argmin(distance_sq))
-		nearest_distance_sq = float(distance_sq[nearest_offset])
-		if nearest_distance_sq > search_radius_sq:
-			continue
+		candidate_normals = target_normals[candidate_indices]
 
-		nearest_index = candidate_indices[nearest_offset]
-		score = float(np.dot(source_normals[point_index], -target_normals[nearest_index]))
-		scores.append(max(-1.0, min(1.0, score)))
-		weights.append(float(source_weights[point_index]))
-		distances.append(math.sqrt(nearest_distance_sq))
+		chunk_size = 256
+		for start in range(0, len(source_indices), chunk_size):
+			chunk_indices = source_indices[start : start + chunk_size]
+			chunk_points = source_points[chunk_indices]
+			deltas = chunk_points[:, None, :] - candidate_points[None, :, :]
+			distance_sq = np.einsum("ijk,ijk->ij", deltas, deltas, optimize=True)
+			nearest_offsets = np.argmin(distance_sq, axis=1)
+			nearest_distance_sq = distance_sq[np.arange(len(chunk_indices)), nearest_offsets]
+			keep_mask = nearest_distance_sq <= search_radius_sq
+			if not np.any(keep_mask):
+				continue
+
+			kept_indices = chunk_indices[keep_mask]
+			kept_offsets = nearest_offsets[keep_mask]
+			kept_scores = np.sum(
+				source_normals[kept_indices] * (-candidate_normals[kept_offsets]),
+				axis=1,
+			)
+			score_chunks.append(np.clip(kept_scores, -1.0, 1.0))
+			weight_chunks.append(source_weights[kept_indices])
+			distance_chunks.append(np.sqrt(nearest_distance_sq[keep_mask]))
+
+	if not score_chunks:
+		return np.empty((0,), dtype=float), np.empty((0,), dtype=float), np.empty((0,), dtype=float)
 
 	return (
-		np.asarray(scores, dtype=float),
-		np.asarray(weights, dtype=float),
-		np.asarray(distances, dtype=float),
+		np.concatenate(score_chunks),
+		np.concatenate(weight_chunks),
+		np.concatenate(distance_chunks),
 	)
 
 
