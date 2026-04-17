@@ -267,6 +267,10 @@ interface = interaction.interface_sasa(
 
 print(f"Buried surface: {interface['buried_surface']:.2f} A^2")
 print(f"Interface area: {interface['interface_area']:.2f} A^2")
+print(f"Buried polar  : {interface['buried_polar_surface']:.2f} A^2")
+print(f"Buried apolar : {interface['buried_apolar_surface']:.2f} A^2")
+print(f"Interface polar area : {interface['interface_polar_area']:.2f} A^2")
+print(f"Interface apolar area: {interface['interface_apolar_area']:.2f} A^2")
 
 for residue in interface["residue_buried_surface"]:
     print(residue["partner"], residue["chain"], residue["resid"], residue["buried_area"])
@@ -276,6 +280,10 @@ Convention:
 
 - `buried_surface = receptor_sasa + ligand_sasa - complex_sasa`
 - `interface_area = buried_surface / 2`
+
+`interaction.interface_sasa()` and `sasa.sasa()` also expose a
+FreeSASA-like polar/apolar split through `polar` / `apolar` totals and the
+corresponding interface fields.
 
 ## 16) D/L amino acid and nucleic acid sequences
 

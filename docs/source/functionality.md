@@ -290,24 +290,31 @@ print(f"{low_b.len} atoms with B < 30")
 
 ## 3.1 SASA and interface SASA
 
-`analysis.sasa()` computes solvent-accessible surface area for each model in a
+`sasa.sasa()` computes solvent-accessible surface area for each model in a
 `Coor` object. It returns one dictionary per model, each with at least
-`total`, and optionally `atom_areas` and `residue_areas`.
+`total`, `polar`, and `apolar`, and optionally `atom_areas` and
+`residue_areas`.
 
 ### SASA for one chain or selection
 
 ```python
-from pdb_cpp import Coor, analysis
+from pdb_cpp import Coor, sasa
 
 coor = Coor("tests/input/1a2k.pdb")
-result = analysis.sasa(coor, selection="chain A", by_residue=True)[0]
+result = sasa.sasa(coor, selection="chain A", by_residue=True)[0]
 print(f"Total SASA: {result['total']:.2f} A^2")
+print(f"Polar SASA: {result['polar']:.2f} A^2")
+print(f"Apolar SASA: {result['apolar']:.2f} A^2")
 print(result["residue_areas"][:3])
 ```
 
+The polar/apolar split is FreeSASA-like: atom areas are partitioned from the
+per-atom SASA using a simple element-based classifier, with `N`, `O`, `S`,
+`P`, and `Se` treated as polar atoms.
+
 ### Protein-protein interface SASA
 
-Use `pdb_cpp.analysis.buried_surface_area()` to evaluate two partners inside one
+Use `pdb_cpp.sasa.buried_surface_area()` to evaluate two partners inside one
 complex. This helper computes three SASA values internally:
 
 - receptor alone
@@ -320,11 +327,11 @@ The returned interface metrics follow the standard convention:
 - `interface_area = buried_surface / 2`
 
 ```python
-from pdb_cpp import Coor, analysis
+from pdb_cpp import Coor, sasa
 
 coor = Coor("tests/input/1a2k.pdb")
 
-interface = analysis.buried_surface_area(
+interface = sasa.buried_surface_area(
     coor,
     receptor_sel="chain A",
     ligand_sel="chain B",
@@ -332,10 +339,16 @@ interface = analysis.buried_surface_area(
 )[0]
 
 print(f"Complex SASA   : {interface['complex_sasa']:.2f} A^2")
+print(f"Complex polar  : {interface['complex_polar_sasa']:.2f} A^2")
+print(f"Complex apolar : {interface['complex_apolar_sasa']:.2f} A^2")
 print(f"Receptor SASA  : {interface['receptor_sasa']:.2f} A^2")
 print(f"Ligand SASA    : {interface['ligand_sasa']:.2f} A^2")
 print(f"Buried surface : {interface['buried_surface']:.2f} A^2")
+print(f"Buried polar   : {interface['buried_polar_surface']:.2f} A^2")
+print(f"Buried apolar  : {interface['buried_apolar_surface']:.2f} A^2")
 print(f"Interface area : {interface['interface_area']:.2f} A^2")
+print(f"Interface polar: {interface['interface_polar_area']:.2f} A^2")
+print(f"Interface apol.: {interface['interface_apolar_area']:.2f} A^2")
 
 for residue in interface["residue_buried_surface"]:
     print(
@@ -353,6 +366,10 @@ receptor and ligand selections, with:
 - `isolated_area`: SASA of that residue in the isolated partner
 - `complex_area`: SASA of that residue inside the full complex
 - `buried_area`: difference between the two
+
+For residue-level SASA, each residue entry also contains `polar_area` and
+`apolar_area`; interface residue burial entries additionally expose
+`buried_polar_area` and `buried_apolar_area`.
 
 ### CONECT records
 

@@ -9,8 +9,8 @@ previously spread across separate modules.
 
 from __future__ import annotations
 
-from .analysis import buried_surface_area
 from .hbond import hbonds
+from .sasa import buried_surface_area
 from .salt_bridge import salt_bridges
 
 __all__ = ["hbonds", "salt_bridges", "interface_sasa"]
@@ -27,7 +27,7 @@ def interface_sasa(
 ):
     """Compute interface SASA / buried surface area for two selections.
 
-    This is a semantic alias for :func:`pdb_cpp.analysis.buried_surface_area`
+    This is a semantic alias for :func:`pdb_cpp.sasa.buried_surface_area`
     exposed under the interaction namespace.
     """
     return buried_surface_area(
