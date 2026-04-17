@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from .core import Coor as CoreCoor, compute_sasa as core_compute_sasa
+from ..core import Coor as CoreCoor, compute_sasa as core_compute_sasa
 
 __all__ = ["sasa", "buried_surface_area"]
 

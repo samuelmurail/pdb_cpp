@@ -18,6 +18,14 @@ from pdb_cpp import Coor, alignment, analysis, core
 import pytest
 
 
+def test_analysis_submodule_imports():
+    from pdb_cpp.analysis import dockq, hbonds, sasa
+
+    assert dockq.rmsd is analysis.rmsd
+    assert sasa.sasa is analysis.sasa.sasa
+    assert hbonds.hbonds is not None
+
+
 def test_measure_rmsd(capsys):
     coor_1 = Coor(PDB_1U85)
     coor_2 = Coor(PDB_1UBD)

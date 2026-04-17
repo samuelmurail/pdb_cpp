@@ -13,7 +13,8 @@ backbone H positions are reconstructed geometrically).
 """
 
 import pytest
-from pdb_cpp import Coor, hbond, core
+from pdb_cpp import Coor, core
+from pdb_cpp.analysis import hbonds as analysis_hbonds
 from .datafiles import MMCIF_1Y0M, MMCIF_2RRI, CIF_1A0A
 
 # ---------------------------------------------------------------------------
@@ -74,7 +75,7 @@ def _hb_key(hb):
 
 def test_hbonds_returns_list_per_model():
     coor = Coor(MMCIF_1Y0M)
-    result = hbond.hbonds(coor, angle_cutoff=120.0)
+    result = analysis_hbonds.hbonds(coor, angle_cutoff=120.0)
     assert isinstance(result, list)
     assert len(result) == coor.model_num
 
@@ -82,14 +83,14 @@ def test_hbonds_returns_list_per_model():
 def test_hbonds_count_1y0m():
     """Total bond count for 1y0m (H reconstructed) matches biotite-calibrated reference."""
     coor = Coor(MMCIF_1Y0M)
-    hb_list = hbond.hbonds(coor, angle_cutoff=120.0)[0]
+    hb_list = analysis_hbonds.hbonds(coor, angle_cutoff=120.0)[0]
     assert len(hb_list) == REFERENCE_1Y0M_N_BONDS
 
 
 def test_hbonds_geometry_1y0m():
     """Top-5 shortest bonds match reference geometry (H reconstructed from heavy atoms)."""
     coor = Coor(MMCIF_1Y0M)
-    hb_list = sorted(hbond.hbonds(coor, angle_cutoff=120.0)[0], key=lambda h: h.dist_HA)
+    hb_list = sorted(analysis_hbonds.hbonds(coor, angle_cutoff=120.0)[0], key=lambda h: h.dist_HA)
 
     for i, (dc, dr, dn, ac, ar, an, exp_ha, exp_da, exp_ang) in enumerate(REFERENCE_1Y0M_TOP5):
         hb = hb_list[i]
@@ -107,14 +108,14 @@ def test_hbonds_geometry_1y0m():
 def test_hbonds_count_2rri():
     """2rri has explicit H: total count must exactly match biotite reference."""
     coor = Coor(MMCIF_2RRI)
-    hb_list = hbond.hbonds(coor, angle_cutoff=120.0)[0]
+    hb_list = analysis_hbonds.hbonds(coor, angle_cutoff=120.0)[0]
     assert len(hb_list) == REFERENCE_2RRI_N_BONDS
 
 
 def test_hbonds_set_2rri():
     """Every bond found by biotite (inter-residue) is reproduced by pdb_cpp."""
     coor = Coor(MMCIF_2RRI)
-    hb_list = hbond.hbonds(coor, angle_cutoff=120.0)[0]
+    hb_list = analysis_hbonds.hbonds(coor, angle_cutoff=120.0)[0]
     found = {_hb_key(hb) for hb in hb_list}
     for ref_key in REFERENCE_2RRI:
         assert ref_key in found, f"Missing bond {ref_key}"
@@ -123,7 +124,7 @@ def test_hbonds_set_2rri():
 def test_hbonds_geometry_2rri():
     """Geometry (dist_HA, dist_DA, angle) matches biotite values to 3 decimal places."""
     coor = Coor(MMCIF_2RRI)
-    hb_by_key = {_hb_key(hb): hb for hb in hbond.hbonds(coor, angle_cutoff=120.0)[0]}
+    hb_by_key = {_hb_key(hb): hb for hb in analysis_hbonds.hbonds(coor, angle_cutoff=120.0)[0]}
     for key, (exp_ha, exp_da, exp_ang) in REFERENCE_2RRI.items():
         assert key in hb_by_key, f"Bond {key} not found"
         hb = hb_by_key[key]
@@ -135,7 +136,7 @@ def test_hbonds_geometry_2rri():
 def test_hbond_fields():
     """Every HBond object exposes all required fields with sane geometry."""
     coor = Coor(MMCIF_1Y0M)
-    hb_list = hbond.hbonds(coor)[0]
+    hb_list = analysis_hbonds.hbonds(coor)[0]
     assert len(hb_list) > 0
     for hb in hb_list:
         assert 0.0 < hb.dist_DA <= 3.5
@@ -155,7 +156,7 @@ def test_hbonds_protein_to_nucleic_include_backbone_acceptors_1a0a():
     as nucleic-acid acceptors.
     """
     coor = Coor(CIF_1A0A)
-    hb_list = hbond.hbonds(coor, donor_sel="protein", acceptor_sel="nucleic")[0]
+    hb_list = analysis_hbonds.hbonds(coor, donor_sel="protein", acceptor_sel="nucleic")[0]
 
     unique_keys = {
         (hb.donor_chain, hb.donor_resid, hb.donor_heavy_name,
@@ -171,7 +172,7 @@ def test_hbonds_protein_to_nucleic_include_backbone_acceptors_1a0a():
 def test_hbonds_strict_cutoff():
     """With zero-length cutoffs no H-bonds should be found."""
     coor = Coor(MMCIF_1Y0M)
-    result = hbond.hbonds(coor, dist_DA_cutoff=0.0, dist_HA_cutoff=0.0)
+    result = analysis_hbonds.hbonds(coor, dist_DA_cutoff=0.0, dist_HA_cutoff=0.0)
     assert result[0] == []
 
 

@@ -6,7 +6,8 @@ import math
 import numpy as np
 import pytest
 
-from pdb_cpp import Coor, analysis, sasa
+from pdb_cpp import Coor, analysis
+from pdb_cpp.analysis import sasa as analysis_sasa
 
 from .datafiles import MMCIF_1Y0M, PDB_SASA_DIMER, PDB_SASA_SINGLE
 
@@ -14,7 +15,7 @@ from .datafiles import MMCIF_1Y0M, PDB_SASA_DIMER, PDB_SASA_SINGLE
 def test_single_atom_sasa_matches_analytic_area():
     coor = Coor(PDB_SASA_SINGLE)
 
-    results = sasa.sasa(coor, n_points=960, by_atom=True)
+    results = analysis_sasa.sasa(coor, n_points=960, by_atom=True)
     result = results[0]
 
     expected = 4.0 * math.pi * (1.7 + 1.4) ** 2
@@ -28,7 +29,7 @@ def test_single_atom_sasa_matches_analytic_area():
 def test_dimer_buried_surface_is_positive():
     coor = Coor(PDB_SASA_DIMER)
 
-    metrics = sasa.buried_surface_area(coor, "chain A", "chain B", n_points=960)[0]
+    metrics = analysis_sasa.buried_surface_area(coor, "chain A", "chain B", n_points=960)[0]
 
     assert metrics["receptor_sasa"] > metrics["complex_sasa"] / 2.0
     assert metrics["ligand_sasa"] > metrics["complex_sasa"] / 2.0
@@ -54,7 +55,7 @@ def test_dimer_buried_surface_is_positive():
 def test_atom_areas_sum_to_total_on_real_structure():
     coor = Coor(PDB_SASA_DIMER)
 
-    results = sasa.sasa(coor, n_points=480, by_atom=True)
+    results = analysis_sasa.sasa(coor, n_points=480, by_atom=True)
     result = results[0]
 
     assert result["atom_areas"].shape == (coor.models[0].len,)
@@ -64,7 +65,7 @@ def test_atom_areas_sum_to_total_on_real_structure():
 def test_model_sasa_can_return_residue_breakdown():
     coor = Coor(PDB_SASA_DIMER)
 
-    results = sasa.sasa(coor, n_points=480, by_residue=True)
+    results = analysis_sasa.sasa(coor, n_points=480, by_residue=True)
     result = results[0]
 
     assert "atom_areas" not in result
@@ -84,7 +85,9 @@ def test_model_sasa_can_return_residue_breakdown():
 def test_buried_surface_can_return_residue_decomposition():
     coor = Coor(PDB_SASA_DIMER)
 
-    metrics = sasa.buried_surface_area(coor, "chain A", "chain B", n_points=480, by_residue=True)[0]
+    metrics = analysis_sasa.buried_surface_area(
+        coor, "chain A", "chain B", n_points=480, by_residue=True
+    )[0]
 
     assert len(metrics["receptor_residue_sasa"]) == 1
     assert len(metrics["ligand_residue_sasa"]) == 1
@@ -108,7 +111,7 @@ def test_buried_surface_can_return_residue_decomposition():
 def test_sasa_selection_returns_one_result_per_model():
     coor = Coor(PDB_SASA_DIMER)
 
-    results = sasa.sasa(coor, selection="chain A", by_residue=True)
+    results = analysis_sasa.sasa(coor, selection="chain A", by_residue=True)
 
     assert len(results) == coor.model_num
     assert len(results[0]["residue_areas"]) == 1
@@ -118,17 +121,25 @@ def test_sasa_selection_returns_one_result_per_model():
 def test_real_structure_sasa_reports_nonzero_polar_and_apolar_components():
     coor = Coor(MMCIF_1Y0M)
 
-    result = sasa.sasa(coor, n_points=480)[0]
+    result = analysis_sasa.sasa(coor, n_points=480)[0]
 
     assert result["total"] == pytest.approx(result["polar"] + result["apolar"], abs=1e-5)
     assert result["polar"] > 0.0
     assert result["apolar"] > 0.0
 
 
-def test_analysis_sasa_backwards_compatibility():
+def test_analysis_namespace_sasa_is_still_callable():
     coor = Coor(PDB_SASA_SINGLE)
 
     result = analysis.sasa(coor)[0]
 
     assert result["total"] == pytest.approx(result["polar"] + result["apolar"], abs=1e-5)
     assert result["apolar"] > 0.0
+
+
+def test_analysis_sasa_module_imports_work():
+    coor = Coor(PDB_SASA_SINGLE)
+
+    result = analysis_sasa.sasa(coor)[0]
+
+    assert result["total"] == pytest.approx(result["polar"] + result["apolar"], abs=1e-5)

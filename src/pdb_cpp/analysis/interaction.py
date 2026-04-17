@@ -3,15 +3,15 @@
 
 """Grouped interaction-analysis helpers.
 
-This module collects contact and interface-oriented utilities that were
-previously spread across separate modules.
+This module collects contact and interface-oriented utilities under the
+analysis namespace.
 """
 
 from __future__ import annotations
 
-from .hbond import hbonds
-from .sasa import buried_surface_area
+from .hbonds import hbonds
 from .salt_bridge import salt_bridges
+from .sasa import buried_surface_area
 
 __all__ = ["hbonds", "salt_bridges", "interface_sasa"]
 
@@ -27,8 +27,8 @@ def interface_sasa(
 ):
     """Compute interface SASA / buried surface area for two selections.
 
-    This is a semantic alias for :func:`pdb_cpp.sasa.buried_surface_area`
-    exposed under the interaction namespace.
+    This is a semantic alias for :func:`pdb_cpp.analysis.sasa.buried_surface_area`
+    exposed under the analysis interaction namespace.
     """
     return buried_surface_area(
         coor,

@@ -16,7 +16,11 @@ src/pdb_cpp/
 ├── __init__.py          # Package entry point (Coor, Model)
 ├── _pyprops.py          # Python property patches on Coor/Model
 ├── alignment.py         # Sequence alignment wrappers
-├── analysis.py          # RMSD, DockQ, interface metrics
+├── analysis/            # High-level analysis package
+│   ├── __init__.py      # Flat compatibility exports + grouped submodules
+│   ├── dockq.py         # RMSD, DockQ, interface metrics
+│   ├── sasa.py          # SASA namespace bridge
+│   └── hbonds.py        # H-bond namespace bridge
 ├── geom.py              # Distance matrix wrapper
 ├── select.py            # Backbone cleaning utility
 ├── sequence.py          # Sequence extraction wrappers

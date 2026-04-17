@@ -254,7 +254,8 @@ print(f"Shape: {dmat.shape}")
 ## 17) Compute protein-protein interface SASA
 
 ```python
-from pdb_cpp import Coor, interaction
+from pdb_cpp import Coor
+from pdb_cpp.analysis import interaction
 
 coor = Coor("tests/input/1a2k.pdb")
 
@@ -358,7 +359,8 @@ ligand.write("ligand_only.pdb")
 ## 19) Interaction analysis: hydrogen bonds and salt bridges
 
 ```python
-from pdb_cpp import Coor, interaction
+from pdb_cpp import Coor
+from pdb_cpp.analysis import interaction
 
 coor = Coor("tests/input/2rri.cif")
 

@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 # coding: utf-8
 
-from pdb_cpp import Coor, salt_bridge
+from pdb_cpp import Coor
+from pdb_cpp.analysis import salt_bridge as analysis_salt_bridge
 
 from .datafiles import CIF_1A0A, MMCIF_1Y0M
 
@@ -21,21 +22,28 @@ def _sb_key(sb):
 
 def test_salt_bridges_returns_list_per_model():
     coor = Coor(MMCIF_1Y0M)
-    result = salt_bridge.salt_bridges(coor)
+    result = analysis_salt_bridge.salt_bridges(coor)
+    assert isinstance(result, list)
+    assert len(result) == coor.model_num
+
+
+def test_analysis_salt_bridge_module_imports_work():
+    coor = Coor(MMCIF_1Y0M)
+    result = analysis_salt_bridge.salt_bridges(coor)
     assert isinstance(result, list)
     assert len(result) == coor.model_num
 
 
 def test_salt_bridges_protein_protein_1y0m():
     coor = Coor(MMCIF_1Y0M)
-    sb_list = salt_bridge.salt_bridges(coor, cation_sel="protein", anion_sel="protein")[0]
+    sb_list = analysis_salt_bridge.salt_bridges(coor, cation_sel="protein", anion_sel="protein")[0]
     assert len(sb_list) > 0
     assert all(sb.distance <= 4.0 for sb in sb_list)
 
 
 def test_salt_bridges_protein_to_nucleic_1a0a():
     coor = Coor(CIF_1A0A)
-    sb_list = salt_bridge.salt_bridges(coor, cation_sel="protein", anion_sel="nucleic")[0]
+    sb_list = analysis_salt_bridge.salt_bridges(coor, cation_sel="protein", anion_sel="nucleic")[0]
     keys = {_sb_key(sb) for sb in sb_list}
 
     assert len(keys) == 20
@@ -45,5 +53,5 @@ def test_salt_bridges_protein_to_nucleic_1a0a():
 
 def test_salt_bridges_nucleic_to_nucleic_canonical_empty_1a0a():
     coor = Coor(CIF_1A0A)
-    sb_list = salt_bridge.salt_bridges(coor, cation_sel="nucleic", anion_sel="nucleic")[0]
+    sb_list = analysis_salt_bridge.salt_bridges(coor, cation_sel="nucleic", anion_sel="nucleic")[0]
     assert sb_list == []

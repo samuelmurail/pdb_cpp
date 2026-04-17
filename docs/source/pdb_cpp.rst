@@ -36,6 +36,30 @@ pdb\_cpp.analysis module
    :show-inheritance:
    :undoc-members:
 
+pdb\_cpp.analysis.interaction module
+------------------------------------
+
+.. automodule:: pdb_cpp.analysis.interaction
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
+pdb\_cpp.analysis.sasa module
+-----------------------------
+
+.. automodule:: pdb_cpp.analysis.sasa
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
+pdb\_cpp.analysis.salt\_bridge module
+--------------------------------------
+
+.. automodule:: pdb_cpp.analysis.salt_bridge
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
 pdb\_cpp.cli\_dockq module
 --------------------------
 
@@ -60,18 +84,10 @@ pdb\_cpp.geom module
    :show-inheritance:
    :undoc-members:
 
-pdb\_cpp.hbond module
----------------------
+pdb\_cpp.analysis.hbonds module
+--------------------------------
 
-.. automodule:: pdb_cpp.hbond
-   :members:
-   :show-inheritance:
-   :undoc-members:
-
-pdb\_cpp.interaction module
----------------------------
-
-.. automodule:: pdb_cpp.interaction
+.. automodule:: pdb_cpp.analysis.hbonds
    :members:
    :show-inheritance:
    :undoc-members:
@@ -80,22 +96,6 @@ pdb\_cpp.rcsb module
 --------------------
 
 .. automodule:: pdb_cpp.rcsb
-   :members:
-   :show-inheritance:
-   :undoc-members:
-
-pdb\_cpp.sasa module
---------------------
-
-.. automodule:: pdb_cpp.sasa
-   :members:
-   :show-inheritance:
-   :undoc-members:
-
-pdb\_cpp.salt\_bridge module
------------------------------
-
-.. automodule:: pdb_cpp.salt_bridge
    :members:
    :show-inheritance:
    :undoc-members:

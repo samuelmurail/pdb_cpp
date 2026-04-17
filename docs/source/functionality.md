@@ -60,18 +60,19 @@ The cached file is reused on subsequent calls with the same PDB ID.
 
 ## Interaction analysis
 
-Interface-oriented tools are grouped under `pdb_cpp.interaction`:
+Interface-oriented tools are grouped under `pdb_cpp.analysis.interaction`:
 
 - `interaction.hbonds()` for hydrogen bonds
 - `interaction.salt_bridges()` for ionic contacts / salt bridges
 - `interaction.interface_sasa()` for buried surface and interface area
 
-The older module paths remain available (`pdb_cpp.hbond`,
-`pdb_cpp.salt_bridge`, `pdb_cpp.analysis.buried_surface_area`), but
-`pdb_cpp.interaction` is the recommended namespace for new code.
+Use `pdb_cpp.analysis.interaction` for interface-oriented analysis. The older
+top-level SASA and salt-bridge modules were removed; interface-oriented helpers
+live under `pdb_cpp.analysis`.
 
 ```python
-from pdb_cpp import Coor, interaction
+from pdb_cpp import Coor
+from pdb_cpp.analysis import interaction
 
 coor = Coor("tests/input/1A0A.cif")
 
@@ -298,7 +299,8 @@ print(f"{low_b.len} atoms with B < 30")
 ### SASA for one chain or selection
 
 ```python
-from pdb_cpp import Coor, sasa
+from pdb_cpp import Coor
+from pdb_cpp.analysis import sasa
 
 coor = Coor("tests/input/1a2k.pdb")
 result = sasa.sasa(coor, selection="chain A", by_residue=True)[0]
@@ -314,7 +316,7 @@ per-atom SASA using a simple element-based classifier, with `N`, `O`, `S`,
 
 ### Protein-protein interface SASA
 
-Use `pdb_cpp.sasa.buried_surface_area()` to evaluate two partners inside one
+Use `pdb_cpp.analysis.sasa.buried_surface_area()` to evaluate two partners inside one
 complex. This helper computes three SASA values internally:
 
 - receptor alone
@@ -327,7 +329,8 @@ The returned interface metrics follow the standard convention:
 - `interface_area = buried_surface / 2`
 
 ```python
-from pdb_cpp import Coor, sasa
+from pdb_cpp import Coor
+from pdb_cpp.analysis import sasa
 
 coor = Coor("tests/input/1a2k.pdb")
 
@@ -662,6 +665,14 @@ This tries all possible chain pairings and returns the best RMSD.
 
 ### RMSD functions
 
+The analysis API is also grouped into submodules, so both of these patterns
+are supported:
+
+```python
+from pdb_cpp import analysis
+from pdb_cpp.analysis import dockq, sasa, hbonds
+```
+
 ```python
 from pdb_cpp import analysis
 
@@ -898,7 +909,7 @@ If you use DockQ scoring, please cite:
 
 ## 10. Hydrogen bond detection
 
-`pdb_cpp.hbond` detects hydrogen bonds using a purely geometric approach
+`pdb_cpp.analysis.hbonds` detects hydrogen bonds using a purely geometric approach
 (Baker & Hubbard, 1984). For structures without explicit hydrogen atoms,
 backbone NH and sidechain hydrogen positions are reconstructed
 algebraically. The algorithm covers all standard L/D amino acids and RNA/DNA
@@ -908,12 +919,12 @@ nucleotides.
 
 ```python
 from pdb_cpp import Coor
-from pdb_cpp import hbond
+from pdb_cpp.analysis import hbonds
 
 coor = Coor("tests/input/2rri.cif")
 
 # All protein–protein H-bonds for every model
-all_bonds = hbond.hbonds(coor)
+all_bonds = hbonds.hbonds(coor)
 
 # List of HBond objects for model 0
 bonds_model0 = all_bonds[0]
@@ -926,7 +937,7 @@ for b in bonds_model0[:3]:
 ### Function signature
 
 ```python
-hbond.hbonds(
+hbonds.hbonds(
     coor,
     donor_sel    = "protein",
     acceptor_sel = "protein",
@@ -976,10 +987,10 @@ read-only attributes:
 
 ```python
 from pdb_cpp import Coor
-from pdb_cpp import hbond
+from pdb_cpp.analysis import hbonds
 
 coor = Coor("tests/input/2rri.cif")
-bonds = hbond.hbonds(coor)[0]
+bonds = hbonds.hbonds(coor)[0]
 
 # Backbone–backbone H-bonds only
 bb_names = {"N", "O"}
@@ -1008,14 +1019,14 @@ string, enabling inter-molecular or cross-type analysis:
 
 ```python
 # Protein side-chains donating to RNA acceptors
-rna_contacts = hbond.hbonds(
+rna_contacts = hbonds.hbonds(
     coor,
     donor_sel    = "protein",
     acceptor_sel = "nucleic",
 )
 
 # H-bonds between two specific chains
-ab_bonds = hbond.hbonds(coor, donor_sel="chain A", acceptor_sel="chain B")
+ab_bonds = hbonds.hbonds(coor, donor_sel="chain A", acceptor_sel="chain B")
 ```
 
 ### Baker & Hubbard criteria
@@ -1092,7 +1103,7 @@ This is recommended before structural alignment to avoid mismatches.
 | `pdb_cpp.core`      | `get_common_atoms`, `coor_align`, `align_seq_based`, `tmalign_ca`, `distance_matrix`, `compute_SS`, `sequence_align`, `Alignment_cpp`, `hy36encode`, `hy36decode` |
 | `pdb_cpp.alignment` | `align_seq`, `print_align_seq`, `align_chain_permutation` |
 | `pdb_cpp.analysis`  | `rmsd`, `interface_rmsd`, `native_contact`, `dockQ`       |
-| `pdb_cpp.hbond`     | `hbonds` — Baker & Hubbard H-bond detection               |
+| `pdb_cpp.analysis.hbonds` | `hbonds` — Baker & Hubbard H-bond detection         |
 | `pdb_cpp.TMalign`   | `compute_secondary_structure`                             |
 | `pdb_cpp.geom`      | `distance_matrix`                                         |
 | `pdb_cpp.select`    | `remove_incomplete_backbone_residues`                     |

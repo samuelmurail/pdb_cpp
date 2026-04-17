@@ -185,18 +185,18 @@ If you use DockQ scoring in `pdb_cpp`, please cite:
 
 ## Hydrogen bond detection
 
-`pdb_cpp.hbond` identifies hydrogen bonds using the Baker & Hubbard
+`pdb_cpp.analysis.hbonds` identifies hydrogen bonds using the Baker & Hubbard
 geometric criteria. Hydrogen positions are reconstructed algebraically when
 not present in the file, so no pre-processing step is required.
 
 ```python
 from pdb_cpp import Coor
-from pdb_cpp import hbond
+from pdb_cpp.analysis import hbonds
 
 coor = Coor("tests/input/2rri.cif")
 
 # One list of HBond objects per model frame
-all_bonds = hbond.hbonds(coor)
+all_bonds = hbonds.hbonds(coor)
 print(f"Model 0: {len(all_bonds[0])} H-bonds")
 
 # Inspect bond geometry
@@ -206,7 +206,7 @@ print(f"Acceptor: {b.acceptor_chain}{b.acceptor_resid} {b.acceptor_name}")
 print(f"d(D..A) = {b.dist_DA:.2f} Å  ∠DHA = {b.angle_DHA:.1f}°")
 
 # Cross-selection: protein donors to nucleic-acid acceptors
-rna_bonds = hbond.hbonds(coor, donor_sel="protein", acceptor_sel="nucleic")
+rna_bonds = hbonds.hbonds(coor, donor_sel="protein", acceptor_sel="nucleic")
 ```
 
 Default cutoffs follow Baker & Hubbard (1984):

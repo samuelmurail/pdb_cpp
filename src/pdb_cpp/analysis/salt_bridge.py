@@ -7,7 +7,7 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from .geom import distance_matrix
+from ..geom import distance_matrix
 
 __all__ = ["SaltBridge", "salt_bridges"]
 
@@ -104,28 +104,6 @@ def salt_bridges(
 
     Salt bridges are detected between explicitly typed cationic and anionic
     heavy atoms using a simple distance cutoff.
-
-    Parameters
-    ----------
-    coor : Coor
-        Coordinate object (one or more models / frames).
-    cation_sel : str, optional
-        Atom selection string for the cationic side (default: ``"protein"``).
-    anion_sel : str, optional
-        Atom selection string for the anionic side (default: ``"protein"``).
-    cutoff : float, optional
-        Maximum cation-anion heavy-atom distance in Å (default 4.0).
-
-    Returns
-    -------
-    list[list[SaltBridge]]
-        One list of salt bridges per model frame.
-
-    Notes
-    -----
-    Canonical nucleic acids contribute phosphate anions but no cationic groups,
-    so nucleic-nucleic systems typically return no salt bridges unless modified
-    positively charged residues are present.
     """
     results = []
     for frame_idx, _ in enumerate(coor.models):

@@ -9,10 +9,9 @@ from concurrent.futures import ThreadPoolExecutor
 
 import numpy as np
 
-from .core import align_seq_based, align_index_based, coor_align, get_common_atoms, rmsd as core_rmsd
-from .select import remove_incomplete_backbone_residues
-from .alignment import align_seq as _align_seq
-from .sasa import buried_surface_area, sasa
+from ..alignment import align_seq as _align_seq
+from ..core import align_seq_based, align_index_based, coor_align, get_common_atoms, rmsd as core_rmsd
+from ..select import remove_incomplete_backbone_residues
 
 __all__ = ["rmsd", "interface_rmsd", "native_contact", "dockQ", "dockQ_multimer"]
 
@@ -65,7 +64,7 @@ def _sequence_identity(seq1, seq2):
 
 
 def _count_clashes(coor, rec_chains, lig_chains, clash_cutoff=2.0):
-    """Count (receptor, ligand) residue pairs with any atom within *clash_cutoff* Å."""
+    """Count (receptor, ligand) residue pairs with any atom within *clash_cutoff* A."""
     rec_sel = " ".join(rec_chains)
     lig_sel = " ".join(lig_chains)
     clashes_list = []
@@ -232,7 +231,6 @@ def interface_rmsd(
     if back_atom is None:
         back_atom = ["CA", "N", "C", "O"]
 
-    # Fast path: caller provides pre-matched atom indices.
     if index_pair is not None:
         iface_model_idx, iface_native_idx = index_pair
         if not iface_model_idx:
@@ -535,10 +533,6 @@ def dockQ(
         len(lig_index) // len(back_atom),
     )
 
-    # Fast path for chain-map search: only LRMS matters for ranking.
-    # Skips native_contact (expensive Python loops), interface_rmsd, and all
-    # intermediate select_atoms / within queries.  The returned pseudo-DockQ is
-    # monotonically related to real DockQ for correct vs. incorrect mappings.
     if _search_mode:
         def _scale(rms, d):
             return 0.0 if rms is None else 1.0 / (1.0 + (rms / d) ** 2)
@@ -586,12 +580,6 @@ def dockQ(
         residue_id_map[model_residue_id] = mapped_id
         native_residue_id_map[native_residue_id] = mapped_id
 
-    # Build interface atom index pairs from the sequence-aligned indices.
-    # Filtering to interface residues here (native side within 10 Å of partner)
-    # lets us pass them directly to interface_rmsd via index_pair, which calls
-    # align_index_based.  This is correct even when model chains restart
-    # residue numbering from 1 (e.g. CASP models) because we work with atom
-    # indices, not residue selections.
     nat_lig_iface = clean_native_coor.select_atoms(
         f"chain {' '.join(native_lig_chains)} "
         f"and within 10.0 of chain {' '.join(native_rec_chains)}"
@@ -617,7 +605,6 @@ def dockQ(
         if native_all_uids[ni] in iface_native_uids
     ]
 
-    # Fnat is computed on clean_coor (before interface_rmsd aligns it in-place).
     fnat_list, fnonnat_list = native_contact(
         interface_coor,
         interface_native_coor,
@@ -728,15 +715,9 @@ def dockQ_multimer(
     native_seq = native_coor.get_aa_seq()
     model_seq = coor.get_aa_seq()
 
-    # Molecule types per chain used for clustering and interface scoring.
-    # get_aa_seq() uses "name CA" so it only returns protein chains — every
-    # chain it reports is protein by definition; no select_atoms needed.
-    # _get_chain_types is reserved for future DNA/RNA chains not in get_aa_seq.
     _native_chain_types = {ch: "protein" for ch in native_seq}
     _model_chain_types = {ch: "protein" for ch in model_seq}
 
-    # These are populated inside the auto-mapping block and reused in the
-    # final per-interface scoring pass below, avoiding redundant select_atoms.
     _native_iface_cache_local = _native_iface_cache
     _model_backbone_cache_local = _model_backbone_cache
 
@@ -747,7 +728,6 @@ def dockQ_multimer(
         _MAX_PERMUTATIONS = 720
         _all_native = sorted(native_seq.keys())
 
-        # ── Step 1: native interface presence (per pair, independent of mapping) ──
         _native_iface_cache_local = {}
         for _n1, _n2 in itertools.combinations(_all_native, 2):
             _sel = native_coor.select_atoms(f"chain {_n1} and within 10.0 of chain {_n2}")
@@ -755,18 +735,13 @@ def dockQ_multimer(
                 len(np.unique(_sel.models[0].uniq_resid)) > 0
             )
 
-        # ── Step 2: per model-chain backbone presence ──────────────────────────
         _back_list = " ".join(back_atom)
         _model_backbone_cache_local = {}
         for _mc in model_chains_list:
             _sel = coor.select_atoms(f"protein and chain {_mc} and name {_back_list}")
             _model_backbone_cache_local[_mc] = len(np.unique(_sel.models[0].uniq_resid)) > 0
 
-        # ── Step 3: build sequence clusters ───────────────────────────────────
-        # Candidates are restricted to chains of the same molecule type so that
-        # protein chains are never assigned to DNA/RNA slots and vice-versa.
         if len(model_chains_list) < len(native_chains_ordered):
-            # Inverse case: clusters maps model → [compatible native chains]
             clusters = {}
             for mod_chain in model_chains_list:
                 mod_s = model_seq[mod_chain].replace("-", "").upper()
@@ -788,13 +763,11 @@ def dockQ_multimer(
                         ),
                     )]
                 clusters[mod_chain] = candidates
-            # Reverse lookup: native chain → model chains that could be assigned to it
             _model_cands_for_nat = {}
             for _mc, _nats in clusters.items():
                 for _nc in _nats:
                     _model_cands_for_nat.setdefault(_nc, []).append(_mc)
         else:
-            # Standard case: clusters maps native → [compatible model chains]
             clusters = {}
             for nat_chain in native_chains_ordered:
                 nat_s = native_seq[nat_chain].replace("-", "").upper()
@@ -816,11 +789,8 @@ def dockQ_multimer(
                         ),
                     )]
                 clusters[nat_chain] = candidates
-            _model_cands_for_nat = clusters  # already nat → [model chains]
+            _model_cands_for_nat = clusters
 
-        # ── Step 4: count permutations; short-circuit when only one is valid ──
-        # For a fully heterogeneous complex (e.g. A1B1C1…) n_combos == 1:
-        # the identity map is the only option, so skip all search overhead.
         if len(model_chains_list) < len(native_chains_ordered):
             def _gen_maps_inv(mod_chains, used):
                 """Yield model→native dicts; each native chain used at most once."""
@@ -844,13 +814,12 @@ def dockQ_multimer(
                 )
                 logger.info("Single valid chain mapping (inverse): %s", best_map)
             else:
-                # ── Pairwise precomp (only when there are multiple permutations) ──
                 _native_pairs_with_iface = [
                     (_n1, _n2)
                     for _n1, _n2 in itertools.combinations(_all_native, 2)
                     if _native_iface_cache_local.get((_n1, _n2), False)
                 ]
-                _pairwise_cache: dict = {}
+                _pairwise_cache = {}
                 for _n1, _n2 in _native_pairs_with_iface:
                     if (_native_chain_types.get(_n1) != "protein"
                             or _native_chain_types.get(_n2) != "protein"):
@@ -957,13 +926,12 @@ def dockQ_multimer(
                 best_map = identity_map
                 logger.info("Single valid chain mapping: %s", best_map)
             else:
-                # ── Pairwise precomp (only when there are multiple permutations) ──
                 _native_pairs_with_iface = [
                     (_n1, _n2)
                     for _n1, _n2 in itertools.combinations(_all_native, 2)
                     if _native_iface_cache_local.get((_n1, _n2), False)
                 ]
-                _pairwise_cache: dict = {}
+                _pairwise_cache = {}
                 for _n1, _n2 in _native_pairs_with_iface:
                     if (_native_chain_types.get(_n1) != "protein"
                             or _native_chain_types.get(_n2) != "protein"):
@@ -1057,9 +1025,6 @@ def dockQ_multimer(
         m1 = chain_map[n1]
         m2 = chain_map[n2]
 
-        # Skip if both native chains map to the same model chain (can happen
-        # when model has fewer chains than native, e.g. a subcomplex model vs.
-        # a full biological assembly). There is no inter-chain interface to score.
         if m1 == m2:
             logger.info(
                 "Skipping interface (%s, %s): both map to the same model chain %s",
@@ -1068,7 +1033,6 @@ def dockQ_multimer(
             interfaces[(n1, n2)] = None
             continue
 
-        # Skip interfaces that dockQ() cannot score yet (non-protein chains).
         if (_native_chain_types.get(n1) != "protein"
                 or _native_chain_types.get(n2) != "protein"):
             logger.info(
@@ -1079,7 +1043,6 @@ def dockQ_multimer(
             interfaces[(n1, n2)] = None
             continue
 
-        # Assign the larger native chain as receptor (DockQ v2 convention)
         n1_len = len(native_seq.get(n1, "").replace("-", ""))
         n2_len = len(native_seq.get(n2, "").replace("-", ""))
         if n1_len >= n2_len:
@@ -1092,8 +1055,6 @@ def dockQ_multimer(
             rec_n, lig_n, rec_m, lig_m,
         )
 
-        # Use precomputed caches — prefer locally computed ones (set above)
-        # which are available when we auto-detected the chain map.
         _eff_nat_cache = _native_iface_cache_local
         _cached_nat = (
             _eff_nat_cache.get((n1, n2), _eff_nat_cache.get((n2, n1)))
@@ -1131,9 +1092,6 @@ def dockQ_multimer(
             )
             interfaces[(n1, n2)] = None
 
-    # iRMS=None just causes scale_rms to return 0.0 in the DockQ formula;
-    # the score is still well-defined, so we only drop interfaces where dockQ
-    # raised an exception (v is None).
     valid = [v for v in interfaces.values() if v is not None]
     if valid:
         n_frames = len(valid[0]["DockQ"])
