@@ -60,25 +60,21 @@ The cached file is reused on subsequent calls with the same PDB ID.
 
 ## Interaction analysis
 
-Interface-oriented tools are grouped under `pdb_cpp.analysis.interaction`:
+Interface-oriented tools live directly in the analysis submodules:
 
-- `interaction.hbonds()` for hydrogen bonds
-- `interaction.salt_bridges()` for ionic contacts / salt bridges
-- `interaction.interface_sasa()` for buried surface and interface area
-
-Use `pdb_cpp.analysis.interaction` for interface-oriented analysis. The older
-top-level SASA and salt-bridge modules were removed; interface-oriented helpers
-live under `pdb_cpp.analysis`.
+- `pdb_cpp.analysis.hbonds.hbonds()` for hydrogen bonds
+- `pdb_cpp.analysis.salt_bridge.salt_bridges()` for ionic contacts / salt bridges
+- `pdb_cpp.analysis.sasa.buried_surface_area()` for buried surface and interface area
 
 ```python
 from pdb_cpp import Coor
-from pdb_cpp.analysis import interaction
+from pdb_cpp.analysis import hbonds, salt_bridge, sasa
 
 coor = Coor("tests/input/1A0A.cif")
 
-hb = interaction.hbonds(coor, donor_sel="protein", acceptor_sel="nucleic")
-sb = interaction.salt_bridges(coor, cation_sel="protein", anion_sel="nucleic")
-iface = interaction.interface_sasa(
+hb = hbonds.hbonds(coor, donor_sel="protein", acceptor_sel="nucleic")
+sb = salt_bridge.salt_bridges(coor, cation_sel="protein", anion_sel="nucleic")
+iface = sasa.buried_surface_area(
     coor,
     receptor_sel="chain C D",
     ligand_sel="chain A B",

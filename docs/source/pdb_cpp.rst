@@ -36,14 +36,6 @@ pdb\_cpp.analysis module
    :show-inheritance:
    :undoc-members:
 
-pdb\_cpp.analysis.interaction module
-------------------------------------
-
-.. automodule:: pdb_cpp.analysis.interaction
-   :members:
-   :show-inheritance:
-   :undoc-members:
-
 pdb\_cpp.analysis.sasa module
 -----------------------------
 

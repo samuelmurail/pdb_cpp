@@ -8,12 +8,13 @@ This package groups structure-analysis helpers into topic-oriented modules:
 - :mod:`pdb_cpp.analysis.dockq`
 - :mod:`pdb_cpp.analysis.sasa`
 - :mod:`pdb_cpp.analysis.hbonds`
+- :mod:`pdb_cpp.analysis.salt_bridge`
 
 The historical flat API is preserved, so existing code such as
 ``pdb_cpp.analysis.rmsd(...)`` keeps working.
 """
 
-from . import dockq, interaction, salt_bridge as _salt_bridge_module
+from . import dockq, salt_bridge as _salt_bridge_module
 from . import hbonds as _hbonds_module
 from . import sasa as _sasa_module
 from .dockq import dockQ, dockQ_multimer, interface_rmsd, native_contact, rmsd
@@ -40,7 +41,6 @@ salt_bridge = _salt_bridge_module
 
 __all__ = [
     "dockq",
-    "interaction",
     "sasa",
     "hbonds",
     "salt_bridge",
