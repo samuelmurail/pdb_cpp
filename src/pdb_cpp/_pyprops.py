@@ -6,6 +6,66 @@ import numpy as np
 from .core import Coor, Model
 from . import rcsb
 
+
+class _FieldProxy:
+    """Proxy for a per-atom field that supports indexed get/set.
+
+    Holds a reference to the original C++ object (Coor or Model) and
+    calls the named getter/setter methods directly, so writes always
+    propagate back into the underlying data.
+
+    Supports::
+
+        obj.beta[indices] = 42.0      # broadcast scalar
+        obj.x[indices] = array        # assign array
+        obj.chain[indices] = "B"      # broadcast string
+    """
+
+    __slots__ = ("_target", "_getter", "_setter")
+
+    def __init__(self, target, getter: str, setter: str):
+        object.__setattr__(self, "_target", target)
+        object.__setattr__(self, "_getter", getter)
+        object.__setattr__(self, "_setter", setter)
+
+    def _raw(self):
+        return getattr(self._target, self._getter)()
+
+    def _get_array(self):
+        return np.asarray(self._raw(), dtype=float)
+
+    def __getitem__(self, index):
+        raw = self._raw()
+        if isinstance(raw, (list, tuple)):
+            if np.isscalar(index):
+                return raw[index]
+            return [raw[i] for i in index]
+        return np.asarray(raw)[index]
+
+    def __setitem__(self, index, value):
+        setter = getattr(self._target, self._setter)
+        indices = [int(index)] if np.isscalar(index) else [int(i) for i in index]
+        if isinstance(value, str) or (np.isscalar(value) and not isinstance(value, (list, tuple))):
+            for i in indices:
+                setter(i, value)
+        else:
+            for i, v in zip(indices, value):
+                setter(i, v)
+
+    def __len__(self):
+        return len(self._raw())
+
+    def __iter__(self):
+        return iter(self._raw())
+
+    def __repr__(self):
+        return repr(list(self._raw()))
+
+    def __array__(self, dtype=None):
+        arr = self._get_array()
+        return arr.astype(dtype) if dtype is not None else arr
+
+
 _coor_init = Coor.__init__
 def _fetch_mmcif(pdb_id):
     """Fetch and cache the asymmetric-unit mmCIF file for a PDB ID."""
@@ -92,217 +152,91 @@ def _char_array_to_str_list(array_like):
 
 @property
 def num(self):
-    """Return the atom number of the selection.
-
-    Returns
-    -------
-    list[int]
-        Atom indices.
-    """
-    return self.get_num()
+    return _FieldProxy(self, 'get_num', 'set_num')
 
 
 @property
 def uniq_resid(self):
-    """Return the unique residue identifiers of the selection.
-
-    Returns
-    -------
-    list[int]
-        Unique residue identifiers.
-    """
-    return self.get_uniqresid()
+    return _FieldProxy(self, 'get_uniqresid', 'set_uniqresid')
 
 
 @property
 def name(self):
-    """Return the atom names of the selection.
-
-    Returns
-    -------
-    list
-        Atom names.
-    """
-    return self.get_name()
+    return _FieldProxy(self, 'get_name', 'set_name')
 
 
 @property
 def chain(self):
-    """Return the chain identifiers of the selection.
-
-    Returns
-    -------
-    list
-        Chain identifiers.
-    """
-    return self.get_chain()
+    return _FieldProxy(self, 'get_chain', 'set_chain')
 
 
 @property
 def resname(self):
-    """Return the residue names of the selection.
-
-    Returns
-    -------
-    list
-        Residue names.
-    """
-    return self.get_resname()
+    return _FieldProxy(self, 'get_resname', 'set_resname')
 
 
 @property
 def resid(self):
-    """Return the residue IDs of the selection.
-
-    Returns
-    -------
-    list[int]
-        Residue IDs.
-    """
-    return self.get_resid()
+    return _FieldProxy(self, 'get_resid', 'set_resid')
 
 
 @property
 def x(self):
-    """Return the x coordinates of the selection.
-
-    Returns
-    -------
-    list[float]
-        X coordinates.
-    """
-    return self.get_x()
+    return _FieldProxy(self, 'get_x', 'set_x')
 
 
 @property
 def y(self):
-    """Return the y coordinates of the selection.
-
-    Returns
-    -------
-    list[float]
-        Y coordinates.
-    """
-    return self.get_y()
+    return _FieldProxy(self, 'get_y', 'set_y')
 
 
 @property
 def z(self):
-    """Return the z coordinates of the selection.
-
-    Returns
-    -------
-    list[float]
-        Z coordinates.
-    """
-    return self.get_z()
+    return _FieldProxy(self, 'get_z', 'set_z')
 
 
 @property
 def beta(self):
-    """Return the B-factors of the selection.
-
-    Returns
-    -------
-    list[float]
-        B-factors.
-    """
-    return self.get_beta()
+    return _FieldProxy(self, 'get_beta', 'set_beta')
 
 
 @property
 def occ(self):
-    """Return the occupancies of the selection.
-
-    Returns
-    -------
-    list[float]
-        Occupancies.
-    """
-    return self.get_occ()
+    return _FieldProxy(self, 'get_occ', 'set_occ')
 
 
 @property
 def xyz(self):
-    """Return the xyz coordinates as an (N, 3) array.
-
-    Returns
-    -------
-    numpy.ndarray
-        Coordinate array with shape (N, 3).
-    """
     return np.column_stack((self.get_x(), self.get_y(), self.get_z()))
 
 
 @property
 def chain_str(self):
-    """Return the chain identifiers as strings.
-
-    Returns
-    -------
-    list[str]
-        Chain identifiers.
-    """
     return _char_array_to_str_list(self.get_chain())
 
 
 @property
 def name_str(self):
-    """Return the atom names as strings.
-
-    Returns
-    -------
-    list[str]
-        Atom names.
-    """
     return _char_array_to_str_list(self.get_name())
 
 
 @property
 def resname_str(self):
-    """Return the residue names as strings.
-
-    Returns
-    -------
-    list[str]
-        Residue names.
-    """
     return _char_array_to_str_list(self.get_resname())
 
 
 @property
 def elem_str(self):
-    """Return the element symbols as strings.
-
-    Returns
-    -------
-    list[str]
-        Element symbols.
-    """
     return _char_array_to_str_list(self.get_elem())
 
 
 @property
 def alterloc_str(self):
-    """Return the alternate location identifiers as strings.
-
-    Returns
-    -------
-    list[str]
-        Alternate location identifiers.
-    """
     return _char_array_to_str_list(self.get_alterloc())
 
 
 @property
 def insertres_str(self):
-    """Return the residue insertion codes as strings.
-
-    Returns
-    -------
-    list[str]
-        Residue insertion codes.
-    """
     return _char_array_to_str_list(self.get_insertres())
 
 
@@ -372,219 +306,92 @@ Coor.model_num = model_num
 
 @property
 def resname(self):
-    """Return the residue names of the selection.
-
-    Returns
-    -------
-    list
-        Residue names.
-    """
-    return self.models[self.active_model].get_resname()
+    return _FieldProxy(self, 'get_resname', 'set_resname')
 
 
 @property
 def resid(self):
-    """Return the residue IDs of the selection.
-
-    Returns
-    -------
-    list[int]
-        Residue IDs.
-    """
-    return self.models[self.active_model].get_resid()
+    return _FieldProxy(self, 'get_resid', 'set_resid')
 
 
 @property
 def uniq_resid(self):
-    """Return the unique residue identifiers of the selection.
-
-    Returns
-    -------
-    list[int]
-        Unique residue identifiers.
-    """
-    return self.models[self.active_model].get_uniqresid()
+    return _FieldProxy(self, 'get_uniqresid', 'set_uniqresid')
 
 
 @property
 def chain(self):
-    """Return the chain identifiers of the selection.
-
-    Returns
-    -------
-    list
-        Chain identifiers.
-    """
-    return self.models[self.active_model].get_chain()
+    return _FieldProxy(self, 'get_chain', 'set_chain')
 
 
 @property
 def name(self):
-    """Return the atom names of the selection.
-
-    Returns
-    -------
-    list
-        Atom names.
-    """
-    return self.models[self.active_model].get_name()
+    return _FieldProxy(self, 'get_name', 'set_name')
 
 
 @property
 def num(self):
-    """Return the atom numbers of the selection.
-
-    Returns
-    -------
-    list[int]
-        Atom indices.
-    """
-    return self.models[self.active_model].get_num()
+    return _FieldProxy(self, 'get_num', 'set_num')
 
 
 @property
 def x(self):
-    """Return the x coordinates of the selection.
-
-    Returns
-    -------
-    list[float]
-        X coordinates.
-    """
-    return self.models[self.active_model].get_x()
+    return _FieldProxy(self, 'get_x', 'set_x')
 
 
 @property
 def y(self):
-    """Return the y coordinates of the selection.
-
-    Returns
-    -------
-    list[float]
-        Y coordinates.
-    """
-    return self.models[self.active_model].get_y()
+    return _FieldProxy(self, 'get_y', 'set_y')
 
 
 @property
 def z(self):
-    """Return the z coordinates of the selection.
-
-    Returns
-    -------
-    list[float]
-        Z coordinates.
-    """
-    return self.models[self.active_model].get_z()
+    return _FieldProxy(self, 'get_z', 'set_z')
 
 
 @property
 def beta(self):
-    """Return the B-factors of the selection.
-
-    Returns
-    -------
-    list[float]
-        B-factors.
-    """
-    return self.models[self.active_model].get_beta()
+    return _FieldProxy(self, 'get_beta', 'set_beta')
 
 
 @property
 def occ(self):
-    """Return the occupancies of the selection.
-
-    Returns
-    -------
-    list[float]
-        Occupancies.
-    """
-    return self.models[self.active_model].get_occ()
+    return _FieldProxy(self, 'get_occ', 'set_occ')
 
 
 @property
 def xyz(self):
-    """Return the xyz coordinates as an (N, 3) array.
-
-    Returns
-    -------
-    numpy.ndarray
-        Coordinate array with shape (N, 3).
-    """
-    model = self.models[self.active_model]
-    return np.column_stack((model.get_x(), model.get_y(), model.get_z()))
+    return np.column_stack((self.get_x(), self.get_y(), self.get_z()))
 
 
 @property
 def chain_str(self):
-    """Return the chain identifiers as strings.
-
-    Returns
-    -------
-    list[str]
-        Chain identifiers.
-    """
-    return _char_array_to_str_list(self.models[self.active_model].get_chain())
+    return _char_array_to_str_list(self.get_chain())
 
 
 @property
 def name_str(self):
-    """Return the atom names as strings.
-
-    Returns
-    -------
-    list[str]
-        Atom names.
-    """
-    return _char_array_to_str_list(self.models[self.active_model].get_name())
+    return _char_array_to_str_list(self.get_name())
 
 
 @property
 def resname_str(self):
-    """Return the residue names as strings.
-
-    Returns
-    -------
-    list[str]
-        Residue names.
-    """
-    return _char_array_to_str_list(self.models[self.active_model].get_resname())
+    return _char_array_to_str_list(self.get_resname())
 
 
 @property
 def elem_str(self):
-    """Return the element symbols as strings.
-
-    Returns
-    -------
-    list[str]
-        Element symbols.
-    """
-    return _char_array_to_str_list(self.models[self.active_model].get_elem())
+    return _char_array_to_str_list(self.get_elem())
 
 
 @property
 def alterloc_str(self):
-    """Return the alternate location identifiers as strings.
-
-    Returns
-    -------
-    list[str]
-        Alternate location identifiers.
-    """
-    return _char_array_to_str_list(self.models[self.active_model].get_alterloc())
+    return _char_array_to_str_list(self.get_alterloc())
 
 
 @property
 def insertres_str(self):
-    """Return the residue insertion codes as strings.
-
-    Returns
-    -------
-    list[str]
-        Residue insertion codes.
-    """
-    return _char_array_to_str_list(self.models[self.active_model].get_insertres())
+    return _char_array_to_str_list(self.get_insertres())
 
 
 Coor.resname = resname

@@ -168,7 +168,7 @@ inline std::unordered_map<std::string, std::vector<AcceptorEntry>> build_accepto
     t["HIE"].push_back("ND1");
     t["DHI"].push_back("ND1"); t["DHI"].push_back("NE2");
     t["SEC"].push_back("SE");
-    // RNA / DNA
+    // RNA / DNA base acceptors
     t["A"]  = {"N1", "N3", "N7"};
     t["U"]  = {"O2", "O4"};
     t["G"]  = {"N3", "N7", "O6"};
@@ -177,6 +177,21 @@ inline std::unordered_map<std::string, std::vector<AcceptorEntry>> build_accepto
     t["DT"] = {"O2", "O4"};
     t["DC"] = t["C"];
     t["DG"] = t["G"];
+
+    // Backbone / sugar acceptors.
+    // Phosphate oxygens are a major class of protein–nucleic H-bond acceptors.
+    const std::vector<std::string> nucleic_all = {"A", "U", "G", "C", "DA", "DT", "DC", "DG"};
+    const std::vector<std::string> backbone_acceptors = {"OP1", "OP2", "O1P", "O2P", "O3'", "O4'", "O5'"};
+    for (const auto &nt : nucleic_all) {
+        auto &acc = t[nt];
+        acc.insert(acc.end(), backbone_acceptors.begin(), backbone_acceptors.end());
+    }
+
+    // RNA 2'-OH oxygen can accept as well.
+    t["A"].push_back("O2'");
+    t["U"].push_back("O2'");
+    t["G"].push_back("O2'");
+    t["C"].push_back("O2'");
 
     return t;
 }

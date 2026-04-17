@@ -14,7 +14,7 @@ backbone H positions are reconstructed geometrically).
 
 import pytest
 from pdb_cpp import Coor, hbond, core
-from .datafiles import MMCIF_1Y0M, MMCIF_2RRI
+from .datafiles import MMCIF_1Y0M, MMCIF_2RRI, CIF_1A0A
 
 # ---------------------------------------------------------------------------
 # Reference values derived from biotite 1.6.0 on 2rri.cif
@@ -146,6 +146,26 @@ def test_hbond_fields():
         assert isinstance(hb.acceptor_name, str) and hb.acceptor_name
         assert len(hb.donor_heavy_xyz) == 3
         assert len(hb.acceptor_xyz) == 3
+
+
+def test_hbonds_protein_to_nucleic_include_backbone_acceptors_1a0a():
+    """Protein-DNA H-bonds on 1A0A must include phosphate backbone acceptors.
+
+    This guards against undercounting caused by treating only nucleobase atoms
+    as nucleic-acid acceptors.
+    """
+    coor = Coor(CIF_1A0A)
+    hb_list = hbond.hbonds(coor, donor_sel="protein", acceptor_sel="nucleic")[0]
+
+    unique_keys = {
+        (hb.donor_chain, hb.donor_resid, hb.donor_heavy_name,
+         hb.acceptor_chain, hb.acceptor_resid, hb.acceptor_name)
+        for hb in hb_list
+    }
+    acceptor_names = {hb.acceptor_name for hb in hb_list}
+
+    assert len(unique_keys) == 6
+    assert {"OP1", "OP2"}.issubset(acceptor_names)
 
 
 def test_hbonds_strict_cutoff():

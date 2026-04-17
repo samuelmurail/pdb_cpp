@@ -64,6 +64,42 @@ public:
     void set_y(size_t index, float value) { if (index < y_.size()) y_[index] = value; }
     void set_z(size_t index, float value) { if (index < z_.size()) z_[index] = value; }
     void set_num(size_t index, int value) { if (index < num_.size()) num_[index] = value; }
+    void set_beta(size_t index, float value) { if (index < beta_.size()) beta_[index] = value; }
+    void set_occ(size_t index, float value) { if (index < occ_.size()) occ_[index] = value; }
+    void set_resid(size_t index, int value) { if (index < resid_.size()) resid_[index] = value; }
+    void set_uniqresid(size_t index, int value) { if (index < uniqresid_.size()) uniqresid_[index] = value; }
+
+    // String field setters (convert std::string → fixed-size char array)
+    void set_name(size_t index, const std::string &value) {
+        if (index >= name_.size()) return;
+        name_[index] = {};
+        for (size_t i = 0; i < std::min(value.size(), (size_t)4); ++i) name_[index][i] = value[i];
+    }
+    void set_resname(size_t index, const std::string &value) {
+        if (index >= resname_.size()) return;
+        resname_[index] = {};
+        for (size_t i = 0; i < std::min(value.size(), (size_t)4); ++i) resname_[index][i] = value[i];
+    }
+    void set_elem(size_t index, const std::string &value) {
+        if (index >= elem_.size()) return;
+        elem_[index] = {};
+        for (size_t i = 0; i < std::min(value.size(), (size_t)4); ++i) elem_[index][i] = value[i];
+    }
+    void set_chain(size_t index, const std::string &value) {
+        if (index >= chain_.size()) return;
+        chain_[index] = {};
+        if (!value.empty()) chain_[index][0] = value[0];
+    }
+    void set_alterloc(size_t index, const std::string &value) {
+        if (index >= alterloc_.size()) return;
+        alterloc_[index] = {};
+        if (!value.empty()) alterloc_[index][0] = value[0];
+    }
+    void set_insertres(size_t index, const std::string &value) {
+        if (index >= insertres_.size()) return;
+        insertres_[index] = {};
+        if (!value.empty()) insertres_[index][0] = value[0];
+    }
 
 private:
     // === Storage (Structure of Arrays) ===
