@@ -1073,9 +1073,11 @@ ab_bonds = hbonds.hbonds(coor, donor_sel="chain A", acceptor_sel="chain B")
 The default thresholds reproduce the original Baker & Hubbard (1984)
 geometric criteria:
 
-$$d(\text{D}{\cdots}\text{A}) \leq 3.5~\text{Å}, \quad
-  d(\text{H}{\cdots}\text{A}) \leq 2.5~\text{Å}, \quad
-  \angle(\text{D{-}H}{\cdots}\text{A}) \geq 90°$$
+$$
+d(\text{D}{\cdots}\text{A}) \leq 3.5~\text{Å}, \quad
+d(\text{H}{\cdots}\text{A}) \leq 2.5~\text{Å}, \quad
+\angle(\text{D{-}H}{\cdots}\text{A}) \geq 90°
+$$
 
 A stricter cut-off of 120° (`angle_cutoff=120`) is closer to values used
 by biotite and is recommended when comparing with other tools.

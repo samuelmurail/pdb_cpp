@@ -7,6 +7,7 @@ Subpackages
 .. toctree::
    :maxdepth: 4
 
+   pdb_cpp.analysis
    pdb_cpp.data
 
 Submodules
@@ -24,30 +25,6 @@ pdb\_cpp.alignment module
 -------------------------
 
 .. automodule:: pdb_cpp.alignment
-   :members:
-   :show-inheritance:
-   :undoc-members:
-
-pdb\_cpp.analysis module
-------------------------
-
-.. automodule:: pdb_cpp.analysis
-   :members:
-   :show-inheritance:
-   :undoc-members:
-
-pdb\_cpp.analysis.sasa module
------------------------------
-
-.. automodule:: pdb_cpp.analysis.sasa
-   :members:
-   :show-inheritance:
-   :undoc-members:
-
-pdb\_cpp.analysis.salt\_bridge module
---------------------------------------
-
-.. automodule:: pdb_cpp.analysis.salt_bridge
    :members:
    :show-inheritance:
    :undoc-members:
@@ -72,14 +49,6 @@ pdb\_cpp.geom module
 --------------------
 
 .. automodule:: pdb_cpp.geom
-   :members:
-   :show-inheritance:
-   :undoc-members:
-
-pdb\_cpp.analysis.hbonds module
---------------------------------
-
-.. automodule:: pdb_cpp.analysis.hbonds
    :members:
    :show-inheritance:
    :undoc-members:

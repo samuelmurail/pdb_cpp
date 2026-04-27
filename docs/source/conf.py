@@ -51,6 +51,11 @@ exclude_patterns = []
 # source_suffix = ['.rst', '.md']
 source_suffix = ['.rst', '.ipynb', '.md']
 
+myst_enable_extensions = [
+    'dollarmath',
+    'amsmath',
+]
+
 
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
