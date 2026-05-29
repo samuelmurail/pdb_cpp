@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 # coding: utf-8
 
+"""Selection helpers that wrap the coordinate-object methods."""
+
 __all__ = ["remove_incomplete_backbone_residues"]
 
 

@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 # coding: utf-8
 
+"""Python wrappers around the TM-align / secondary-structure core."""
+
 
 from .core import compute_SS
 
@@ -32,10 +34,10 @@ def compute_secondary_structure(coor, **kwargs):
 
     for ss_frame in ss_list:
         ss_dict = {}
-        # print(f"Secondary structure: {ss_sec}")
+
+        # The C++ layer returns fixed-width chain identifiers with NUL padding.
 
         for chain, seq in zip(uniq_chains, ss_frame):
-            # print(f"Chain: {chain}, Sequence: {seq}")
             new_chain = ""
             for letter in chain:
                 if letter != "\x00":

@@ -1,6 +1,12 @@
 #!/usr/bin/env python3
 # coding: utf-8
 
+"""Command-line interface for DockQ scoring.
+
+This module turns the analysis helpers into a small CLI that can print either
+human-readable reports or JSON output.
+"""
+
 from __future__ import annotations
 
 import argparse
@@ -11,6 +17,7 @@ from . import Coor, analysis
 
 
 def _parse_chain_map(value: str) -> dict[str, str]:
+    """Parse a native:model chain mapping from CLI input."""
     chain_map = {}
     if not value.strip():
         raise argparse.ArgumentTypeError("chain map cannot be empty")
@@ -36,6 +43,7 @@ def _parse_chain_map(value: str) -> dict[str, str]:
 
 
 def _build_parser() -> argparse.ArgumentParser:
+    """Build the argument parser for the DockQ CLI."""
     parser = argparse.ArgumentParser(
         description=(
             "Compute DockQ with pdb_cpp using analysis.dockQ_multimer(), "
@@ -64,12 +72,14 @@ def _build_parser() -> argparse.ArgumentParser:
 
 
 def _float_or_none(value: float | None) -> float | None:
+    """Convert numeric values to plain floats while preserving ``None``."""
     if value is None:
         return None
     return float(value)
 
 
 def _serialise_result(result: dict) -> dict:
+    """Convert the DockQ result structure into JSON-friendly primitives."""
     interfaces = {}
     for (native_chain_1, native_chain_2), iface_result in result["interfaces"].items():
         key = f"{native_chain_1}-{native_chain_2}"
@@ -97,12 +107,14 @@ def _serialise_result(result: dict) -> dict:
 
 
 def _format_value(value: float | None) -> str:
+    """Format a scalar result value for text output."""
     if value is None:
         return "NA"
     return f"{value:.3f}"
 
 
 def _print_report(result: dict, model_path: str, native_path: str) -> None:
+    """Print a compact DockQ summary for interactive use."""
     print(f"model: {Path(model_path)}")
     print(f"native: {Path(native_path)}")
     print(
@@ -137,6 +149,7 @@ def _print_report(result: dict, model_path: str, native_path: str) -> None:
 
 
 def main(argv: list[str] | None = None) -> int:
+    """Run the DockQ command-line interface."""
     parser = _build_parser()
     args = parser.parse_args(argv)
 

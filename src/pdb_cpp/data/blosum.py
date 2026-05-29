@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 # coding: utf-8
 
+"""Load and cache substitution matrices bundled with pdb_cpp."""
+
 import os
 
 _BLOSUM62_CACHE = None
@@ -56,6 +58,8 @@ def get_blosum62():
 
 
 class _LazyBlosum62(dict):
+    """Dictionary-like lazy loader for the packaged BLOSUM62 matrix."""
+
     def _ensure(self):
         if not self:
             self.update(get_blosum62())

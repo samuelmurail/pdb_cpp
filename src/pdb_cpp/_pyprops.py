@@ -1,6 +1,13 @@
 #!/usr/bin/env python3
 # coding: utf-8
 
+"""Python-facing property helpers for the C++ coordinate objects.
+
+This module monkey-patches the compiled ``Coor`` and ``Model`` classes so they
+behave more naturally from Python, including NumPy-friendly field access and
+optional PDB-ID loading.
+"""
+
 import numpy as np
 
 from .core import Coor, Model
@@ -76,6 +83,8 @@ class _FieldProxy:
 
 
 _coor_init = Coor.__init__
+
+
 def _fetch_mmcif(pdb_id):
     """Fetch and cache the asymmetric-unit mmCIF file for a PDB ID."""
     return rcsb.download_structure(pdb_id, structure="asymmetric_unit", file_format="cif")
@@ -159,6 +168,8 @@ def _char_array_to_str_list(array_like):
     return out
 
 
+# Attach Python properties to the compiled bindings so callers can use array-like
+# access patterns directly on the objects they already know.
 @property
 def num(self):
     return _FieldProxy(self, 'get_num', 'set_num')

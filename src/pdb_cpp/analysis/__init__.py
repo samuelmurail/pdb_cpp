@@ -24,6 +24,12 @@ from .sasa import buried_surface_area, shape_complementarity
 
 
 class _CallableNamespace:
+    """Expose a module through a callable facade.
+
+    This keeps the historical ``pdb_cpp.analysis.sasa(...)`` style API working
+    while still allowing attribute access to the underlying module.
+    """
+
     def __init__(self, func, module):
         self._func = func
         self._module = module

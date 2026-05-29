@@ -1,6 +1,12 @@
 #!/usr/bin/env python3
 # coding: utf-8
 
+"""Public package entry point for pdb_cpp.
+
+Importing this module exposes the primary coordinate classes and loads the
+runtime patches that add Python-friendly helpers onto the C++ bindings.
+"""
+
 # Autorship information
 __author__ = "Samuel Murail"
 __copyright__ = "Copyright 2025, RPBS"

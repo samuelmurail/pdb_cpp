@@ -1,6 +1,12 @@
 #!/usr/bin/env python3
 # coding: utf-8
 
+"""Sequence-alignment convenience wrappers.
+
+The compiled core implements the actual alignment algorithms; this module keeps
+the Python surface small and provides packaged defaults such as BLOSUM62.
+"""
+
 from importlib import resources
 
 from .core import align_chain_permutation as _align_chain_permutation
@@ -11,6 +17,7 @@ __all__ = ["align_seq", "print_align_seq", "align_chain_permutation"]
 
 
 def _default_matrix_file():
+    """Return the bundled BLOSUM62 matrix path."""
     return str(resources.files("pdb_cpp.data").joinpath("blosum62.txt"))
 
 

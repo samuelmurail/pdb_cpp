@@ -1,6 +1,12 @@
 #!/usr/bin/env python3
 # coding: utf-8
 
+"""Salt-bridge detection helpers.
+
+The implementation uses explicit charged-atom tables and a simple distance
+cutoff so the behavior stays predictable across protein and nucleic selections.
+"""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -14,6 +20,8 @@ __all__ = ["SaltBridge", "salt_bridges"]
 
 @dataclass(frozen=True)
 class SaltBridge:
+    """Describe a single salt bridge between a cationic and anionic atom."""
+
     cation_resid: int
     cation_resname: str
     cation_chain: str
@@ -54,6 +62,7 @@ NEGATIVE_ATOMS = {
 
 
 def _char_array_to_str_list(array_like):
+    """Convert fixed-width C++ character arrays into trimmed Python strings."""
     out = []
     for item in array_like:
         value = ""
@@ -65,10 +74,12 @@ def _char_array_to_str_list(array_like):
 
 
 def _get_model_strings(model, getter_name: str) -> list[str]:
+    """Fetch a string-valued atom property from a model."""
     return _char_array_to_str_list(getattr(model, getter_name)())
 
 
 def _collect_charged_atoms(model, charge_table: dict[str, set[str]]) -> list[dict]:
+    """Collect atoms that match the charged-atom lookup table."""
     names = _get_model_strings(model, "get_name")
     resnames = _get_model_strings(model, "get_resname")
     chains = _get_model_strings(model, "get_chain")

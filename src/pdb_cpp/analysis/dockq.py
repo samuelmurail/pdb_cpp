@@ -1,6 +1,12 @@
 #!/usr/bin/env python3
 # coding: utf-8
 
+"""DockQ scoring and interface-metric helpers.
+
+The public functions in this module compute RMSD, contact fractions, and the
+combined DockQ score for protein-protein and protein-nucleic interfaces.
+"""
+
 import itertools
 import logging
 import math
