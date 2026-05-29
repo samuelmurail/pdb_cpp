@@ -11,6 +11,9 @@
 #include "../geom.h"
 #include "encode.h"
 
+// The parser keeps field extraction local and explicit so the format
+// assumptions remain easy to audit and adjust.
+
 using namespace std;
 
 namespace {
@@ -112,7 +115,7 @@ Coor PDB_parse(const string& filename) {
             int num = hy36decode(5, safe_field(line, 6, 5));
             const string name_field = safe_field(line, 12, 4);
             array<char, 5> name_array{};
-            // strip spaces
+            // PDB atom names are fixed-width; strip padding while preserving order.
             array_i = 0;
             for (size_t i = 0; i < 4; ++i) {
                 if (name_field[i] != ' ') {
@@ -124,7 +127,7 @@ Coor PDB_parse(const string& filename) {
             array<char, 2> alterloc = {safe_char(line, 16), '\0'};
             const string resname_field = safe_field(line, 17, 3);
             array<char, 5> resname_array{};
-            // strip spaces
+            // Residue names use the same fixed-width packing as atom names.
             array_i = 0;
             for (size_t i = 0; i < 3; ++i) {
                 if (resname_field[i] != ' ') {
@@ -196,7 +199,7 @@ Coor PDB_parse(const string& filename) {
                 }
             }
         } else if (line.compare(0, 6, "CRYST1") == 0) {
-            // Parse CRYST1 line
+            // Capture crystallographic metadata verbatim; parsing happens later.
             coor.crystal_pack.set_CRYST1_pdb(line);
         } else if (line.compare(0, 11, "REMARK 350 ") == 0) {
             transformation_txt += line + "\n";

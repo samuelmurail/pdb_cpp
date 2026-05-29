@@ -1,6 +1,11 @@
 #ifndef SELECT_H
 #define SELECT_H
 
+/**
+ * @file select.h
+ * @brief Selection utilities for pruning coordinate containers.
+ */
+
 #include <vector>
 #include <string>
 #include <unordered_map>
@@ -12,7 +17,7 @@ using namespace std;
 class Model;
 
 
-// Recursive token structure
+// Recursive token structure used by the textual selection parser.
 struct Token;
 using TokenVariant = variant<string, vector<Token>>;
 struct Token {
@@ -44,11 +49,11 @@ struct Token {
     }
 };
 
-// Alias for list of tokens
+// Alias for a parsed selection token list.
 using TokenList = vector<Token>;
 
 
-// Function declarations
+// Function declarations.
 bool is_simple_list(const Token &tokens);
 bool is_operator(const string &token);
 void print_tokens(const Token& token, int indent=0);
@@ -60,7 +65,7 @@ Token parse_selection(string selection);
 vector<bool> simple_select_atoms_model(const Model &model, const string &column, const vector<string> &values, const string &op);
 vector<bool> dist_under_index(const Model &model, vector<bool> selection, float distance);
 
-// Keywords and nicknames
+// Keywords and nicknames used by the parser.
 extern const unordered_set<string> KEYWORDS;
 extern unordered_map<string, string> NICKNAMES;
 

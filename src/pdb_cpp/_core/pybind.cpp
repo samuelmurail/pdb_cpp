@@ -1,5 +1,8 @@
 #include <cstring>
 
+// Python bindings for the C++ core. Keep public behavior documented here so
+// downstream wrappers and generated help stay easy to inspect.
+
 #include <pybind11/pybind11.h>
 #include <pybind11/numpy.h>
 #include <pybind11/stl.h>
@@ -17,6 +20,8 @@
 namespace py = pybind11;
 
 static std::string resolve_matrix_file(const std::string &matrix_file) {
+    // Fall back to the packaged matrix so Python callers do not need to know
+    // the resource path.
     if (!matrix_file.empty()) {
         return matrix_file;
     }
@@ -26,6 +31,7 @@ static std::string resolve_matrix_file(const std::string &matrix_file) {
 }
 
 PYBIND11_MODULE(core, m) {
+    // Model exposes the atom arrays for the active frame and in-place setters.
     py::class_<Model>(m, "Model")
         .def(py::init<>())
         .def("clear", &Model::clear)
@@ -65,8 +71,9 @@ PYBIND11_MODULE(core, m) {
              "Calculate centroid of all atoms in the model")
         .def("get_centroid", static_cast<std::array<float, 3> (Model::*)(const std::vector<int>&) const>(&Model::get_centroid),
              py::arg("indices"), "Calculate centroid of atoms at specified indices")
-        // Add more methods as needed
+        // Additional Model methods should be bound here as the Python API grows.
         ;
+    // Coor owns multiple frames and mirrors the selection/alignment API.
     py::class_<Coor>(m, "Coor")
         .def_property("active_model", &Coor::get_active_model, &Coor::set_active_model)
         .def(py::init<>())
@@ -88,7 +95,7 @@ PYBIND11_MODULE(core, m) {
         .def("get_Models", &Coor::get_Models)
         .def("get_all_Models", &Coor::get_all_Models)
         .def("model_size", &Coor::model_size)
-        // Per-atom getters (active model)
+        // Per-atom getters for the active model.
         .def("get_x",         static_cast<const std::vector<float> &(Coor::*)(size_t) const>(&Coor::get_x),         py::arg("frame") = 0)
         .def("get_y",         static_cast<const std::vector<float> &(Coor::*)(size_t) const>(&Coor::get_y),         py::arg("frame") = 0)
         .def("get_z",         static_cast<const std::vector<float> &(Coor::*)(size_t) const>(&Coor::get_z),         py::arg("frame") = 0)
@@ -103,7 +110,7 @@ PYBIND11_MODULE(core, m) {
         .def("get_chain",     static_cast<const std::vector<std::array<char, 2>> &(Coor::*)(size_t) const>(&Coor::get_chain),     py::arg("frame") = 0)
         .def("get_alterloc",  static_cast<const std::vector<std::array<char, 2>> &(Coor::*)(size_t) const>(&Coor::get_alterloc),  py::arg("frame") = 0)
         .def("get_insertres", static_cast<const std::vector<std::array<char, 2>> &(Coor::*)(size_t) const>(&Coor::get_insertres), py::arg("frame") = 0)
-        // Per-atom setters (active model) — write in-place, no copy
+        // Per-atom setters for the active model; these mutate the underlying storage.
         .def("set_x",         &Coor::set_x)
         .def("set_y",         &Coor::set_y)
         .def("set_z",         &Coor::set_z)
@@ -146,7 +153,7 @@ PYBIND11_MODULE(core, m) {
         .def("remove_incomplete_backbone_residues", &Coor::remove_incomplete_backbone_residues,
             py::arg("back_atom") = std::vector<std::string>{"CA", "C", "N", "O"},
             "Remove residues with incomplete backbone atoms")
-        // Add more methods as needed
+        // Selection and sequence helpers are intentionally bound close to the core.
         ;
 
     m.def("distance_matrix",
@@ -227,14 +234,14 @@ ndarray, shape (N-3,)
         py::arg("include_hydrogen") = false,
         py::arg("by_atom") = false,
         "Compute solvent-accessible surface area for one Model with a Shrake-Rupley sampler");
-    // Bind the TMAlign secondary-structure function
+    // Bind the TM-align secondary-structure helper.
     m.def("compute_SS",
         static_cast<std::vector<std::vector<std::string>>(*)(const Coor&, bool)>(&compute_SS),
         py::arg("coor"),
         py::arg("gap_in_seq") = false,
         "Compute secondary structure for all models in a Coor object");
 
-    // Bind the TM-align structural alignment result
+    // Result object returned by the TM-align wrapper.
     py::class_<TMalignResult>(m, "TMalignResult")
         .def_readonly("TM1", &TMalignResult::TM1)
         .def_readonly("TM2", &TMalignResult::TM2)
@@ -246,7 +253,7 @@ ndarray, shape (N-3,)
         .def_readonly("seqxA", &TMalignResult::seqxA)
         .def_readonly("seqyA", &TMalignResult::seqyA);
 
-    // Bind the TM-align based CA alignment helper
+    // Bind the TM-align based CA alignment helper.
     m.def("tmalign_ca",
         &tmalign_CA,
         py::arg("coor_1"),
@@ -256,7 +263,7 @@ ndarray, shape (N-3,)
         py::arg("mm") = 0,
         "Align CA atoms of selected chains using the TM-align core from USalign");
 
-    // Bind the Alignment structure
+    // Alignment structure returned by the sequence-alignment helpers.
     py::class_<Alignment_cpp>(m, "Alignment_cpp")
         .def(py::init<>())  // Default constructor
         .def_readwrite("seq1", &Alignment_cpp::seq1, "Aligned sequence 1")

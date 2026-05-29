@@ -29,6 +29,9 @@ using namespace std::chrono;
 
 using namespace std;
 
+// Keep the alignment logic explicit here so chain mapping, scoring, and RMSD
+// behavior remain easy to inspect next to the Python-facing wrappers.
+
 // #define MATRIX_SIZE 23
 // const std::string DEFAULT_MATRIX_FILE = "./data/blosum62.txt";
 

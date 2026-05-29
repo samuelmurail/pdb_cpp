@@ -1,6 +1,11 @@
 #ifndef COOR_H
 #define COOR_H
 
+/**
+ * @file Coor.h
+ * @brief High-level structure container that owns one or more Model frames.
+ */
+
 #include <vector>
 #include <string>
 #include <array>
@@ -11,50 +16,74 @@
 
 class Coor {
 public:
-    // === Constructors ===
+    /** Construct an empty coordinate container. */
     Coor() = default;
+    /** Load a coordinate file immediately after construction. */
     Coor(const std::string& filename) {
         read(filename);
     }
-    // === Public values ===
+
+    /** Crystallographic metadata parsed from the input file. */
     CrystalPack crystal_pack;
+    /** Symmetry and transformation records parsed from REMARK blocks. */
     Transformation transformation;
+    /** Symmetry annotations parsed from REMARK blocks. */
     Symmetry symmetry;
+    /** Index of the currently active frame. */
     size_t active_model = 0;
+    /** Atom connectivity table keyed by serial number. */
     std::unordered_map<int, std::vector<int>> conect;
 
-    // === Public interface ===
-
+    /** Read a structure file into this container. */
     bool read(const std::string& filename, const std::string& format = "");
+    /** Write the current structure to disk. */
     bool write(const std::string & filename) const;
-    //bool loadPDB(const string& filename);
+    /** Remove all stored frames and metadata. */
     void clear();
+    /** Append a new frame to the container. */
     void add_Model(const Model& model) { models_.push_back(model); };
+    /** Return the current active frame index. */
     size_t get_active_model() const { return active_model; };
+    /** Set the active frame index. */
     void set_active_model(size_t model) { active_model = model; };
+    /** Return the atom count for the active frame. */
     size_t size() const {
         if (models_.empty() || active_model >= models_.size()) {
             return 0;
         }
         return models_[active_model].size();
     };
+    /** Return the number of stored frames. */
     size_t model_size() const { return models_.size(); };
+    /** Return a filtered copy using a selection string. */
     Coor select_atoms(const std::string &selection, size_t frame=0) const;
+    /** Return a filtered copy using a boolean mask. */
     Coor select_bool_index(const std::vector<bool> &indexes) const;
+    /** Return atom indices matching a selection string. */
     std::vector<int> get_index_select(const std::string selection, size_t frame=0) const;
+    /** Return unique chains as fixed-size character arrays. */
     std::vector<std::array<char, 2>> get_uniq_chain() const;
+    /** Return unique chains as strings. */
     std::vector<std::string> get_uniq_chain_str() const;
+    /** Return amino-acid sequences per chain. */
     std::vector<std::string> get_aa_sequences(bool gap_in_seq=true, size_t frame=0) const;
+    /** Return amino-acid sequences with D-residues encoded in lowercase. */
     std::vector<std::string> get_aa_sequences_dl(bool gap_in_seq=true, size_t frame=0) const;
+    /** Return protein chain sequences keyed by chain identifier. */
     std::unordered_map<std::string, std::string> get_aa_seq(bool gap_in_seq=true, size_t frame=0) const;
+    /** Return protein chain sequences with D-residues encoded in lowercase. */
     std::unordered_map<std::string, std::string> get_aa_DL_seq(bool gap_in_seq=true, size_t frame=0) const;
+    /** Return protein and nucleic-acid sequences keyed by chain identifier. */
     std::unordered_map<std::string, std::string> get_aa_na_seq(bool gap_in_seq=true, size_t frame=0) const;
+    /** Remove residues that lack the required backbone atoms. */
     Coor remove_incomplete_backbone_residues(const std::vector<std::string> &back_atom) const;
 
+    /** Return a model by value. */
     Model get_Models(int i) const { return models_[i]; }
+    /** Return all stored models by value. */
     std::vector<Model> get_all_Models() const { return models_; }
 
-    // Per-atom getters (active model)
+    /** Per-atom getters for the active model. */
     const std::vector<float> &get_x(size_t frame = 0) const { return models_[frame].get_x(); }
     const std::vector<float> &get_y(size_t frame = 0) const { return models_[frame].get_y(); }
     const std::vector<float> &get_z(size_t frame = 0) const { return models_[frame].get_z(); }
@@ -70,7 +99,7 @@ public:
     const std::vector<std::array<char, 2>> &get_alterloc(size_t frame = 0) const { return models_[frame].get_alterloc(); }
     const std::vector<std::array<char, 2>> &get_insertres(size_t frame = 0) const { return models_[frame].get_insertres(); }
 
-    // Per-atom setters (active model) — write directly, no copy
+    /** Per-atom setters for the active model. */
     void set_x(size_t index, float v)  { models_[active_model].set_x(index, v); }
     void set_y(size_t index, float v)  { models_[active_model].set_y(index, v); }
     void set_z(size_t index, float v)  { models_[active_model].set_z(index, v); }
@@ -93,7 +122,7 @@ public:
 
 
 private:
-    // === Storage (Structure of Arrays) ===
+    /** Frame storage, each entry owning one Model. */
     std::vector<Model> models_;
 
 };

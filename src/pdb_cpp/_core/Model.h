@@ -1,6 +1,11 @@
 #ifndef MODEL_H
 #define MODEL_H
 
+/**
+ * @file Model.h
+ * @brief In-memory representation of a single coordinate model/frame.
+ */
+
 #pragma once
 #include <vector>
 #include <string>
@@ -11,8 +16,7 @@ struct Token;
 class Model
 {
 public:
-    // === Public interface ===
-    // bool loadPDB(const std::string& filename);
+    /** Append one atom to the model. */
     bool addAtom(
         int num,
         const std::array<char, 5> &name_array,
@@ -26,15 +30,22 @@ public:
         bool field,
         int uniqresid);
 
+    /** Remove all atoms from the model. */
     void clear();
+    /** Return the atom count. */
     size_t size() const;
+    /** Evaluate a simple column-based selection against explicit values. */
     std::vector<bool> simple_select_atoms(const std::string &column, const std::vector<std::string> &values, const std::string &op) const;
+    /** Evaluate a parsed selection token stream. */
     std::vector<bool> select_tokens(const Token &tokens) const;
+    /** Evaluate a textual selection expression. */
     std::vector<bool> select_atoms(const std::string selection) const;
+    /** Return a filtered copy of the model. */
     Model select_index(const std::vector<bool> &indexes) const;
+    /** Return indices matching a selection expression. */
     std::vector<int> get_index_select(const std::string selection) const;
 
-    // Accessors
+    /** Atom coordinate and annotation accessors. */
     const std::vector<float> &get_x() const { return x_; }
     const std::vector<float> &get_y() const { return y_; }
     const std::vector<float> &get_z() const { return z_; }
@@ -51,15 +62,17 @@ public:
     const std::vector<bool> &get_field() const { return field_; }
     const std::vector<int> &get_uniqresid() const { return uniqresid_; }
 
+    /** Return the unique chains present in the model. */
     std::vector<std::array<char, 2>> get_uniq_chain() const;
 
+    /** Compute the distance between two atoms. */
     float distance(size_t i, size_t j) const;
     
-    // Calculate centroid of all atoms or specific indices
+    /** Compute the centroid over all atoms or a selected subset. */
     std::array<float, 3> get_centroid() const;
     std::array<float, 3> get_centroid(const std::vector<int>& indices) const;
 
-    // Coordinate setters
+    /** Coordinate setters. */
     void set_x(size_t index, float value) { if (index < x_.size()) x_[index] = value; }
     void set_y(size_t index, float value) { if (index < y_.size()) y_[index] = value; }
     void set_z(size_t index, float value) { if (index < z_.size()) z_[index] = value; }
@@ -69,7 +82,7 @@ public:
     void set_resid(size_t index, int value) { if (index < resid_.size()) resid_[index] = value; }
     void set_uniqresid(size_t index, int value) { if (index < uniqresid_.size()) uniqresid_[index] = value; }
 
-    // String field setters (convert std::string → fixed-size char array)
+    /** String field setters convert std::string values into fixed-size arrays. */
     void set_name(size_t index, const std::string &value) {
         if (index >= name_.size()) return;
         name_[index] = {};
@@ -102,7 +115,7 @@ public:
     }
 
 private:
-    // === Storage (Structure of Arrays) ===
+    /** Atom-wise storage in a structure-of-arrays layout. */
     std::vector<float> x_, y_, z_, occ_, beta_;
     std::vector<std::array<char, 5>> name_, resname_, elem_;
     std::vector<std::array<char, 2>> chain_, alterloc_, insertres_;
