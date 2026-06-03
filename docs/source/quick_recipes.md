@@ -1,6 +1,8 @@
 # Quick Recipes
 
 Short, copy-paste snippets for common workflows.
+For detailed behavior, conventions, and parameter notes, see the
+[Functionality Guide](functionality.md).
 
 ---
 
@@ -13,7 +15,7 @@ coor_local = Coor("tests/input/1y0m.cif")
 coor_remote = Coor(pdb_id="1y0m")
 ```
 
-## 1b) Force a specific file format
+## 2) Force a specific file format
 
 When the file extension is absent or misleading, pass `format=` to override
 auto-detection. This works on both the constructor and `read()`:
@@ -33,7 +35,7 @@ coor.read("structure.dat", format="pqr")
 Accepted values: `"pdb"`, `"cif"`, `"pqr"`, `"gro"`.
 Omit `format` (or pass `format=""`) to infer from the file extension as usual.
 
-## 2) Load an asymmetric unit or biological assembly from RCSB
+## 3) Load an asymmetric unit or biological assembly from RCSB
 
 ```python
 from pdb_cpp import rcsb
@@ -46,7 +48,7 @@ path = rcsb.download("5a9z", structure="biological_assembly", assembly_id=1)
 print(path)
 ```
 
-## 3) Inspect atom properties
+## 4) Inspect atom properties
 
 ```python
 from pdb_cpp import Coor
@@ -66,7 +68,7 @@ print(coor.beta[:5])
 print(coor.occ[:5])
 ```
 
-## 4) Extract an interface selection between two chains
+## 5) Extract an interface selection between two chains
 
 ```python
 from pdb_cpp import Coor
@@ -78,7 +80,7 @@ interface_a = coor.select_atoms("chain A and within 10.0 of chain B")
 interface_a.write("interface_A_vs_B.pdb")
 ```
 
-## 5) Select a receptor-ligand complex subset
+## 6) Select a receptor-ligand complex subset
 
 ```python
 from pdb_cpp import Coor
@@ -90,7 +92,7 @@ complex_ab = coor.select_atoms("chain A B")
 complex_ab.write("complex_AB.pdb")
 ```
 
-## 6) Clean up: remove incomplete backbone residues
+## 7) Clean up: remove incomplete backbone residues
 
 ```python
 from pdb_cpp import Coor, select
@@ -100,7 +102,7 @@ clean = select.remove_incomplete_backbone_residues(coor)
 print(f"Before: {coor.len}, After: {clean.len}")
 ```
 
-## 7) Sequence alignment for two chains
+## 8) Sequence alignment (two chains)
 
 ```python
 from pdb_cpp import Coor, alignment
@@ -116,7 +118,7 @@ print(f"Score: {score}")
 alignment.print_align_seq(aln_1, aln_2)
 ```
 
-## 8) Align coordinates and compute RMSD
+## 9) Structural alignment (RMSD-based)
 
 ```python
 from pdb_cpp import Coor, core, analysis
@@ -131,7 +133,7 @@ rmsd_values = analysis.rmsd(coor_1, coor_2, index_list=[idx_1, idx_2])
 print(f"RMSD: {rmsd_values[0]:.3f} Å")
 ```
 
-## 9) One-step sequence-based alignment
+## 10) One-step sequence-based alignment
 
 ```python
 from pdb_cpp import Coor, core
@@ -145,37 +147,46 @@ rmsd_list, align_idx_1, align_idx_2 = core.align_seq_based(
 print(f"RMSD: {rmsd_list[0]:.3f} Å")
 ```
 
-## 10) Chain-permutation alignment (unknown chain mapping)
+## 11) Chain-permutation alignment (unknown chain mapping)
 
 ```python
 from pdb_cpp import Coor, alignment
 
-coor_1 = Coor("tests/input/1u85.pdb")
-coor_2 = Coor("tests/input/1ubd.pdb")
+coor_1 = Coor("tests/input/1rxz_colabfold_model_1.pdb")
+coor_2 = Coor("tests/input/1rxz.pdb")
 
 rmsds, mappings = alignment.align_chain_permutation(coor_1, coor_2)
 print(f"Best RMSD: {rmsds[0]:.3f} Å")
 ```
 
-## 11) TM-score for specific chain pair
+## 12) TM-align and TM-score
 
 ```python
-from pdb_cpp import Coor
+from pdb_cpp import Coor, geom
 from pdb_cpp.core import tmalign_ca
 
 coor_1 = Coor("tests/input/1y0m.cif")
 coor_2 = Coor("tests/input/1ubd.pdb")
 
-tm = tmalign_ca(coor_1, coor_2, chain_1=["A"], chain_2=["C"], mm=1)
+tm = tmalign_ca(
+    coor_1,
+    coor_2,
+    chain_1=["A"],
+    chain_2=["C"],
+    mm=0,
+    include_transform=True,
+)
+
+R = tm.rotation
+t = tm.translation
+
+# Apply x' = R x + t to the mobile structure coordinates
+coor_1.xyz = geom.apply_transform(coor_1.xyz, R, t)
+
 print(f"L_ali={tm.L_ali}, RMSD={tm.rmsd:.3f}, TM1={tm.TM1:.4f}, TM2={tm.TM2:.4f}")
 ```
 
-If you use this USalign/TM-align functionality, please cite:
-
-- Chengxin Zhang, Morgan Shine, Anna Marie Pyle, Yang Zhang (2022) Nat Methods. 19(9), 1109-1115.
-- Chengxin Zhang, Anna Marie Pyle (2022) iScience. 25(10), 105218.
-
-## 12) DockQ with automatic chain-role inference
+## 13) DockQ with automatic chain-role inference
 
 ```python
 from pdb_cpp import Coor, analysis
@@ -189,7 +200,7 @@ print(f"Fnat: {scores['Fnat'][0]:.3f}, Fnonnat: {scores['Fnonnat'][0]:.3f}")
 print(f"LRMS: {scores['LRMS'][0]:.3f}, iRMS: {scores['iRMS'][0]:.3f}")
 ```
 
-## 13) DockQ with explicit receptor/ligand chains
+## 14) DockQ with explicit receptor/ligand chains
 
 ```python
 from pdb_cpp import Coor, analysis
@@ -208,7 +219,7 @@ scores = analysis.dockQ(
 print(f"DockQ: {scores['DockQ'][0]:.3f}")
 ```
 
-## 14) DockQ multimer from the command line
+## 15) DockQ multimer from the command line
 
 The installed `pdb_cpp_dockq` bin uses `analysis.dockQ_multimer()` directly,
 including its automatic chain-map search:
@@ -224,11 +235,7 @@ mapping:
 pdb_cpp_dockq tests/input/1a2k_model.pdb tests/input/1a2k.pdb --chain-map A:B,B:A,C:C
 ```
 
-If you use DockQ scoring, please cite:
-
-- DockQ, DOI: 10.1093/bioinformatics/btae586
-
-## 15) Secondary structure per model/chain
+## 16) Secondary structure assignment
 
 ```python
 from pdb_cpp import Coor, TMalign
@@ -240,7 +247,7 @@ for chain_id, ss_string in ss_list[0].items():
     print(f"Chain {chain_id}: {ss_string}")
 ```
 
-## 16) Distance matrix on C-alpha atoms
+## 17) Geometry utilities: distance matrix
 
 ```python
 from pdb_cpp import Coor, geom
@@ -251,7 +258,7 @@ dmat = geom.distance_matrix(ca, ca)
 print(f"Shape: {dmat.shape}")
 ```
 
-## 17) Compute protein-protein interface SASA
+## 18) SASA and interface SASA
 
 ```python
 from pdb_cpp import Coor
@@ -277,16 +284,7 @@ for residue in interface["residue_buried_surface"]:
     print(residue["partner"], residue["chain"], residue["resid"], residue["buried_area"])
 ```
 
-Convention:
-
-- `buried_surface = receptor_sasa + ligand_sasa - complex_sasa`
-- `interface_area = buried_surface / 2`
-
-`sasa.buried_surface_area()` and `sasa.sasa()` also expose a
-FreeSASA-like polar/apolar split through `polar` / `apolar` totals and the
-corresponding interface fields.
-
-## 17b) Estimate protein-protein shape complementarity
+## 19) Estimate protein-protein shape complementarity
 
 ```python
 from pdb_cpp import Coor
@@ -309,10 +307,7 @@ print(f"Interface dot pairs: {sc['interface_dot_pairs']}")
 print(f"Mean paired distance: {sc['mean_interface_distance']:.3f} A")
 ```
 
-This uses rolling-probe surface dots and a voxel-hash nearest-neighbor search
-to estimate Lawrence-Colman style interface shape complementarity.
-
-## 16) D/L amino acid and nucleic acid sequences
+## 20) D/L amino acid and nucleic acid sequences
 
 ```python
 from pdb_cpp import Coor
@@ -332,7 +327,7 @@ all_seqs = coor.get_aa_na_seq()
 print(all_seqs)
 ```
 
-## 16) Hybrid-36 encoding/decoding
+## 21) Hybrid-36 encoding/decoding
 
 ```python
 from pdb_cpp.core import hy36encode, hy36decode
@@ -343,7 +338,7 @@ decoded = hy36decode(5, "A0000")  # 100000
 print(encoded, decoded)
 ```
 
-## 17) Multi-model: iterate and compute per-model RMSD
+## 22) Multi-model: iterate and compute per-model RMSD
 
 ```python
 from pdb_cpp import Coor, analysis
@@ -357,7 +352,7 @@ for i, r in enumerate(rmsd_values):
     print(f"Model {i}: RMSD = {r:.3f} Å")
 ```
 
-## 18) Bond topology (CONECT / _struct_conn)
+## 23) Bond topology (CONECT / _struct_conn)
 
 ```python
 from pdb_cpp import Coor
@@ -382,7 +377,7 @@ ligand = coor.select_atoms("not protein")
 ligand.write("ligand_only.pdb")
 ```
 
-## 19) Interaction analysis: hydrogen bonds and salt bridges
+## 24) Interaction analysis (H-bonds and salt bridges)
 
 ```python
 from pdb_cpp import Coor

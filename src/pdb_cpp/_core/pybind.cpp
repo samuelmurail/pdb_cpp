@@ -251,7 +251,9 @@ ndarray, shape (N-3,)
         .def_readonly("Liden", &TMalignResult::Liden)
         .def_readonly("seqM", &TMalignResult::seqM)
         .def_readonly("seqxA", &TMalignResult::seqxA)
-        .def_readonly("seqyA", &TMalignResult::seqyA);
+        .def_readonly("seqyA", &TMalignResult::seqyA)
+        .def_readonly("translation", &TMalignResult::translation)
+        .def_readonly("rotation", &TMalignResult::rotation);
 
     // Bind the TM-align based CA alignment helper.
     m.def("tmalign_ca",
@@ -261,6 +263,7 @@ ndarray, shape (N-3,)
         py::arg("chain_1") = std::vector<std::string>{"A"},
         py::arg("chain_2") = std::vector<std::string>{"A"},
         py::arg("mm") = 0,
+        py::arg("include_transform") = false,
         "Align CA atoms of selected chains using the TM-align core from USalign");
 
     // Alignment structure returned by the sequence-alignment helpers.

@@ -76,6 +76,24 @@ make html
 
 The output is in `docs/build/html/`.
 
+## Documentation guidelines
+
+Use the docs pages with distinct responsibilities to keep the documentation
+organized and avoid repeating content:
+
+- `README.md`: short project overview, installation, and one minimal quick start.
+- `docs/source/basic_example.md`: beginner walkthrough only.
+- `docs/source/functionality.md`: canonical explanations of features and behavior.
+- `docs/source/quick_recipes.md`: compact copy-paste snippets.
+- `docs/source/pdb_cpp.rst`: API reference entry page.
+
+When adding or updating docs:
+
+1. Put the full explanation in one canonical page (usually `functionality.md`).
+2. In tutorial/recipe pages, link to canonical explanations instead of duplicating text.
+3. Add cross-links at the end of a section when a related page exists.
+4. Keep examples runnable and as short as possible.
+
 ## Memory safety checks
 
 Sanitizer and Valgrind scripts are in `scripts/`:

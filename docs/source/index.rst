@@ -18,29 +18,33 @@ API for fast PDB/mmCIF parsing, atom selection, sequence/structure alignment,
 TM-score, and DockQ evaluation.
 
 .. toctree::
-   :maxdepth: 4
+   :maxdepth: 2
    :caption: Getting Started
 
-   readme
    installation
+   basic_example
 
 .. toctree::
-   :maxdepth: 4
+   :maxdepth: 2
    :caption: User Guide
 
-   basic_example
    functionality
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Recipes
+
    quick_recipes
 
 .. toctree::
-   :maxdepth: 4
+   :maxdepth: 2
    :caption: Development
 
    contributing
    Github Repository <https://github.com/samuelmurail/pdb_cpp>
 
 .. toctree::
-   :maxdepth: 4
+   :maxdepth: 2
    :caption: API Reference
 
    pdb_cpp

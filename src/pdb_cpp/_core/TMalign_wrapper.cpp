@@ -355,7 +355,8 @@ TMalignResult mmalign_collect_result(
     int *assign2_list,
     vector<string> &sequence,
     double d0_scale,
-    bool fast_opt)
+    bool fast_opt,
+    bool include_transform)
 {
     int xlen = 0;
     int ylen = 0;
@@ -419,6 +420,14 @@ TMalignResult mmalign_collect_result(
     result.seqM = seqM;
     result.seqxA = seqxA;
     result.seqyA = seqyA;
+    if (include_transform) {
+        result.translation = {t0[0], t0[1], t0[2]};
+        result.rotation = {
+            {u0[0][0], u0[0][1], u0[0][2]},
+            {u0[1][0], u0[1][1], u0[1][2]},
+            {u0[2][0], u0[2][1], u0[2][2]},
+        };
+    }
 
     delete[] seqx;
     delete[] seqy;
@@ -814,7 +823,7 @@ TMalignResult mmalign_from_files(
         xa_vec, ya_vec, seqx_vec, seqy_vec, secx_vec, secy_vec,
         mol_vec1, mol_vec2, xlen_vec, ylen_vec, len_aa, len_na,
         chain1_num, chain2_num, seqxA_mat, seqyA_mat,
-        assign1_list, assign2_list, sequence, d0_scale, fast_opt);
+        assign1_list, assign2_list, sequence, d0_scale, fast_opt, false);
 
     delete [] assign1_list;
     delete [] assign2_list;
@@ -831,7 +840,8 @@ TMalignResult mmalign_from_coor(
     const Coor &coor_1,
     const Coor &coor_2,
     const vector<string> &chain2parse1,
-    const vector<string> &chain2parse2)
+    const vector<string> &chain2parse2,
+    bool include_transform)
 {
     vector<vector<vector<double>>> xa_vec;
     vector<vector<vector<double>>> ya_vec;
@@ -905,7 +915,7 @@ TMalignResult mmalign_from_coor(
             seqM, seqxA, seqyA, do_vec,
             rmsd0, L_ali, Liden, TM_ali, rmsd_ali, n_ali, n_ali8,
             xlen, ylen, sequence, 0, 0.0,
-            0, false, true, false, false,
+            0, false, false, false, false,
             mol_vec1[0] + mol_vec2[0], -1.0);
 
         TMalignResult result;
@@ -918,6 +928,14 @@ TMalignResult mmalign_from_coor(
         result.seqM = seqM;
         result.seqxA = seqxA;
         result.seqyA = seqyA;
+        if (include_transform) {
+            result.translation = {t0[0], t0[1], t0[2]};
+            result.rotation = {
+                {u0[0][0], u0[0][1], u0[0][2]},
+                {u0[1][0], u0[1][1], u0[1][2]},
+                {u0[2][0], u0[2][1], u0[2][2]},
+            };
+        }
 
         delete[] seqx;
         delete[] seqy;
@@ -1178,7 +1196,7 @@ TMalignResult mmalign_from_coor(
         xa_vec, ya_vec, seqx_vec, seqy_vec, secx_vec, secy_vec,
         mol_vec1, mol_vec2, xlen_vec, ylen_vec, len_aa, len_na,
         chain1_num, chain2_num, seqxA_mat, seqyA_mat,
-        assign1_list, assign2_list, sequence, 0.0, fast_opt);
+        assign1_list, assign2_list, sequence, 0.0, fast_opt, include_transform);
 
     delete[] assign1_list;
     delete[] assign2_list;
@@ -1288,10 +1306,11 @@ TMalignResult tmalign_CA(
     const Coor &coor_2,
     const std::vector<std::string> &chain_1,
     const std::vector<std::string> &chain_2,
-    int mm)
+    int mm,
+    bool include_transform)
 {
     if (mm == 1) {
-        return mmalign_from_coor(coor_1, coor_2, chain_1, chain_2);
+        return mmalign_from_coor(coor_1, coor_2, chain_1, chain_2, include_transform);
     }
 
     // Select CA atoms for the requested chains in each structure
@@ -1449,6 +1468,14 @@ TMalignResult tmalign_CA(
     result.seqM = seqM;
     result.seqxA = seqxA;
     result.seqyA = seqyA;
+    if (include_transform) {
+        result.translation = {t0[0], t0[1], t0[2]};
+        result.rotation = {
+            {u0[0][0], u0[0][1], u0[0][2]},
+            {u0[1][0], u0[1][1], u0[1][2]},
+            {u0[2][0], u0[2][1], u0[2][2]},
+        };
+    }
 
     return result;
 }

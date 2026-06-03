@@ -18,6 +18,8 @@ struct TMalignResult {
     std::string seqM;   // Alignment annotation string from TM-align
     std::string seqxA;  // Aligned sequence for structure 1
     std::string seqyA;  // Aligned sequence for structure 2
+    std::vector<double> translation;              // Translation applied to structure 1
+    std::vector<std::vector<double>> rotation;    // Rotation applied to structure 1
 };
 
 // Align backbone CA atoms of selected chains using the TM-align core
@@ -29,7 +31,8 @@ TMalignResult tmalign_CA(
     const Coor &coor_2,
     const std::vector<std::string> &chain_1 = {"A"},
     const std::vector<std::string> &chain_2 = {"A"},
-    int mm = 0);
+    int mm = 0,
+    bool include_transform = false);
 
 // Secondary structure assignment helpers (implemented in TMalign_wrapper.cpp)
 std::vector<std::string> compute_SS(const Model &model, bool gap_in_seq = false);

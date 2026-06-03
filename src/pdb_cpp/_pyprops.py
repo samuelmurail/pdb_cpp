@@ -41,22 +41,45 @@ class _FieldProxy:
     def _get_array(self):
         return np.asarray(self._raw(), dtype=float)
 
+    def _normalize_indices(self, index, size):
+        if np.isscalar(index):
+            return [int(index)]
+        if isinstance(index, slice):
+            return list(range(size))[index]
+
+        idx_arr = np.asarray(index)
+        if idx_arr.dtype == bool:
+            if idx_arr.size != size:
+                raise IndexError("Boolean index must match field length")
+            return np.flatnonzero(idx_arr).tolist()
+        return [int(i) for i in idx_arr.tolist()]
+
     def __getitem__(self, index):
         raw = self._raw()
         if isinstance(raw, (list, tuple)):
             if np.isscalar(index):
                 return raw[index]
+            if isinstance(index, slice):
+                return raw[index]
+            idx_arr = np.asarray(index)
+            if idx_arr.dtype == bool:
+                if idx_arr.size != len(raw):
+                    raise IndexError("Boolean index must match field length")
+                return [v for v, keep in zip(raw, idx_arr.tolist()) if keep]
             return [raw[i] for i in index]
         return np.asarray(raw)[index]
 
     def __setitem__(self, index, value):
         setter = getattr(self._target, self._setter)
-        indices = [int(index)] if np.isscalar(index) else [int(i) for i in index]
+        indices = self._normalize_indices(index, len(self._raw()))
         if isinstance(value, str) or (np.isscalar(value) and not isinstance(value, (list, tuple))):
             for i in indices:
                 setter(i, value)
         else:
-            for i, v in zip(indices, value):
+            values = list(value)
+            if len(values) != len(indices):
+                raise ValueError("Value length must match indexed selection length")
+            for i, v in zip(indices, values):
                 setter(i, v)
 
     def __len__(self):
@@ -168,6 +191,18 @@ def _char_array_to_str_list(array_like):
     return out
 
 
+def _coerce_xyz_array(xyz_values, expected_len):
+    """Validate and normalize an xyz array to shape (N, 3)."""
+    xyz = np.asarray(xyz_values, dtype=float)
+    if xyz.ndim != 2 or xyz.shape[1] != 3:
+        raise ValueError("xyz must have shape (N, 3)")
+    if xyz.shape[0] != expected_len:
+        raise ValueError(
+            f"xyz first dimension ({xyz.shape[0]}) must match atom count ({expected_len})"
+        )
+    return xyz
+
+
 # Attach Python properties to the compiled bindings so callers can use array-like
 # access patterns directly on the objects they already know.
 @property
@@ -228,6 +263,14 @@ def occ(self):
 @property
 def xyz(self):
     return np.column_stack((self.get_x(), self.get_y(), self.get_z()))
+
+
+@xyz.setter
+def xyz(self, xyz_values):
+    xyz_array = _coerce_xyz_array(xyz_values, self.size())
+    self.x[:] = xyz_array[:, 0]
+    self.y[:] = xyz_array[:, 1]
+    self.z[:] = xyz_array[:, 2]
 
 
 @property
@@ -382,6 +425,14 @@ def occ(self):
 @property
 def xyz(self):
     return np.column_stack((self.get_x(), self.get_y(), self.get_z()))
+
+
+@xyz.setter
+def xyz(self, xyz_values):
+    xyz_array = _coerce_xyz_array(xyz_values, self.size())
+    self.x[:] = xyz_array[:, 0]
+    self.y[:] = xyz_array[:, 1]
+    self.z[:] = xyz_array[:, 2]
 
 
 @property

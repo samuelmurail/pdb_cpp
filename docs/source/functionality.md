@@ -380,6 +380,12 @@ to its nearest dot on the other partner within a configurable interface radius
 using a voxel hash, and the score aggregates `dot(n_a, -n_b)` over the matched
 interface dots.
 
+```{warning}
+`shape_complementarity()` is currently experimental and has not yet been
+validated against established reference implementations or benchmark datasets.
+Use this score with caution for quantitative conclusions.
+```
+
 ```python
 from pdb_cpp import Coor
 from pdb_cpp.analysis import sasa
@@ -412,6 +418,9 @@ Important parameters:
 The returned dictionary also includes the per-frame `receptor_shape_complementarity`,
 `ligand_shape_complementarity`, `interface_dot_pairs`, and
 `mean_interface_distance` diagnostics.
+
+
+
 
 ### CONECT records
 
@@ -499,7 +508,14 @@ returns a new `Coor` object containing only the matching atoms.
 | `rna`      | RNA residue names (`A U G C`)               |
 | `dna`      | DNA residue names (`DA DC DG DT`)           |
 
-#### Logical operators
+#### Logical operatorsfrom pdb_cpp import Coor, alignment
+
+coor_1 = Coor("tests/input/1rxz_colabfold_model_1.pdb")
+coor_2 = Coor("tests/input/1rxz.pdb")
+
+rmsds, mappings = alignment.align_chain_permutation(coor_1, coor_2)
+print("Best RMSD:", rmsds[0])
+print("Returned mapping tuple lengths:", len(mappings[0]), len(mappings[1]))
 
 - `and` — intersection
 - `or` — union
@@ -694,10 +710,14 @@ This combines `get_common_atoms`, `coor_align`, and RMSD in a single call.
 When chain correspondence is unknown:
 
 ```python
-from pdb_cpp import alignment
+from pdb_cpp import Coor, alignment
+
+coor_1 = Coor("tests/input/1rxz_colabfold_model_1.pdb")
+coor_2 = Coor("tests/input/1rxz.pdb")
 
 rmsds, mappings = alignment.align_chain_permutation(coor_1, coor_2)
-print(f"Best RMSD: {rmsds[0]:.3f} Å")
+print("Best RMSD:", rmsds[0])
+print("Returned mapping tuple lengths:", len(mappings[0]), len(mappings[1]))
 ```
 
 This tries all possible chain pairings and returns the best RMSD.
@@ -730,7 +750,7 @@ TM-align provides length-independent structural similarity scoring via
 the bundled USalign implementation.
 
 ```python
-from pdb_cpp import Coor
+from pdb_cpp import Coor, geom
 from pdb_cpp.core import tmalign_ca
 
 coor_1 = Coor("tests/input/1y0m.cif")
@@ -739,8 +759,15 @@ coor_2 = Coor("tests/input/1ubd.pdb")
 result = tmalign_ca(
     coor_1, coor_2,
     chain_1=["A"], chain_2=["C"],
-    mm=1,    # 1 = TM-align mode
+    mm=0,
+    include_transform=True,
 )
+
+print(result.rotation)
+print(result.translation)
+
+# Apply x' = R x + t to all atoms of the mobile structure
+coor_1.xyz = geom.apply_transform(coor_1.xyz, result.rotation, result.translation)
 ```
 
 ### `TMalignResult` fields
@@ -756,6 +783,8 @@ result = tmalign_ca(
 | `seqxA`  | `str`   | Aligned sequence of structure 1                      |
 | `seqyA`  | `str`   | Aligned sequence of structure 2                      |
 | `seqM`   | `str`   | Alignment match string (`:` aligned, `.` close, ` ` far) |
+| `rotation`    | `list[list[float]]` | 3x3 rotation matrix (when `include_transform=True`) |
+| `translation` | `list[float]`       | Length-3 translation vector (when `include_transform=True`) |
 
 ### The `mm` parameter
 
@@ -772,7 +801,7 @@ For multi-chain alignment with chain-pairing, pass multiple chains:
 result = tmalign_ca(
     coor_1, coor_2,
     chain_1=["A", "B"], chain_2=["A", "B"],
-    mm=1,
+    mm=0,
 )
 ```
 
@@ -1095,7 +1124,7 @@ coor = Coor("tests/input/1y0m.cif")
 ca = coor.select_atoms("name CA")
 
 # Pairwise distance matrix between two coordinate sets
-dmat = geom.distance_matrix(ca, ca)
+dmat = geom.distance_matrix(ca.xyz, ca.xyz)
 print(dmat.shape)  # (N_ca, N_ca)
 ```
 

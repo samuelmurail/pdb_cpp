@@ -68,6 +68,23 @@ def test_tmalign_alignment_strings_consistent():
     assert len(result.seqM) == len(result.seqxA) == len(result.seqyA)
 
 
+def test_tmalign_can_return_transform():
+    coor_1 = Coor(PDB_1Y0M)
+    coor_2 = Coor(PDB_1UBD)
+
+    result = tmalign_ca(
+        coor_1,
+        coor_2,
+        chain_1=["A"],
+        chain_2=["C"],
+        include_transform=True,
+    )
+
+    assert len(result.translation) == 3
+    assert len(result.rotation) == 3
+    assert all(len(row) == 3 for row in result.rotation)
+
+
 @pytest.mark.parametrize(
     "coor_1_path, coor_2_path, chain_1, chain_2, expected_L, expected_rmsd, expected_tm1, expected_tm2",
     [

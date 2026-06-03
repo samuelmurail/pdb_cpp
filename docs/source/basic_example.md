@@ -1,6 +1,7 @@
 # Basic Usage
 
-A quick-start walk-through. For full details on every feature see the
+A quick-start walk-through focused on the core beginner workflow.
+For full details on every feature see the
 [Functionality Guide](functionality.md); for copy-paste snippets see
 [Quick Recipes](quick_recipes.md).
 
@@ -78,50 +79,11 @@ rmsd_list, _, _ = core.align_seq_based(coor_1, coor_2, chain_1=["A"], chain_2=["
 print(f"RMSD: {rmsd_list[0]:.3f} Å")
 ```
 
-## TM-score
+## Next steps
 
-```python
-from pdb_cpp.core import tmalign_ca
+From here, pick the page that matches your goal:
 
-tm = tmalign_ca(coor_1, coor_2, chain_1=["A"], chain_2=["C"], mm=1)
-print(f"TM1={tm.TM1:.4f}, TM2={tm.TM2:.4f}, RMSD={tm.rmsd:.3f}")
-```
-
-## DockQ scoring
-
-```python
-model = Coor("tests/input/1rxz_colabfold_model_1.pdb")
-native = Coor("tests/input/1rxz.pdb")
-
-scores = analysis.dockQ(model, native)
-print(f"DockQ: {scores['DockQ'][0]:.3f}")
-```
-
-For multimer scoring from the command line, use the installed
-`pdb_cpp_dockq` executable. It calls `analysis.dockQ_multimer()` and uses
-the same automatic native-to-model chain mapping as the benchmark script:
-
-```bash
-pdb_cpp_dockq tests/input/1a2k_model.pdb tests/input/1a2k.pdb
-```
-
-## Secondary structure
-
-```python
-from pdb_cpp import TMalign
-
-ss = TMalign.compute_secondary_structure(coor)
-for chain_id, ss_string in ss[0].items():
-    print(f"Chain {chain_id}: {ss_string}")
-```
-
-## Distance matrix
-
-```python
-from pdb_cpp import geom
-
-ca = coor.select_atoms("name CA")
-dmat = geom.distance_matrix(ca, ca)
-print(f"Distance matrix shape: {dmat.shape}")
-```
+- Advanced feature explanations: [Functionality Guide](functionality.md)
+- Task-oriented snippets (TM-score, DockQ, SASA, geometry): [Quick Recipes](quick_recipes.md)
+- Full API details: [pdb_cpp package](pdb_cpp.rst)
 
