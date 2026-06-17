@@ -64,6 +64,14 @@ def _build_parser() -> argparse.ArgumentParser:
         help="Number of CPUs passed to analysis.dockQ_multimer()",
     )
     parser.add_argument(
+        "--peptide",
+        action="store_true",
+        help=(
+            "Enable peptide DockQ cutoffs: Fnat contacts at 4A and iRMS "
+            "interface at 8A"
+        ),
+    )
+    parser.add_argument(
         "--json",
         action="store_true",
         help="Print machine-readable JSON instead of a plain-text report",
@@ -162,6 +170,7 @@ def main(argv: list[str] | None = None) -> int:
         model,
         native,
         chain_map=args.chain_map,
+        peptide=args.peptide,
         n_cpu=args.n_cpu,
     )
 

@@ -431,6 +431,7 @@ def dockQ(
     native_rec_chains=None,
     native_lig_chains=None,
     back_atom=None,
+    peptide=False,
     _search_mode=False,
 ):
     """Compute DockQ scores between a model and a native structure.
@@ -457,6 +458,9 @@ def dockQ(
         Native ligand chains. If ``None``, uses the shortest chain.
     back_atom : list[str], optional
         Backbone atom names used for alignment and RMSD calculations.
+    peptide : bool, default=False
+        Enable peptide cutoffs: 4.0 Angstrom for Fnat/Fnonnat contact counting
+        and 8.0 Angstrom for interface-residue definition in iRMS.
 
     Returns
     -------
@@ -473,6 +477,9 @@ def dockQ(
 
     if back_atom is None:
         back_atom = ["CA", "N", "C", "O"]
+
+    fnat_cutoff = 4.0 if peptide else 5.0
+    interface_cutoff = 8.0 if peptide else 10.0
 
     model_seq = coor.get_aa_seq()
     native_seq = native_coor.get_aa_seq()
@@ -588,11 +595,11 @@ def dockQ(
 
     nat_lig_iface = clean_native_coor.select_atoms(
         f"chain {' '.join(native_lig_chains)} "
-        f"and within 10.0 of chain {' '.join(native_rec_chains)}"
+        f"and within {interface_cutoff} of chain {' '.join(native_rec_chains)}"
     )
     nat_rec_iface = clean_native_coor.select_atoms(
         f"chain {' '.join(native_rec_chains)} "
-        f"and within 10.0 of chain {' '.join(native_lig_chains)}"
+        f"and within {interface_cutoff} of chain {' '.join(native_lig_chains)}"
     )
     iface_native_uids = set(
         list(nat_lig_iface.models[0].uniq_resid)
@@ -618,7 +625,7 @@ def dockQ(
         lig_chains,
         native_rec_chains,
         native_lig_chains,
-        cutoff=5.0,
+        cutoff=fnat_cutoff,
         residue_id_map=residue_id_map,
         native_residue_id_map=native_residue_id_map,
     )
@@ -634,7 +641,7 @@ def dockQ(
         clean_native_coor,
         native_rec_chains,
         native_lig_chains,
-        cutoff=10.0,
+        cutoff=interface_cutoff,
         back_atom=back_atom,
         index_pair=(iface_model_idx, iface_native_idx) if iface_model_idx else None,
     )
@@ -672,6 +679,7 @@ def dockQ_multimer(
     native_coor,
     chain_map=None,
     back_atom=None,
+    peptide=False,
     n_cpu=1,
     _search_mode=False,
     _native_iface_cache=None,
@@ -695,6 +703,8 @@ def dockQ_multimer(
         and builds an identity mapping for chains present in both.
     back_atom : list[str], optional
         Backbone atom names used for alignment and RMSD calculations.
+    peptide : bool, default=False
+        Enable peptide cutoffs for per-interface DockQ calculations.
 
     Returns
     -------
@@ -718,6 +728,8 @@ def dockQ_multimer(
     if back_atom is None:
         back_atom = ["CA", "N", "C", "O"]
 
+    interface_cutoff = 8.0 if peptide else 10.0
+
     native_seq = native_coor.get_aa_seq()
     model_seq = coor.get_aa_seq()
 
@@ -736,7 +748,9 @@ def dockQ_multimer(
 
         _native_iface_cache_local = {}
         for _n1, _n2 in itertools.combinations(_all_native, 2):
-            _sel = native_coor.select_atoms(f"chain {_n1} and within 10.0 of chain {_n2}")
+            _sel = native_coor.select_atoms(
+                f"chain {_n1} and within {interface_cutoff} of chain {_n2}"
+            )
             _native_iface_cache_local[(_n1, _n2)] = (
                 len(np.unique(_sel.models[0].uniq_resid)) > 0
             )
@@ -849,7 +863,7 @@ def dockQ_multimer(
                                     coor, native_coor,
                                     rec_chains=[_rec_m], lig_chains=[_lig_m],
                                     native_rec_chains=[_rec_n], native_lig_chains=[_lig_n],
-                                    back_atom=back_atom, _search_mode=True,
+                                    back_atom=back_atom, peptide=peptide, _search_mode=True,
                                 )
                                 _pairwise_cache[_key] = _res["DockQ"][0]
                             except Exception as _exc:
@@ -961,7 +975,7 @@ def dockQ_multimer(
                                     coor, native_coor,
                                     rec_chains=[_rec_m], lig_chains=[_lig_m],
                                     native_rec_chains=[_rec_n], native_lig_chains=[_lig_n],
-                                    back_atom=back_atom, _search_mode=True,
+                                    back_atom=back_atom, peptide=peptide, _search_mode=True,
                                 )
                                 _pairwise_cache[_key] = _res["DockQ"][0]
                             except Exception as _exc:
@@ -1068,6 +1082,7 @@ def dockQ_multimer(
         )
         viable, reason = _check_interface_viable(
             coor, native_coor, rec_m, lig_m, rec_n, lig_n, back_atom,
+            cutoff=interface_cutoff,
             _native_has_interface=_cached_nat,
             _model_backbone_cache=_model_backbone_cache_local,
         )
@@ -1085,6 +1100,7 @@ def dockQ_multimer(
                 native_rec_chains=[rec_n],
                 native_lig_chains=[lig_n],
                 back_atom=back_atom,
+                peptide=peptide,
                 _search_mode=_search_mode,
             )
             interfaces[(n1, n2)] = {

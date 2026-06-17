@@ -21,6 +21,7 @@ from .datafiles import (
 )
 from .dockq_reference_values import DOCKQ_REFERENCES, DOCKQ_MULTIMER_REFERENCES
 from pdb_cpp import Coor, analysis
+from pdb_cpp.analysis import dockq as dockq_module
 from pdb_cpp.cli_dockq import main as dockq_cli_main
 import pytest
 
@@ -164,6 +165,33 @@ def test_dockq_output_includes_clashes():
     assert all(c >= 0 for c in result["clashes"])
 
 
+def test_dockq_peptide_mode_uses_peptide_cutoffs(monkeypatch):
+    """Peptide mode must pass 4A (Fnat) and 8A (iRMS interface) cutoffs."""
+    model_coor = Coor(DOCKQ_MODEL)
+    native_coor = Coor(DOCKQ_NATIVE)
+
+    captured = {}
+    real_native_contact = dockq_module.native_contact
+    real_interface_rmsd = dockq_module.interface_rmsd
+
+    def _native_contact_spy(*args, **kwargs):
+        captured["fnat_cutoff"] = kwargs.get("cutoff")
+        return real_native_contact(*args, **kwargs)
+
+    def _interface_rmsd_spy(*args, **kwargs):
+        captured["irms_cutoff"] = kwargs.get("cutoff")
+        return real_interface_rmsd(*args, **kwargs)
+
+    monkeypatch.setattr(dockq_module, "native_contact", _native_contact_spy)
+    monkeypatch.setattr(dockq_module, "interface_rmsd", _interface_rmsd_spy)
+
+    result = analysis.dockQ(model_coor, native_coor, peptide=True)
+
+    assert len(result["DockQ"]) == len(model_coor.models)
+    assert captured["fnat_cutoff"] == pytest.approx(4.0)
+    assert captured["irms_cutoff"] == pytest.approx(8.0)
+
+
 def test_dockq_multimer_1a2k_auto_mapping():
     """dockQ_multimer without chain_map must find the optimal A→B, B→A, C→C mapping."""
     model_coor = Coor(PDB_1A2K_MODEL)
@@ -221,3 +249,21 @@ def test_dockq_cli_uses_multimer_auto_mapping(capsys):
     assert payload["interfaces"]["A-B"]["DockQ"][0] == pytest.approx(
         ref["interfaces"][("A", "B")]["DockQ"], abs=0.005
     )
+
+
+def test_dockq_cli_forwards_peptide_flag(monkeypatch, capsys):
+    captured = {}
+
+    def _fake_multimer(model, native, chain_map=None, back_atom=None, peptide=False, n_cpu=1, **kwargs):
+        captured["peptide"] = peptide
+        return {"interfaces": {}, "GlobalDockQ": [], "chain_map": {}}
+
+    monkeypatch.setattr(analysis, "dockQ_multimer", _fake_multimer)
+
+    exit_code = dockq_cli_main([PDB_1A2K_MODEL, PDB_1A2K, "--peptide", "--json"])
+    captured_out = capsys.readouterr()
+    payload = json.loads(captured_out.out)
+
+    assert exit_code == 0
+    assert captured["peptide"] is True
+    assert payload["GlobalDockQ"] == []
