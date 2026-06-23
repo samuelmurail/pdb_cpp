@@ -126,6 +126,8 @@ PYBIND11_MODULE(core, m) {
         .def("set_alterloc",  &Coor::set_alterloc)
         .def("set_insertres", &Coor::set_insertres)
         .def_readwrite("conect", &Coor::conect)
+        .def_readwrite("crystal_pack", &Coor::crystal_pack,
+            "Access crystallographic data (CRYST1 records) for this structure")
         .def("select_atoms", &Coor::select_atoms, 
             py::arg("selection"), py::arg("frame") = 0, // Specify default value for `frame`
             "Select atoms based on a selection string and an optional frame index")
@@ -510,5 +512,16 @@ Returns
 list[HBond]
     List of detected hydrogen bonds with full geometry information.
 )doc");
+
+    // CrystalPack class for handling crystallographic metadata (CRYST1 records)
+    py::class_<CrystalPack>(m, "CrystalPack")
+        .def(py::init<>())
+        .def("set_CRYST1_pdb", &CrystalPack::set_CRYST1_pdb,
+            py::arg("line"),
+            "Parse and set crystallographic data from a PDB CRYST1 record line")
+        .def("get_pdb_crystal_pack", &CrystalPack::get_pdb_crystal_pack,
+            "Generate a PDB CRYST1 record string from the stored crystallographic data")
+        .def("clear", &CrystalPack::clear,
+            "Clear all crystallographic data");
 
 }
