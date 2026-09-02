@@ -20,19 +20,14 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Download all artifacts
+      - name: Download wheel artifacts
         uses: actions/download-artifact@v4
         with:
-          path: dist
-          pattern: wheels-*
-
-      - name: Flatten wheels directory
-        run: |
-          mkdir -p wheelhouse
-          find dist -name "*.whl" -exec mv {} wheelhouse/ \;
+          path: wheelhouse
+          merge-multiple: true
 
       - name: Install build tools
-        run: python -m pip install --upgrade pip build twine
+        run: python -m pip install --upgrade pip build
 
       - name: Build source distribution
         run: python -m build --sdist
@@ -41,4 +36,3 @@ jobs:
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           password: ${{ secrets.PYPI_API_TOKEN }}
-          packages-dir: .
