@@ -53,3 +53,7 @@ where = ["src"]
 
 [tool.setuptools.package-data]
 pdb_cpp = ["data/*.txt"]
+
+[tool.cibuildwheel]
+build = "cp310-* cp311-* cp312-*"
+skip = "*-win32 *-i686"
