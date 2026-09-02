@@ -1,17 +1,13 @@
 name: Publish to PyPI
 
 on:
-  workflow_run:
-    workflows: ["Build wheels"]
-    types:
-      - completed
-    branches:
-      - main
+  push:
+    tags:
+      - "v*"
 
 jobs:
   publish:
     runs-on: ubuntu-latest
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
 
     steps:
       - uses: actions/checkout@v4
@@ -19,6 +15,9 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+
+      - name: Wait for wheels workflow
+        run: sleep 300  # Wait 5 minutes for wheels to build
 
       - name: Download wheel artifacts
         uses: actions/download-artifact@v4
