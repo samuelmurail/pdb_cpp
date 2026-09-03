@@ -507,16 +507,18 @@ returns a new `Coor` object containing only the matching atoms.
 | `nucleic`  | RNA and DNA residue names                    |
 | `rna`      | RNA residue names (`A U G C`)               |
 | `dna`      | DNA residue names (`DA DC DG DT`)           |
-| `nucleic_back`|`name P O5\' C5\' C4\' C3\' O3\'` within nucleic residues|
+| `nucleic_back`| `name P O5\' C5\' C4\' C3\' O3\'` within nucleic residues|
 
 #### Logical operatorsfrom pdb_cpp import Coor, alignment
 
+```python
 coor_1 = Coor("tests/input/1rxz_colabfold_model_1.pdb")
 coor_2 = Coor("tests/input/1rxz.pdb")
 
 rmsds, mappings = alignment.align_chain_permutation(coor_1, coor_2)
 print("Best RMSD:", rmsds[0])
 print("Returned mapping tuple lengths:", len(mappings[0]), len(mappings[1]))
+```
 
 - `and` — intersection
 - `or` — union
@@ -529,7 +531,7 @@ print("Returned mapping tuple lengths:", len(mappings[0]), len(mappings[1]))
 
 #### Spatial queries
 
-```
+```python
 within <distance> of <sub-selection>
 ```
 
