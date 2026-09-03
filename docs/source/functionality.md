@@ -862,8 +862,10 @@ ss = core.compute_SS(coor, gap_in_seq=False)
 
 ## 9. DockQ scoring
 
-DockQ evaluates docking model quality by combining interface contacts,
-ligand RMSD, and interface RMSD into a single score.
+DockQ evaluates docking model quality by combining the fraction of native contact 
+in the preidcted interace ($f_{nat}$), ligand RMSD ($LRMSD$), and interface RMSD ($iRMSD$) into a single score.
+
+$$DockQ = \frac{1}{3} \left(f_{nat} + \frac{1}{1 + (\frac{iRMSD}{a}) ^2} +  \frac{1}{1 + (\frac{LRMSD}{a}) ^2} \right) $$
 
 ### Basic usage (automatic chain-role inference)
 
@@ -974,6 +976,7 @@ are `None` when no interface residues are found within the cutoff distance.
 
 If you use DockQ scoring, please cite:
 
+- Basu S. & Wallner, B. (2016) *PLOS One*. DOI: 10.1371/journal.pone.0161879
 - Mirabello, C. & Wallner, B. (2024) *Bioinformatics*. DOI: 10.1093/bioinformatics/btae586
 
 ---
