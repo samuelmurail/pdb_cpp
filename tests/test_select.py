@@ -13,7 +13,13 @@ from pdb_cpp import Coor
 
 # from pdb_cpp import select as select
 
-from .datafiles import PDB_1U85, PDB_1Y0M, PDB_2RRI, CIF_1A0A
+from .datafiles import (
+    PDB_1U85,
+    PDB_1Y0M,
+    PDB_2RRI,
+    CIF_1A0A,
+    CIF_FOLD_2026_DNAPROT_MODEL,
+)
 
 def test_select_atoms():
     """Test select_atoms function."""
@@ -105,6 +111,82 @@ def test_select_atoms_multi_frame():
     new = test.select_atoms(selec)
     assert new.len == 237
     assert new.models[10].len == 237
+
+
+def test_select_atoms_macros_1a0a():
+    """Test macro selections (backbone, nucleic_back, ...) on a protein-DNA complex."""
+    test = Coor(CIF_1A0A)
+    assert test.len == 1767
+
+    selec = "protein"
+    new = test.select_atoms(selec)
+    assert new.len == 996
+
+    selec = "backbone"
+    new = test.select_atoms(selec)
+    assert new.len == 504
+
+    selec = "dna"
+    new = test.select_atoms(selec)
+    assert new.len == 691
+
+    selec = "rna"
+    new = test.select_atoms(selec)
+    assert new.len == 0
+
+    selec = "nucleic"
+    new = test.select_atoms(selec)
+    assert new.len == 691
+
+    selec = "nucleic_back"
+    new = test.select_atoms(selec)
+    assert new.len == 202
+
+    selec = "noh"
+    new = test.select_atoms(selec)
+    assert new.len == 1767
+
+    selec = "ions"
+    new = test.select_atoms(selec)
+    assert new.len == 0
+
+
+def test_select_atoms_macros_fold_model():
+    """Test macro selections (backbone, nucleic_back, ...) on an AlphaFold3 protein-DNA model."""
+    test = Coor(CIF_FOLD_2026_DNAPROT_MODEL)
+    assert test.len == 1695
+
+    selec = "protein"
+    new = test.select_atoms(selec)
+    assert new.len == 996
+
+    selec = "backbone"
+    new = test.select_atoms(selec)
+    assert new.len == 504
+
+    selec = "dna"
+    new = test.select_atoms(selec)
+    assert new.len == 699
+
+    selec = "rna"
+    new = test.select_atoms(selec)
+    assert new.len == 0
+
+    selec = "nucleic"
+    new = test.select_atoms(selec)
+    assert new.len == 699
+
+    selec = "nucleic_back"
+    new = test.select_atoms(selec)
+    assert new.len == 204
+
+    selec = "noh"
+    new = test.select_atoms(selec)
+    assert new.len == 1695
+
+    selec = "ions"
+    new = test.select_atoms(selec)
+    assert new.len == 0
 
 
 def test_select_atoms_within(tmp_path):

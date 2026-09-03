@@ -56,10 +56,11 @@ const unordered_set<string> KEYWORDS = {
 // NICKNAMES
 unordered_map<string, string> NICKNAMES = {
     {"protein", "resname ALA ARG ASN ASP CYS GLN GLU GLY HIS ILE LEU LYS MET PHE PRO SER THR TRP TYR VAL"},
+    {"backbone", "resname ALA ARG ASN ASP CYS GLN GLU GLY HIS ILE LEU LYS MET PHE PRO SER THR TRP TYR VAL and name N CA C O"},
     {"dna",     "resname DA DC DG DT"},
     {"rna",     "resname A U G C"},
     {"nucleic", "resname DA DC DG DT A U G C"},
-    {"backbone", "resname ALA ARG ASN ASP CYS GLN GLU GLY HIS ILE LEU LYS MET PHE PRO SER THR TRP TYR VAL and name N CA C O"},
+    {"nucleic_back", "resname DA DC DG DT A U G C and name P O5\' C5\' C4\' C3\' O3\'"},
     {"noh",  "not name H*"},
     {"ions", "resname NA CL CA MG ZN MN FE CU CO NI CD K"}};
 
@@ -223,8 +224,16 @@ Token parse_selection(string selection)
         replace_all(selection, op, " " + op + " ");
     }
 
-    // Replace nicknames with their corresponding values
-    for (const auto &pair : NICKNAMES) {
+    // Replace nicknames with their corresponding values.
+    // Longest keys are processed first so that a shorter nickname that is a
+    // substring of a longer one (e.g. "nucleic" inside "nucleic_back") cannot
+    // consume it before the longer nickname gets a chance to match.
+    vector<pair<string, string>> sorted_nicknames(NICKNAMES.begin(), NICKNAMES.end());
+    sort(sorted_nicknames.begin(), sorted_nicknames.end(),
+         [](const pair<string, string> &a, const pair<string, string> &b) {
+             return a.first.size() > b.first.size();
+         });
+    for (const auto &pair : sorted_nicknames) {
         replace_all(selection, pair.first, pair.second);
     }
 

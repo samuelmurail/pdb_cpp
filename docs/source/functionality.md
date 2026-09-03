@@ -507,6 +507,7 @@ returns a new `Coor` object containing only the matching atoms.
 | `nucleic`  | RNA and DNA residue names                    |
 | `rna`      | RNA residue names (`A U G C`)               |
 | `dna`      | DNA residue names (`DA DC DG DT`)           |
+| `nucleic_back`|`name P O5\' C5\' C4\' C3\' O3\'` within nucleic residues|
 
 #### Logical operatorsfrom pdb_cpp import Coor, alignment
 
