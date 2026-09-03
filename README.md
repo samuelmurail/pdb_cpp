@@ -82,11 +82,11 @@ For complete usage documentation, use the project docs site and source pages:
 - Installation and build notes: `docs/source/installation.md`
 - API reference entry: `docs/source/pdb_cpp.rst`
 
-Online docs: https://[samuelmurail.github.io/pdb_cpp](https://pdb-cpp.readthedocs.io)/
+Online docs: https://[pdb-cpp.readthedocs.io](https://pdb-cpp.readthedocs.io)/
 
 ## Documentation
 
-- API and examples: https://[samuelmurail.github.io/pdb_cpp](https://pdb-cpp.readthedocs.io)/
+- API and examples: https://[pdb-cpp.readthedocs.io](https://pdb-cpp.readthedocs.io)/
 - Docs sources: `docs/source/`
 
 ## Notes for contributors (C++ core)
