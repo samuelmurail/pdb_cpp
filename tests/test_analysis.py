@@ -97,8 +97,8 @@ def test_dockq_bad():
     dockq = analysis.dockQ(model_coor, native_coor)
     assert dockq["Fnat"][0] == pytest.approx(ref["Fnat"], abs=0.001)
     assert dockq["Fnonnat"][0] == pytest.approx(ref["Fnonnat"], abs=0.001)
-    assert dockq["LRMS"][0] == pytest.approx(ref["LRMS"], abs=2.0)
-    assert dockq["iRMS"][0] == pytest.approx(ref["iRMS"], abs=2.5)
+    assert dockq["LRMSD"][0] == pytest.approx(ref["LRMSD"], abs=2.0)
+    assert dockq["iRMSD"][0] == pytest.approx(ref["iRMSD"], abs=2.5)
     assert dockq["DockQ"][0] == pytest.approx(ref["DockQ"], abs=0.005)
 
 
@@ -112,8 +112,8 @@ def test_dockq_good():
     assert dockq["DockQ"][0] == pytest.approx(ref["DockQ"], abs=0.001)
     assert dockq["Fnat"][0] == pytest.approx(ref["Fnat"], abs=0.001)
     assert dockq["Fnonnat"][0] == pytest.approx(ref["Fnonnat"], abs=0.001)
-    assert dockq["LRMS"][0] == pytest.approx(ref["LRMS"], abs=0.001)
-    assert dockq["iRMS"][0] == pytest.approx(ref["iRMS"], abs=0.001)
+    assert dockq["LRMSD"][0] == pytest.approx(ref["LRMSD"], abs=0.001)
+    assert dockq["iRMSD"][0] == pytest.approx(ref["iRMSD"], abs=0.001)
 
 
 def test_dockq_model():
@@ -126,5 +126,5 @@ def test_dockq_model():
     assert dockq["DockQ"][0] == pytest.approx(ref["DockQ"], abs=0.001)
     assert dockq["Fnat"][0] == pytest.approx(ref["Fnat"], abs=0.001)
     assert dockq["Fnonnat"][0] == pytest.approx(ref["Fnonnat"], abs=0.001)
-    assert dockq["LRMS"][0] == pytest.approx(ref["LRMS"], abs=0.001)
-    assert dockq["iRMS"][0] == pytest.approx(ref["iRMS"], abs=0.001)
+    assert dockq["LRMSD"][0] == pytest.approx(ref["LRMSD"], abs=0.001)
+    assert dockq["iRMSD"][0] == pytest.approx(ref["iRMSD"], abs=0.001)

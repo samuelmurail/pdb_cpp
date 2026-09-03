@@ -36,8 +36,8 @@ def test_dockq_reference_1rxz_colabfold_vs_native():
     assert result["DockQ"][0] == pytest.approx(ref["DockQ"], abs=0.001)
     assert result["Fnat"][0] == pytest.approx(ref["Fnat"], abs=0.001)
     assert result["Fnonnat"][0] == pytest.approx(ref["Fnonnat"], abs=0.001)
-    assert result["iRMS"][0] == pytest.approx(ref["iRMS"], abs=0.001)
-    assert result["LRMS"][0] == pytest.approx(ref["LRMS"], abs=0.001)
+    assert result["iRMSD"][0] == pytest.approx(ref["iRMSD"], abs=0.001)
+    assert result["LRMSD"][0] == pytest.approx(ref["LRMSD"], abs=0.001)
 
 
 def test_dockq_reference_model_vs_native():
@@ -50,8 +50,8 @@ def test_dockq_reference_model_vs_native():
     assert result["DockQ"][0] == pytest.approx(ref["DockQ"], abs=0.001)
     assert result["Fnat"][0] == pytest.approx(ref["Fnat"], abs=0.001)
     assert result["Fnonnat"][0] == pytest.approx(ref["Fnonnat"], abs=0.001)
-    assert result["iRMS"][0] == pytest.approx(ref["iRMS"], abs=0.001)
-    assert result["LRMS"][0] == pytest.approx(ref["LRMS"], abs=0.001)
+    assert result["iRMSD"][0] == pytest.approx(ref["iRMSD"], abs=0.001)
+    assert result["LRMSD"][0] == pytest.approx(ref["LRMSD"], abs=0.001)
 
 
 def test_dockq_reference_1jd4_vs_5m6n_score_target():
@@ -77,7 +77,7 @@ def test_dockq_multimer_dimer_dimer_perfect():
     # Correct number of interfaces with actual contacts
     valid_ifaces = [
         k for k, v in result["interfaces"].items()
-        if v is not None and v["iRMS"][0] is not None
+        if v is not None and v["iRMSD"][0] is not None
     ]
     assert len(valid_ifaces) == ref["n_interfaces"]
 
@@ -104,7 +104,7 @@ def test_dockq_multimer_1a2k_with_chain_map():
 
     valid_ifaces = [
         k for k, v in result["interfaces"].items()
-        if v is not None and v["iRMS"][0] is not None
+        if v is not None and v["iRMSD"][0] is not None
     ]
     assert len(valid_ifaces) == ref["n_interfaces"]
 
@@ -114,8 +114,8 @@ def test_dockq_multimer_1a2k_with_chain_map():
         iface = result["interfaces"][iface_key]
         assert iface is not None, f"Interface {iface_key} missing from results"
         assert iface["DockQ"][0] == pytest.approx(iref["DockQ"], abs=0.005)
-        assert iface["iRMS"][0] == pytest.approx(iref["iRMS"], abs=0.005)
-        assert iface["LRMS"][0] == pytest.approx(iref["LRMS"], abs=0.005)
+        assert iface["iRMSD"][0] == pytest.approx(iref["iRMSD"], abs=0.005)
+        assert iface["LRMSD"][0] == pytest.approx(iref["LRMSD"], abs=0.005)
         assert iface["Fnat"][0] == pytest.approx(iref["Fnat"], abs=0.005)
 
 
@@ -138,7 +138,7 @@ def test_dockq_multimer_1a0a_protein_only():
 
     valid_ifaces = [
         k for k, v in result["interfaces"].items()
-        if v is not None and v["iRMS"][0] is not None
+        if v is not None and v["iRMSD"][0] is not None
     ]
     assert len(valid_ifaces) == ref["n_interfaces"]
 
@@ -148,8 +148,8 @@ def test_dockq_multimer_1a0a_protein_only():
     assert iface is not None
     iref = ref["interfaces"][("C", "D")]
     assert iface["DockQ"][0] == pytest.approx(iref["DockQ"], abs=0.005)
-    assert iface["iRMS"][0] == pytest.approx(iref["iRMS"], abs=0.005)
-    assert iface["LRMS"][0] == pytest.approx(iref["LRMS"], abs=0.005)
+    assert iface["iRMSD"][0] == pytest.approx(iref["iRMSD"], abs=0.005)
+    assert iface["LRMSD"][0] == pytest.approx(iref["LRMSD"], abs=0.005)
     assert iface["Fnat"][0] == pytest.approx(iref["Fnat"], abs=0.005)
 
 
@@ -205,7 +205,7 @@ def test_dockq_multimer_1a2k_auto_mapping():
 
     valid_ifaces = [
         k for k, v in result["interfaces"].items()
-        if v is not None and v["iRMS"][0] is not None
+        if v is not None and v["iRMSD"][0] is not None
     ]
     assert len(valid_ifaces) == ref["n_interfaces"]
 
@@ -215,8 +215,8 @@ def test_dockq_multimer_1a2k_auto_mapping():
         iface = result["interfaces"][iface_key]
         assert iface is not None, f"Interface {iface_key} missing from results"
         assert iface["DockQ"][0] == pytest.approx(iref["DockQ"], abs=0.005)
-        assert iface["iRMS"][0] == pytest.approx(iref["iRMS"], abs=0.005)
-        assert iface["LRMS"][0] == pytest.approx(iref["LRMS"], abs=0.005)
+        assert iface["iRMSD"][0] == pytest.approx(iref["iRMSD"], abs=0.005)
+        assert iface["LRMSD"][0] == pytest.approx(iref["LRMSD"], abs=0.005)
         assert iface["Fnat"][0] == pytest.approx(iref["Fnat"], abs=0.005)
 
 

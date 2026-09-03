@@ -436,8 +436,8 @@ def dockQ(
 ):
     """Compute DockQ scores between a model and a native structure.
 
-    DockQ combines interface contacts (Fnat), ligand RMSD (LRMS), and
-    interface RMSD (iRMS) into a single docking quality metric. Chain roles
+    DockQ combines interface contacts (Fnat), ligand RMSD (LRMSD), and
+    interface RMSD (iRMSD) into a single docking quality metric. Chain roles
     are inferred by selecting the shortest chain as ligand when not provided.
 
     Parameters
@@ -460,13 +460,13 @@ def dockQ(
         Backbone atom names used for alignment and RMSD calculations.
     peptide : bool, default=False
         Enable peptide cutoffs: 4.0 Angstrom for Fnat/Fnonnat contact counting
-        and 8.0 Angstrom for interface-residue definition in iRMS.
+        and 8.0 Angstrom for interface-residue definition in iRMSD.
 
     Returns
     -------
     dict
-        Dictionary with keys ``Fnat``, ``Fnonnat``, ``rRMS``, ``iRMS``,
-        ``LRMS``, and ``DockQ``, each containing lists per model.
+        Dictionary with keys ``Fnat``, ``Fnonnat``, ``rRMSD``, ``iRMSD``,
+        ``LRMSD``, and ``DockQ``, each containing lists per model.
 
     Notes
     -----
@@ -554,8 +554,8 @@ def dockQ(
             "Fnat": [0.0] * len(lrmsd_list),
             "Fnonnat": [0.0] * len(lrmsd_list),
             "rRMS": rmsd_prot_list,
-            "iRMS": [None] * len(lrmsd_list),
-            "LRMS": lrmsd_list,
+            "iRMSD": [None] * len(lrmsd_list),
+            "LRMSD": lrmsd_list,
             "DockQ": pseudo_dq,
             "clashes": [0] * len(lrmsd_list),
         }
@@ -666,9 +666,9 @@ def dockQ(
     return {
         "Fnat": fnat_list,
         "Fnonnat": fnonnat_list,
-        "rRMS": rmsd_prot_list,
-        "iRMS": irmsd_list,
-        "LRMS": lrmsd_list,
+        "rRMSD": rmsd_prot_list,
+        "iRMSD": irmsd_list,
+        "LRMSD": lrmsd_list,
         "DockQ": dockq_list,
         "clashes": clashes_list,
     }

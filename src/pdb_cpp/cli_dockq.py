@@ -67,7 +67,7 @@ def _build_parser() -> argparse.ArgumentParser:
         "--peptide",
         action="store_true",
         help=(
-            "Enable peptide DockQ cutoffs: Fnat contacts at 4A and iRMS "
+            "Enable peptide DockQ cutoffs: Fnat contacts at 4A and iRMSD "
             "interface at 8A"
         ),
     )
@@ -101,9 +101,9 @@ def _serialise_result(result: dict) -> dict:
             "DockQ": [_float_or_none(v) for v in iface_result["DockQ"]],
             "Fnat": [_float_or_none(v) for v in iface_result["Fnat"]],
             "Fnonnat": [_float_or_none(v) for v in iface_result["Fnonnat"]],
-            "LRMS": [_float_or_none(v) for v in iface_result["LRMS"]],
-            "iRMS": [_float_or_none(v) for v in iface_result["iRMS"]],
-            "rRMS": [_float_or_none(v) for v in iface_result["rRMS"]],
+            "LRMSD": [_float_or_none(v) for v in iface_result["LRMSD"]],
+            "iRMSD": [_float_or_none(v) for v in iface_result["iRMSD"]],
+            "rRMSD": [_float_or_none(v) for v in iface_result["rRMSD"]],
             "clashes": [int(v) for v in iface_result["clashes"]],
         }
 
@@ -136,7 +136,7 @@ def _print_report(result: dict, model_path: str, native_path: str) -> None:
         print("GlobalDockQ: NA")
 
     print("")
-    print("native_if	model_if	DockQ	Fnat	Fnonnat	LRMS	iRMS	rRMS	clashes")
+    print("native_if	model_if	DockQ	Fnat	Fnonnat	    	iRMSD	rRMSD	clashes")
     for (native_chain_1, native_chain_2), iface_result in result["interfaces"].items():
         if iface_result is None:
             print(f"{native_chain_1}-{native_chain_2}	NA	NA	NA	NA	NA	NA	NA	NA")
@@ -149,9 +149,9 @@ def _print_report(result: dict, model_path: str, native_path: str) -> None:
             f"{_format_value(iface_result['DockQ'][0])}\t"
             f"{_format_value(iface_result['Fnat'][0])}\t"
             f"{_format_value(iface_result['Fnonnat'][0])}\t"
-            f"{_format_value(iface_result['LRMS'][0])}\t"
-            f"{_format_value(iface_result['iRMS'][0])}\t"
-            f"{_format_value(iface_result['rRMS'][0])}\t"
+            f"{_format_value(iface_result['LRMSD'][0])}\t"
+            f"{_format_value(iface_result['iRMSD'][0])}\t"
+            f"{_format_value(iface_result['rRMSD'][0])}\t"
             f"{int(iface_result['clashes'][0])}"
         )
 

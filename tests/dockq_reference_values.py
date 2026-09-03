@@ -8,22 +8,22 @@ DOCKQ_REFERENCES = {
         "DockQ": 0.934,
         "Fnat": 0.963,
         "Fnonnat": 0.088,
-        "iRMS": 0.618,
-        "LRMS": 1.050,
+        "iRMSD": 0.618,
+        "LRMSD": 1.050,
     },
     "model_vs_native": {
         "DockQ": 0.700,
         "Fnat": 0.533,
         "Fnonnat": 0.238,
-        "iRMS": 1.232,
-        "LRMS": 1.516,
+        "iRMSD": 1.232,
+        "LRMSD": 1.516,
     },
     "1jd4_vs_5m6n": {
         "DockQ": 0.015,
         "Fnat": 0.000,
         "Fnonnat": 1.000,
-        "iRMS": 10.453,
-        "LRMS": 52.493,
+        "iRMSD": 10.453,
+        "LRMSD": 52.493,
     },
 }
 
@@ -52,9 +52,9 @@ DOCKQ_MULTIMER_REFERENCES = {
         "GlobalDockQ": 0.681,
         "n_interfaces": 3,
         "interfaces": {
-            ("A", "B"): {"DockQ": 0.997, "iRMS": 0.000, "LRMS": 0.000, "Fnat": 0.992},
-            ("A", "C"): {"DockQ": 0.511, "iRMS": 1.237, "LRMS": 6.864, "Fnat": 0.333},
-            ("B", "C"): {"DockQ": 0.533, "iRMS": 2.104, "LRMS": 8.131, "Fnat": 0.740},
+            ("A", "B"): {"DockQ": 0.997, "iRMSD": 0.000, "LRMSD": 0.000, "Fnat": 0.992},
+            ("A", "C"): {"DockQ": 0.511, "iRMSD": 1.237, "LRMSD": 6.864, "Fnat": 0.333},
+            ("B", "C"): {"DockQ": 0.533, "iRMSD": 2.104, "LRMSD": 8.131, "Fnat": 0.740},
         },
     },
     "1a2k_auto_mapping": {
@@ -64,9 +64,9 @@ DOCKQ_MULTIMER_REFERENCES = {
         "n_interfaces": 3,
         "chain_map": {"A": "B", "B": "A", "C": "C"},
         "interfaces": {
-            ("A", "B"): {"DockQ": 0.997, "iRMS": 0.000, "LRMS": 0.000, "Fnat": 0.992},
-            ("A", "C"): {"DockQ": 0.511, "iRMS": 1.237, "LRMS": 6.864, "Fnat": 0.333},
-            ("B", "C"): {"DockQ": 0.533, "iRMS": 2.104, "LRMS": 8.131, "Fnat": 0.740},
+            ("A", "B"): {"DockQ": 0.997, "iRMSD": 0.000, "LRMSD": 0.000, "Fnat": 0.992},
+            ("A", "C"): {"DockQ": 0.511, "iRMSD": 1.237, "LRMSD": 6.864, "Fnat": 0.333},
+            ("B", "C"): {"DockQ": 0.533, "iRMSD": 2.104, "LRMSD": 8.131, "Fnat": 0.740},
         },
     },
     # Protein-DNA complex: fold_2026_03_10_11_53_model_4.cif (AlphaFold3 model)
@@ -79,7 +79,7 @@ DOCKQ_MULTIMER_REFERENCES = {
         "GlobalDockQ": 0.789,
         "n_interfaces": 1,
         "interfaces": {
-            ("C", "D"): {"DockQ": 0.789, "iRMS": 1.427, "LRMS": 2.212, "Fnat": 0.906},
+            ("C", "D"): {"DockQ": 0.789, "iRMSD": 1.427, "LRMSD": 2.212, "Fnat": 0.906},
         },
     },
 }
