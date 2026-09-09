@@ -292,6 +292,17 @@ ndarray, shape (N-3,)
         py::return_value_policy::take_ownership,  // Python takes ownership of the returned pointer
         "Align two sequences using a substitution matrix and gap penalties");
 
+    m.def("sequence_align_nucleic",
+        &sequence_align_nucleic,
+        py::arg("seq1"),
+        py::arg("seq2"),
+        py::arg("match_score") = 5.0,
+        py::arg("mismatch_score") = 0.0,
+        py::arg("gap_open") = -4.0,
+        py::arg("gap_extend") = -0.5,
+        py::return_value_policy::take_ownership,
+        "Align nucleotide sequences with DockQ-compatible affine-gap scoring");
+
     // Bind the get_common_atoms function
     m.def("get_common_atoms",
         [](const Coor &coor_1,

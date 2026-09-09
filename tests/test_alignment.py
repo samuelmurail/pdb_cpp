@@ -5,7 +5,18 @@
 Tests for _alignment functions
 """
 
-from .datafiles import PDB_1Y0M, PDB_2RRI, PDB_1U85, PDB_1UBD, PDB_2MUS, PDB_2MUS_MODEL
+from .datafiles import (
+    PDB_1Y0M,
+    PDB_2RRI,
+    PDB_1U85,
+    PDB_1UBD,
+    PDB_2MUS,
+    PDB_2MUS_MODEL,
+    CIF_1A0A,
+    CIF_FOLD_2026_DNAPROT_MODEL,
+    PDB_9B0L_RNA_NATIVE,
+    PDB_9B0L_RNA_MODEL,
+)
 from pdb_cpp import Coor, alignment, core
 
 import logging
@@ -141,6 +152,65 @@ def test_seq_align(capsys):
     assert captured[-3] == "Identity seq2: 49.12%"
     assert captured[-2] == "Similarity seq1: 100.00%"
     assert captured[-1] == "Similarity seq2: 49.12%"
+
+
+def test_nucleic_sequence_align_with_insertion():
+    """Nucleotide alignment must place an insertion in a gap."""
+    result = core.sequence_align_nucleic("ACGT", "ACGTT")
+
+    assert result.seq1 == "ACG-T"
+    assert result.seq2 == "ACGTT"
+    assert result.score == 16
+
+
+def test_nucleic_sequence_align_dockq_gap_pattern():
+    """Nucleotide alignment must reproduce DockQ's affine-gap alignment."""
+    model_sequence = "CGGCCCAATAACAAGGAGGTGGCTGCCCCGACCGTCGCTCGGGCGTCG"
+    native_sequence = "AGGAGGTGGCTGCCCCGACCGTC"
+    result = core.sequence_align_nucleic(model_sequence, native_sequence)
+
+    assert result.seq1 == model_sequence
+    assert result.seq2 == "-------------AGGAGGTGGCTGCCCCGACCGTC------------"
+    assert result.score == 95
+
+
+def test_align_seq_based_nucleic_chain():
+    """The core coordinate alignment must support a DNA chain."""
+    model = Coor(CIF_FOLD_2026_DNAPROT_MODEL).select_atoms("chain C")
+    native = Coor(CIF_1A0A).select_atoms("chain A")
+    nucleic_backbone = ["P", "O5'", "C5'", "C4'", "C3'", "O3'"]
+
+    rmsds, model_indices, native_indices = core.align_seq_based(
+        model,
+        native,
+        chain_1=["C"],
+        chain_2=["A"],
+        back_names=nucleic_backbone,
+    )
+
+    assert len(model_indices) == len(native_indices)
+    assert len(model_indices) > 0
+    assert len(model_indices) // len(nucleic_backbone) == 16
+    assert rmsds[0] == pytest.approx(0.4016, abs=0.001)
+
+
+def test_align_seq_based_rna_chain():
+    """The core coordinate alignment must support a real RNA chain."""
+    model = Coor(PDB_9B0L_RNA_MODEL, format="pdb").select_atoms("chain 0")
+    native = Coor(PDB_9B0L_RNA_NATIVE).select_atoms("chain E")
+    nucleic_backbone = ["P", "O5'", "C5'", "C4'", "C3'", "O3'"]
+
+    rmsds, model_indices, native_indices = core.align_seq_based(
+        model,
+        native,
+        chain_1=["0"],
+        chain_2=["E"],
+        back_names=nucleic_backbone,
+    )
+
+    assert len(model_indices) == len(native_indices)
+    assert len(model_indices) // len(nucleic_backbone) == 117
+    assert rmsds[0] == pytest.approx(31.9641, abs=0.001)
 
 
 def test_align_seq_based():

@@ -492,7 +492,57 @@ def sasa(
 	by_atom=False,
 	by_residue=False,
 ):
-	"""Compute SASA for each model in a Coor object."""
+	"""Compute solvent-accessible surface area (SASA) for each model in a Coor object.
+
+	Parameters
+	----------
+	coor : Coor
+		Coordinate container holding one or more frames/models. SASA is computed
+		independently for each model in the object.
+	selection : str or None, optional
+		Atom selection expression to restrict the atoms included in the SASA
+		calculation for each frame. If ``None``, the entire model is used.
+	probe_radius : float, optional
+		Radius of the solvent probe in Angstroms. Larger probe radii produce a
+		more compact accessible surface.
+	n_points : int, optional
+		Number of points sampled on each atom's spherical surface when estimating
+		SASA. A higher value yields a more accurate approximation at the cost of
+		more computation.
+	include_hydrogen : bool, optional
+		If ``False`` (default), hydrogen atoms are excluded from the SASA
+		calculation. If ``True``, hydrogens are included in the surface estimate.
+	by_atom : bool, optional
+		If ``True``, retain per-atom SASA values in the result dictionary under
+		``atom_areas``. If ``False`` (default), those atom-level entries are
+		removed from the final output.
+	by_residue : bool, optional
+		If ``True``, include residue-level area summaries in the result under
+		``residue_areas``. The summary includes the chained residue identifiers,
+		total area, polar area, and apolar area for each residue.
+
+	Returns
+	-------
+	list of dict
+		A list with one dictionary per frame/model. Each dictionary contains the
+		computed SASA metrics produced by the native backend, including at least
+		``total``, ``polar``, and ``apolar`` values. When ``by_atom`` is enabled,
+		the dictionary also contains ``atom_areas``; when ``by_residue`` is
+		enabled, it contains ``residue_areas``.
+
+	Raises
+	------
+	ValueError
+		Raised if the selected atom set is empty for a given frame.
+
+	Notes
+	-----
+	This wrapper computes SASA for every model in ``coor`` and returns a list of
+	results rather than a single aggregated result, matching the per-frame API used
+	throughout the package. The function adds polar/apolar summaries derived from
+	the atom area output so that total accessible area can be interpreted in terms
+	of solvent exposure of polar and apolar atoms.
+	"""
 	results = []
 	for frame_index in range(coor.model_num):
 		if selection is None:

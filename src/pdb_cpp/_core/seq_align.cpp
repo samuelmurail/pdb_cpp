@@ -2,6 +2,9 @@
 #include <string>
 #include <iostream>
 #include <vector>
+#include <array>
+#include <algorithm>
+#include <limits>
 #include <fstream>
 #include <sstream>
 #include <stdexcept>
@@ -407,6 +410,117 @@ Alignment_cpp *sequence_align(
     free_align(alignment);
 
     return alignment_cpp;
+}
+
+Alignment_cpp *sequence_align_nucleic(
+    const std::string &seq1,
+    const std::string &seq2,
+    double match_score,
+    double mismatch_score,
+    double gap_open,
+    double gap_extend) {
+    const double neg_inf = -std::numeric_limits<double>::infinity();
+    const size_t rows = seq1.size() + 1;
+    const size_t columns = seq2.size() + 1;
+    using Matrix = std::vector<std::vector<double>>;
+    using TraceMatrix = std::vector<std::vector<unsigned char>>;
+
+    Matrix match(rows, std::vector<double>(columns, neg_inf));
+    Matrix gap_seq2(rows, std::vector<double>(columns, neg_inf));
+    Matrix gap_seq1(rows, std::vector<double>(columns, neg_inf));
+    TraceMatrix trace_match(rows, std::vector<unsigned char>(columns, 0));
+    TraceMatrix trace_gap_seq2(rows, std::vector<unsigned char>(columns, 0));
+    TraceMatrix trace_gap_seq1(rows, std::vector<unsigned char>(columns, 0));
+
+    match[0][0] = 0.0;
+    for (size_t row = 1; row < rows; ++row) {
+        gap_seq2[row][0] = gap_open + static_cast<double>(row - 1) * gap_extend;
+        trace_gap_seq2[row][0] = row == 1 ? 0 : 1;
+    }
+    for (size_t column = 1; column < columns; ++column) {
+        gap_seq1[0][column] = gap_open + static_cast<double>(column - 1) * gap_extend;
+        trace_gap_seq1[0][column] = column == 1 ? 0 : 2;
+    }
+
+    auto best_state = [](double first, double second, double third) {
+        if (first >= second && first >= third) return static_cast<unsigned char>(0);
+        if (second >= third) return static_cast<unsigned char>(1);
+        return static_cast<unsigned char>(2);
+    };
+
+    for (size_t row = 1; row < rows; ++row) {
+        for (size_t column = 1; column < columns; ++column) {
+            trace_match[row][column] = best_state(
+                match[row - 1][column - 1],
+                gap_seq2[row - 1][column - 1],
+                gap_seq1[row - 1][column - 1]);
+            const double previous_match =
+                trace_match[row][column] == 0 ? match[row - 1][column - 1] :
+                trace_match[row][column] == 1 ? gap_seq2[row - 1][column - 1] :
+                                                 gap_seq1[row - 1][column - 1];
+            match[row][column] = previous_match +
+                (seq1[row - 1] == seq2[column - 1] ? match_score : mismatch_score);
+
+            trace_gap_seq2[row][column] = best_state(
+                match[row - 1][column] + gap_open,
+                gap_seq2[row - 1][column] + gap_extend,
+                gap_seq1[row - 1][column] + gap_open);
+            gap_seq2[row][column] =
+                trace_gap_seq2[row][column] == 0 ? match[row - 1][column] + gap_open :
+                trace_gap_seq2[row][column] == 1 ? gap_seq2[row - 1][column] + gap_extend :
+                                                   gap_seq1[row - 1][column] + gap_open;
+
+            trace_gap_seq1[row][column] = best_state(
+                match[row][column - 1] + gap_open,
+                gap_seq1[row][column - 1] + gap_extend,
+                gap_seq2[row][column - 1] + gap_open);
+            gap_seq1[row][column] =
+                trace_gap_seq1[row][column] == 0 ? match[row][column - 1] + gap_open :
+                trace_gap_seq1[row][column] == 1 ? gap_seq1[row][column - 1] + gap_extend :
+                                                   gap_seq2[row][column - 1] + gap_open;
+        }
+    }
+
+    const unsigned char final_state = best_state(
+        match.back().back(), gap_seq2.back().back(), gap_seq1.back().back());
+    const double final_score = final_state == 0 ? match.back().back() :
+                               final_state == 1 ? gap_seq2.back().back() :
+                                                  gap_seq1.back().back();
+    std::string aligned_seq1;
+    std::string aligned_seq2;
+    aligned_seq1.reserve(seq1.size() + seq2.size());
+    aligned_seq2.reserve(seq1.size() + seq2.size());
+
+    size_t row = seq1.size();
+    size_t column = seq2.size();
+    unsigned char state = final_state;
+    while (row > 0 || column > 0) {
+        if (state == 0) {
+            aligned_seq1.push_back(seq1[row - 1]);
+            aligned_seq2.push_back(seq2[column - 1]);
+            state = trace_match[row][column];
+            --row;
+            --column;
+        } else if (state == 1) {
+            aligned_seq1.push_back(seq1[row - 1]);
+            aligned_seq2.push_back('-');
+            state = trace_gap_seq2[row][column];
+            --row;
+        } else {
+            aligned_seq1.push_back('-');
+            aligned_seq2.push_back(seq2[column - 1]);
+            state = trace_gap_seq1[row][column];
+            --column;
+        }
+    }
+
+    std::reverse(aligned_seq1.begin(), aligned_seq1.end());
+    std::reverse(aligned_seq2.begin(), aligned_seq2.end());
+    auto *alignment = new Alignment_cpp;
+    alignment->seq1 = aligned_seq1;
+    alignment->seq2 = aligned_seq2;
+    alignment->score = static_cast<int>(final_score);
+    return alignment;
 }
 
 

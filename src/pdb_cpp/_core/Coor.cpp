@@ -441,7 +441,7 @@ unordered_map<string, string> Coor::get_aa_na_seq(bool gap_in_seq, size_t frame)
     }
 
     vector<bool> sel = models_[frame].select_atoms(
-        "((protein and name CA) or (dna and name P)) and not altloc B C D E F");
+        "((protein and name CA) or (nucleic and name P)) and not altloc B C D E F");
     vector<array<char, 5>> resname_array = models_[frame].get_resname();
     vector<array<char, 2>> chain_array = models_[frame].get_chain();
     vector<int> resid_array = models_[frame].get_resid();

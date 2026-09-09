@@ -12,11 +12,18 @@ import logging
 import math
 from collections import Counter
 from concurrent.futures import ThreadPoolExecutor
+from functools import lru_cache
 
 import numpy as np
 
 from ..alignment import align_seq as _align_seq
-from ..core import align_seq_based, align_index_based, coor_align, get_common_atoms, rmsd as core_rmsd
+from ..core import (
+    align_seq_based,
+    align_index_based,
+    coor_align,
+    get_common_atoms,
+    rmsd as core_rmsd,
+)
 from ..select import remove_incomplete_backbone_residues
 
 __all__ = ["rmsd", "interface_rmsd", "native_contact", "dockQ", "dockQ_multimer"]
@@ -48,6 +55,7 @@ def _count_chain_combinations(clusters):
     return int(n_combos)
 
 
+@lru_cache(maxsize=4096)
 def _sequence_identity(seq1, seq2):
     """Return sequence identity using Smith-Waterman alignment.
 
@@ -93,7 +101,40 @@ def _count_clashes(coor, rec_chains, lig_chains, clash_cutoff=2.0):
     return clashes_list
 
 
-def _check_interface_viable(coor, native_coor, rec_m, lig_m, rec_n, lig_n, back_atom, cutoff=10.0, _native_has_interface=None, _model_backbone_cache=None):
+def _chain_names(coor):
+    """Return flattened chain IDs from a Coor object."""
+    chains = []
+    for chain in coor.get_uniq_chain():
+        chains.append(chain[0] if isinstance(chain, (list, tuple)) else chain)
+    return chains
+
+
+def _default_back_atom_for_chains(chains, coor=None):
+    """Return a backbone atom list that covers protein and nucleic chains."""
+    protein_back = ["CA", "N", "C", "O"]
+    nucleic_back = ["P", "O5'", "C5'", "C4'", "C3'", "O3'"]
+    if coor is None:
+        return protein_back + nucleic_back
+
+    chain_types = _get_chain_types(coor, chains)
+    if any(chain_types.get(ch) in {"dna", "rna"} for ch in chains):
+        return protein_back + nucleic_back
+    return protein_back
+
+
+def _common_chain_atoms(coor, native_coor, chain_1, chain_2, atom_names):
+    """Match nucleic-acid atoms through the core sequence-alignment path."""
+    return get_common_atoms(
+        coor,
+        native_coor,
+        chain_1=chain_1,
+        chain_2=chain_2,
+        back_names=atom_names,
+        matrix_file="",
+    )
+
+
+def _check_interface_viable(coor, native_coor, rec_m, lig_m, rec_n, lig_n, back_atom, cutoff=10.0, _native_has_interface=None, _model_backbone_cache=None, _model_chain_types=None):
     """Cheap pre-check: return (True, "") when the interface is scoreable.
 
     Avoids the expensive ``dockQ`` call (and its logged warnings) when it
@@ -101,19 +142,23 @@ def _check_interface_viable(coor, native_coor, rec_m, lig_m, rec_n, lig_n, back_
     - a model chain has no protein backbone atoms, or
     - the native structure has no interface residues between the two chains.
     """
-    back_list = " ".join(back_atom)
+    model_types = _model_chain_types or _get_chain_types(coor, [rec_m, lig_m])
+    protein_back = "CA N C O"
+    nucleic_back = "P O5' C5' C4' C3' O3'"
+    rec_back_list = nucleic_back if model_types[rec_m] in {"dna", "rna"} else protein_back
+    lig_back_list = nucleic_back if model_types[lig_m] in {"dna", "rna"} else protein_back
     if _model_backbone_cache is not None:
         rec_ok = _model_backbone_cache.get(rec_m)
         lig_ok = _model_backbone_cache.get(lig_m)
     else:
         rec_ok = lig_ok = None
     if rec_ok is None:
-        model_rec = coor.select_atoms(f"protein and chain {rec_m} and name {back_list}")
+        model_rec = coor.select_atoms(f"chain {rec_m} and name {rec_back_list}")
         rec_ok = len(np.unique(model_rec.models[0].uniq_resid)) > 0
     if not rec_ok:
         return False, f"no backbone atoms in model chain {rec_m}"
     if lig_ok is None:
-        model_lig = coor.select_atoms(f"protein and chain {lig_m} and name {back_list}")
+        model_lig = coor.select_atoms(f"chain {lig_m} and name {lig_back_list}")
         lig_ok = len(np.unique(model_lig.models[0].uniq_resid)) > 0
     if not lig_ok:
         return False, f"no backbone atoms in model chain {lig_m}"
@@ -147,6 +192,11 @@ def _get_chain_types(coor, chains):
     return types
 
 
+def _chain_sequences(coor):
+    """Return comparable protein and nucleic-acid sequences from the core."""
+    return coor.get_aa_na_seq(gap_in_seq=False)
+
+
 def rmsd(coor_1, coor_2, selection="name CA", index_list=None, frame_ref=0):
     """Compute RMSD between two sets of coordinates.
 
@@ -168,7 +218,6 @@ def rmsd(coor_1, coor_2, selection="name CA", index_list=None, frame_ref=0):
     list[float]
         RMSD values for each model in coor_1.
     """
-
     if frame_ref < 0 or frame_ref >= coor_2.model_num:
         raise ValueError(
             "Reference frame index is larger than the number of frames in the reference structure"
@@ -433,6 +482,8 @@ def dockQ(
     back_atom=None,
     peptide=False,
     _search_mode=False,
+    _model_chain_types=None,
+    _native_chain_types=None,
 ):
     """Compute DockQ scores between a model and a native structure.
 
@@ -475,9 +526,6 @@ def dockQ(
     ligand RMSD and interface metrics.
     """
 
-    if back_atom is None:
-        back_atom = ["CA", "N", "C", "O"]
-
     fnat_cutoff = 4.0 if peptide else 5.0
     interface_cutoff = 8.0 if peptide else 10.0
 
@@ -502,48 +550,79 @@ def dockQ(
         native_rec_chains = [
             chain for chain in native_seq if chain not in native_lig_chains
         ]
+
+    if back_atom is None:
+        back_atom = _default_back_atom_for_chains(rec_chains + lig_chains, coor=coor)
+    model_chain_types = _model_chain_types or _get_chain_types(coor, rec_chains + lig_chains)
+    receptor_back = ["CA", "N", "C", "O"]
+    nucleic_back = ["P", "O5'", "C5'", "C4'", "C3'", "O3'"]
+    rec_back_atom = nucleic_back if model_chain_types[rec_chains[0]] in {"dna", "rna"} else receptor_back
+    lig_back_atom = nucleic_back if model_chain_types[lig_chains[0]] in {"dna", "rna"} else receptor_back
+    mixed_backbones = rec_back_atom != lig_back_atom
+    has_nucleic_chain = any(
+        chain_type in {"dna", "rna"} for chain_type in model_chain_types.values()
+    )
+    if not mixed_backbones:
+        back_atom = rec_back_atom
     logger.info("Native receptor chains : %s", " ".join(native_rec_chains))
 
     clean_coor = coor.select_atoms(
-        f"protein and not altloc B C D and not name H* and chain {' '.join(rec_chains + lig_chains)}"
+        f"(protein or nucleic) and not altloc B C D and not name H* and chain {' '.join(rec_chains + lig_chains)}"
     )
     clean_native_coor = native_coor.select_atoms(
-        f"protein and not altloc B C D and not name H* and chain {' '.join(native_rec_chains + native_lig_chains)}"
+        f"(protein or nucleic) and not altloc B C D and not name H* and chain {' '.join(native_rec_chains + native_lig_chains)}"
     )
 
-    clean_coor = remove_incomplete_backbone_residues(clean_coor, back_atom)
-    clean_native_coor = remove_incomplete_backbone_residues(
-        clean_native_coor, back_atom
-    )
+    if not mixed_backbones and not has_nucleic_chain:
+        clean_coor = remove_incomplete_backbone_residues(clean_coor, back_atom)
+        clean_native_coor = remove_incomplete_backbone_residues(
+            clean_native_coor, back_atom
+        )
 
-    rmsd_prot_list, align_rec_index, align_rec_native_index = align_seq_based(
-        clean_coor,
-        clean_native_coor,
-        chain_1=rec_chains,
-        chain_2=native_rec_chains,
-        back_names=back_atom,
-    )
+    if model_chain_types[rec_chains[0]] in {"dna", "rna"}:
+        align_rec_index, align_rec_native_index = _common_chain_atoms(
+            clean_coor, clean_native_coor, rec_chains, native_rec_chains, rec_back_atom
+        )
+        rmsd_prot_list, _, _ = align_index_based(
+            clean_coor,
+            clean_native_coor,
+            align_rec_index,
+            align_rec_native_index,
+        )
+    else:
+        rmsd_prot_list, align_rec_index, align_rec_native_index = align_seq_based(
+            clean_coor,
+            clean_native_coor,
+            chain_1=rec_chains,
+            chain_2=native_rec_chains,
+            back_names=rec_back_atom,
+        )
     logger.info("Receptor RMSD: %.3f A", rmsd_prot_list[0])
     logger.info(
         "Found %d residues in common (receptor)",
-        len(align_rec_index) // len(back_atom),
+        len(align_rec_index) // len(rec_back_atom),
     )
 
-    lig_index, lig_native_index = get_common_atoms(
-        clean_coor,
-        clean_native_coor,
-        chain_1=lig_chains,
-        chain_2=native_lig_chains,
-        back_names=back_atom,
-        matrix_file="",
-    )
+    if model_chain_types[lig_chains[0]] in {"dna", "rna"}:
+        lig_index, lig_native_index = _common_chain_atoms(
+            clean_coor, clean_native_coor, lig_chains, native_lig_chains, lig_back_atom
+        )
+    else:
+        lig_index, lig_native_index = get_common_atoms(
+            clean_coor,
+            clean_native_coor,
+            chain_1=lig_chains,
+            chain_2=native_lig_chains,
+            back_names=lig_back_atom,
+            matrix_file="",
+        )
     lrmsd_list = rmsd(
         clean_coor, clean_native_coor, index_list=[lig_index, lig_native_index]
     )
     logger.info("Ligand   RMSD: %.3f A", lrmsd_list[0])
     logger.info(
         "Found %d residues in common (ligand)",
-        len(lig_index) // len(back_atom),
+        len(lig_index) // len(lig_back_atom),
     )
 
     if _search_mode:
@@ -642,7 +721,7 @@ def dockQ(
         native_rec_chains,
         native_lig_chains,
         cutoff=interface_cutoff,
-        back_atom=back_atom,
+        back_atom=rec_back_atom,
         index_pair=(iface_model_idx, iface_native_idx) if iface_model_idx else None,
     )
     logger.info("Interface   RMSD: %s A", irmsd_list[0])
@@ -730,11 +809,11 @@ def dockQ_multimer(
 
     interface_cutoff = 8.0 if peptide else 10.0
 
-    native_seq = native_coor.get_aa_seq()
-    model_seq = coor.get_aa_seq()
+    native_seq = _chain_sequences(native_coor)
+    model_seq = _chain_sequences(coor)
 
-    _native_chain_types = {ch: "protein" for ch in native_seq}
-    _model_chain_types = {ch: "protein" for ch in model_seq}
+    _native_chain_types = _get_chain_types(native_coor, _chain_names(native_coor))
+    _model_chain_types = _get_chain_types(coor, _chain_names(coor))
 
     _native_iface_cache_local = _native_iface_cache
     _model_backbone_cache_local = _model_backbone_cache
@@ -755,10 +834,10 @@ def dockQ_multimer(
                 len(np.unique(_sel.models[0].uniq_resid)) > 0
             )
 
-        _back_list = " ".join(back_atom)
         _model_backbone_cache_local = {}
         for _mc in model_chains_list:
-            _sel = coor.select_atoms(f"protein and chain {_mc} and name {_back_list}")
+            _back_list = "CA N C O" if _model_chain_types[_mc] == "protein" else "P O5' C5' C4' C3' O3'"
+            _sel = coor.select_atoms(f"chain {_mc} and name {_back_list}")
             _model_backbone_cache_local[_mc] = len(np.unique(_sel.models[0].uniq_resid)) > 0
 
         if len(model_chains_list) < len(native_chains_ordered):
@@ -841,9 +920,6 @@ def dockQ_multimer(
                 ]
                 _pairwise_cache = {}
                 for _n1, _n2 in _native_pairs_with_iface:
-                    if (_native_chain_types.get(_n1) != "protein"
-                            or _native_chain_types.get(_n2) != "protein"):
-                        continue
                     _n1_len = len(native_seq.get(_n1, "").replace("-", ""))
                     _n2_len = len(native_seq.get(_n2, "").replace("-", ""))
                     _rec_n, _lig_n = (_n1, _n2) if _n1_len >= _n2_len else (_n2, _n1)
@@ -953,9 +1029,6 @@ def dockQ_multimer(
                 ]
                 _pairwise_cache = {}
                 for _n1, _n2 in _native_pairs_with_iface:
-                    if (_native_chain_types.get(_n1) != "protein"
-                            or _native_chain_types.get(_n2) != "protein"):
-                        continue
                     _n1_len = len(native_seq.get(_n1, "").replace("-", ""))
                     _n2_len = len(native_seq.get(_n2, "").replace("-", ""))
                     _rec_n, _lig_n = (_n1, _n2) if _n1_len >= _n2_len else (_n2, _n1)
@@ -1053,15 +1126,20 @@ def dockQ_multimer(
             interfaces[(n1, n2)] = None
             continue
 
-        if (_native_chain_types.get(n1) != "protein"
-                or _native_chain_types.get(n2) != "protein"):
+        if (_native_chain_types.get(n1) not in {"protein", "dna", "rna"}
+            or _native_chain_types.get(n2) not in {"protein", "dna", "rna"}):
             logger.info(
-                "Skipping interface (%s:%s, %s:%s): non-protein interfaces not yet supported",
+            "Skipping interface (%s:%s, %s:%s): unsupported chain types",
                 n1, _native_chain_types.get(n1, "?"),
                 n2, _native_chain_types.get(n2, "?"),
             )
             interfaces[(n1, n2)] = None
             continue
+
+        # Mixed protein/DNA interfaces are valid and should be scored when both
+        # chains contain the required backbone atoms. The model/native chain-type
+        # check only gates unsupported chemistries; it does not prohibit the
+        # protein-nucleic combinations this benchmark exercises.
 
         n1_len = len(native_seq.get(n1, "").replace("-", ""))
         n2_len = len(native_seq.get(n2, "").replace("-", ""))
@@ -1085,6 +1163,7 @@ def dockQ_multimer(
             cutoff=interface_cutoff,
             _native_has_interface=_cached_nat,
             _model_backbone_cache=_model_backbone_cache_local,
+            _model_chain_types=_model_chain_types,
         )
         if not viable:
             logger.info("Skipping interface (%s, %s): %s", n1, n2, reason)
@@ -1102,6 +1181,8 @@ def dockQ_multimer(
                 back_atom=back_atom,
                 peptide=peptide,
                 _search_mode=_search_mode,
+                _model_chain_types=_model_chain_types,
+                _native_chain_types=_native_chain_types,
             )
             interfaces[(n1, n2)] = {
                 **result,

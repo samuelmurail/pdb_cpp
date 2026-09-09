@@ -7,6 +7,7 @@ import os
 
 PYTEST_DIR = os.path.dirname(os.path.abspath(__file__))
 TEST_FILE_PATH = os.path.join(PYTEST_DIR, "input")
+REPOSITORY_ROOT = os.path.dirname(PYTEST_DIR)
 
 PDB_1Y0M = os.path.join(TEST_FILE_PATH, "1y0m.pdb")
 MMCIF_1Y0M = os.path.join(TEST_FILE_PATH, "1y0m.cif")
@@ -38,6 +39,14 @@ PDB_DIMER_DIMER_MODEL = os.path.join(TEST_FILE_PATH, "dimer_dimer_model.pdb")
 # fold model:   label chains A,B = protein; C,D = DNA.
 CIF_1A0A = os.path.join(TEST_FILE_PATH, "1A0A.cif")
 CIF_FOLD_2026_DNAPROT_MODEL = os.path.join(TEST_FILE_PATH, "fold_2026_03_10_11_53_model_4.cif")
+
+# Protein-RNA benchmark: model chain 0 versus native chain E.
+PDB_9B0L_RNA_NATIVE = os.path.join(
+	REPOSITORY_ROOT, "external", "pdb_cpp_benchmark", "PDB", "9b0l.pdb"
+)
+PDB_9B0L_RNA_MODEL = os.path.join(
+	REPOSITORY_ROOT, "external", "pdb_cpp_benchmark", "M1212", "M1212TS028_1"
+)
 
 PDB_5BKG = os.path.join(TEST_FILE_PATH, "5BKG.pdb")
 PDB_3EAM = os.path.join(TEST_FILE_PATH, "3EAM.pdb")

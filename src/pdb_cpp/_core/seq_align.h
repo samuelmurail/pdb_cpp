@@ -79,6 +79,16 @@ Alignment_cpp *sequence_align(
     int GAP_EXT = -1
 );
 
+/** Perform DockQ-compatible global alignment of nucleotide sequences. */
+Alignment_cpp *sequence_align_nucleic(
+    const std::string &seq1,
+    const std::string &seq2,
+    double match_score = 5.0,
+    double mismatch_score = 0.0,
+    double gap_open = -4.0,
+    double gap_extend = -0.5
+);
+
 /**
  * Validate sequence contains only valid amino acid characters
  * @param seq Sequence to check

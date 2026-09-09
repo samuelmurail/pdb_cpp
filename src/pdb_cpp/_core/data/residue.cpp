@@ -66,6 +66,10 @@ unordered_map<string, char> AA_DICT_D = {
 
 // Nucleic acid dictionary
 unordered_map<string, char> NA_DICT = {
+    {"A", 'A'},
+    {"U", 'U'},
+    {"G", 'G'},
+    {"C", 'C'},
     {"DA", 'A'},
     {"DT", 'T'},
     {"DC", 'C'},

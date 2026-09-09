@@ -14,6 +14,7 @@
 #include <memory>
 #include <algorithm>
 #include <unordered_map>
+#include <unordered_set>
 #include <utility>
 #include <limits>
 #include <numeric>
@@ -392,20 +393,50 @@ pair<vector<int>, vector<int>> get_common_atoms(
     string chain_2_str = join_strings(chain_2);
     string back_names_str = join_strings(back_names);
 
+    const bool has_ca = find(back_names.begin(), back_names.end(), "CA") != back_names.end();
+    const bool has_nucleic_backbone =
+        find(back_names.begin(), back_names.end(), "P") != back_names.end() ||
+        find(back_names.begin(), back_names.end(), "C4'") != back_names.end();
+    bool nucleic_1 = has_nucleic_backbone && !has_ca;
+    bool nucleic_2 = nucleic_1;
+    bool protein_1 = has_ca && !has_nucleic_backbone;
+    bool protein_2 = protein_1;
+
+    if (!nucleic_1 && !protein_1) {
+        nucleic_1 = coor_1.select_atoms(
+            "chain " + chain_1_str + " and nucleic").size() > 0;
+        nucleic_2 = coor_2.select_atoms(
+            "chain " + chain_2_str + " and nucleic").size() > 0;
+        protein_1 = !nucleic_1;
+        protein_2 = !nucleic_2;
+    }
+
+    if ((nucleic_1 && !nucleic_2) || (nucleic_2 && !nucleic_1) ||
+        (protein_1 && !protein_2) || (protein_2 && !protein_1)) {
+        throw runtime_error("Cannot align protein and nucleic-acid chains together");
+    }
+    if (!nucleic_1 && !protein_1) {
+        throw runtime_error("No protein or nucleic-acid chains selected");
+    }
+
+    const string polymer_selector = nucleic_1 ? "nucleic" : "protein";
     string selection_1 = "chain " + chain_1_str +
-                              " and protein and name " + back_names_str +
+                              " and " + polymer_selector + " and name " + back_names_str +
                               " and not altloc B C D E F";
     string selection_2 = "chain " + chain_2_str +
-                              " and protein and name " + back_names_str +
+                              " and " + polymer_selector + " and name " + back_names_str +
                               " and not altloc B C D E F";
 
     // Select backbone atoms
     Coor coor_1_back = coor_1.select_atoms(selection_1);
     Coor coor_2_back = coor_2.select_atoms(selection_2);
 
-    // Get sequences (assuming get_aa_sequences returns map<string, string>)
-    auto sel_1_seq = coor_1_back.get_aa_sequences(false);
-    auto sel_2_seq = coor_2_back.get_aa_sequences(false);
+    unordered_map<string, string> sel_1_seq = nucleic_1
+        ? coor_1_back.get_aa_na_seq(false)
+        : coor_1_back.get_aa_seq(false);
+    unordered_map<string, string> sel_2_seq = nucleic_2
+        ? coor_2_back.get_aa_na_seq(false)
+        : coor_2_back.get_aa_seq(false);
 
     // cout << "Selected sequences for Coor 1: " << endl;
     // for (const auto &seq : sel_1_seq) {
@@ -420,19 +451,129 @@ pair<vector<int>, vector<int>> get_common_atoms(
     vector<int> sel_index_1 = coor_1.get_index_select(selection_1);
     vector<int> sel_index_2 = coor_2.get_index_select(selection_2);
 
-    // Build concatenated sequences
-    // Assuming get_aa_sequences() returns sequences in chain order matching the input chains
-   string seq_1 = "";
-    for (size_t i = 0; i < chain_1.size() && i < sel_1_seq.size(); ++i) {
-        string chain_seq = sel_1_seq[i];
+    if (nucleic_1) {
+        struct NucleicResidue {
+            string code;
+            unordered_map<string, int> atoms;
+        };
+
+        auto residue_code = [](const array<char, 5> &resname_array) {
+            string resname(
+                resname_array.data(),
+                strnlen(resname_array.data(), resname_array.size()));
+            if (resname == "DA" || resname == "A") return string("A");
+            if (resname == "DC" || resname == "C") return string("C");
+            if (resname == "DG" || resname == "G") return string("G");
+            if (resname == "DT" || resname == "T") return string("T");
+            if (resname == "U") return string("U");
+            return string("X");
+        };
+
+        auto collect_residues = [&](const Coor &coor, const vector<int> &selected,
+                                    const vector<string> &chains) {
+            unordered_set<int> selected_atoms(selected.begin(), selected.end());
+            unordered_map<string, vector<NucleicResidue>> by_chain;
+            Model model = coor.get_Models(0);
+            const auto &chain_array = model.get_chain();
+            const auto &residue_array = model.get_uniqresid();
+            const auto &name_array = model.get_name();
+            const auto &resname_array = model.get_resname();
+
+            auto chain_name = [](const array<char, 2> &chain) {
+                string value;
+                for (char letter : chain) {
+                    if (letter != '\0' && letter != ' ') value.push_back(letter);
+                }
+                return value;
+            };
+
+            unordered_set<string> requested(chains.begin(), chains.end());
+            unordered_map<string, unordered_map<int, size_t>> residue_positions;
+            for (size_t atom_index = 0; atom_index < chain_array.size(); ++atom_index) {
+                if (!selected_atoms.count(static_cast<int>(atom_index))) continue;
+                string chain = chain_name(chain_array[atom_index]);
+                if (!requested.count(chain)) continue;
+                auto &residues = by_chain[chain];
+                int residue_id = residue_array[atom_index];
+                auto position = residue_positions[chain].find(residue_id);
+                if (position == residue_positions[chain].end()) {
+                    residue_positions[chain][residue_id] = residues.size();
+                    residues.push_back({residue_code(resname_array[atom_index]), {}});
+                    position = residue_positions[chain].find(residue_id);
+                }
+                string atom_name(
+                    name_array[atom_index].data(),
+                    strnlen(name_array[atom_index].data(), name_array[atom_index].size()));
+                residues[position->second].atoms[atom_name] = static_cast<int>(atom_index);
+            }
+            return by_chain;
+        };
+
+        auto residues_1 = collect_residues(coor_1, sel_index_1, chain_1);
+        auto residues_2 = collect_residues(coor_2, sel_index_2, chain_2);
+        vector<NucleicResidue> ordered_1;
+        vector<NucleicResidue> ordered_2;
+        for (const auto &chain : chain_1) {
+            ordered_1.insert(ordered_1.end(), residues_1[chain].begin(), residues_1[chain].end());
+        }
+        for (const auto &chain : chain_2) {
+            ordered_2.insert(ordered_2.end(), residues_2[chain].begin(), residues_2[chain].end());
+        }
+
+        string seq_1;
+        string seq_2;
+        for (const auto &residue : ordered_1) seq_1 += residue.code;
+        for (const auto &residue : ordered_2) seq_2 += residue.code;
+        Alignment_cpp *alignment = sequence_align_nucleic(seq_1, seq_2);
+        string align_seq_1 = alignment->seq1;
+        string align_seq_2 = alignment->seq2;
+        delete alignment;
+
+        vector<int> align_sel_1;
+        vector<int> align_sel_2;
+        size_t index_1 = 0;
+        size_t index_2 = 0;
+        for (size_t position = 0; position < align_seq_1.size(); ++position) {
+            const NucleicResidue *residue_1 = nullptr;
+            const NucleicResidue *residue_2 = nullptr;
+            if (align_seq_1[position] != '-') residue_1 = &ordered_1[index_1++];
+            if (align_seq_2[position] != '-') residue_2 = &ordered_2[index_2++];
+            if (residue_1 == nullptr || residue_2 == nullptr) continue;
+            for (const auto &atom_name : back_names) {
+                auto atom_1 = residue_1->atoms.find(atom_name);
+                auto atom_2 = residue_2->atoms.find(atom_name);
+                if (atom_1 != residue_1->atoms.end() && atom_2 != residue_2->atoms.end()) {
+                    align_sel_1.push_back(atom_1->second);
+                    align_sel_2.push_back(atom_2->second);
+                }
+            }
+        }
+        if (align_sel_1.empty() || align_sel_1.size() != align_sel_2.size()) {
+            throw runtime_error("No common nucleic-acid atoms after sequence alignment");
+        }
+        return make_pair(align_sel_1, align_sel_2);
+    }
+
+    // Build concatenated sequences in the same chain order as the selections.
+    string seq_1 = "";
+    for (const auto &chain : chain_1) {
+        auto sequence = sel_1_seq.find(chain);
+        if (sequence == sel_1_seq.end()) {
+            throw runtime_error("No sequence found for selected chain " + chain);
+        }
+        string chain_seq = sequence->second;
         // Remove gaps (replace "-" with "")
         chain_seq.erase(remove(chain_seq.begin(), chain_seq.end(), '-'), chain_seq.end());
         seq_1 += chain_seq;
     }
     
     string seq_2 = "";
-    for (size_t i = 0; i < chain_2.size() && i < sel_2_seq.size(); ++i) {
-        string chain_seq = sel_2_seq[i];
+    for (const auto &chain : chain_2) {
+        auto sequence = sel_2_seq.find(chain);
+        if (sequence == sel_2_seq.end()) {
+            throw runtime_error("No sequence found for selected chain " + chain);
+        }
+        string chain_seq = sequence->second;
         // Remove gaps (replace "-" with "")
         chain_seq.erase(remove(chain_seq.begin(), chain_seq.end(), '-'), chain_seq.end());
         seq_2 += chain_seq;
@@ -449,12 +590,15 @@ pair<vector<int>, vector<int>> get_common_atoms(
     // Perform sequence alignment
     auto start = high_resolution_clock::now();
     // cout << "Aligning sequences..." << endl;
-    Alignment *alignment = seq_align(seq_1.c_str(), seq_2.c_str(), matrix_file.c_str());
+    Alignment_cpp *alignment = nucleic_1
+        ? sequence_align_nucleic(seq_1, seq_2)
+        : sequence_align(seq_1, seq_2, matrix_file);
     auto stop = high_resolution_clock::now();
     auto duration = duration_cast<microseconds>(stop - start);
     // cout << "Alignment duration :" << duration.count()/1e6 << endl;
-    string align_seq_1(alignment->seq1);
-    string align_seq_2(alignment->seq2);
+    string align_seq_1 = alignment->seq1;
+    string align_seq_2 = alignment->seq2;
+    delete alignment;
 
     // print_alignment(alignment);
     // cout << "Alignment score: " << alignment.score << endl;

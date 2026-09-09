@@ -669,6 +669,54 @@ print(result.score)   # alignment score (int)
 | `seq2`  | `str` | Aligned sequence 2 (with gaps)   |
 | `score` | `int` | Raw alignment score              |
 
+### Nucleic-acid sequence alignment
+
+DNA and RNA sequences use a separate global affine-gap alignment implemented
+in the C++ core. It follows the scoring used by DockQ:
+
+| Parameter | Value |
+|-----------|-------|
+| Match | `+5` |
+| Mismatch | `0` |
+| Gap opening | `-4` |
+| Gap extension | `-0.5` |
+
+The low-level API is available as `core.sequence_align_nucleic()`:
+
+```python
+from pdb_cpp import core
+
+result = core.sequence_align_nucleic("ACGTT", "ACGT")
+print(result.seq1)  # ACGTT
+print(result.seq2)  # ACG-T
+```
+
+For coordinate structures, `core.align_seq_based()` automatically detects
+whether the selected chains are protein or nucleic. Nucleic chains are aligned
+using the residue names converted to one-letter DNA/RNA codes. Aligned residues
+are then matched using the nucleic backbone atoms:
+
+```python
+from pdb_cpp import Coor, core
+
+model = Coor("model.cif")
+native = Coor("native.cif")
+nucleic_backbone = ["P", "O5'", "C5'", "C4'", "C3'", "O3'"]
+
+rmsd_list, model_indices, native_indices = core.align_seq_based(
+    model,
+    native,
+    chain_1=["A"],
+    chain_2=["B"],
+    back_names=nucleic_backbone,
+)
+```
+
+Only atoms present in both aligned residues are included. Consequently, terminal
+or incomplete nucleotides do not have to contain every backbone atom. Protein
+and nucleic chains cannot be aligned together in one call; align each polymer
+type separately.
+
 ---
 
 ## 6. Structural alignment (RMSD-based)
@@ -1176,7 +1224,7 @@ This is recommended before structural alignment to avoid mismatches.
 | Module              | Key functions / classes                                   |
 |---------------------|-----------------------------------------------------------|
 | `pdb_cpp`           | `Coor`, `Model` — main data objects                           |
-| `pdb_cpp.core`      | `get_common_atoms`, `coor_align`, `align_seq_based`, `tmalign_ca`, `distance_matrix`, `compute_SS`, `sequence_align`, `Alignment_cpp`, `hy36encode`, `hy36decode` |
+| `pdb_cpp.core`      | `get_common_atoms`, `coor_align`, `align_seq_based`, `tmalign_ca`, `distance_matrix`, `compute_SS`, `sequence_align`, `sequence_align_nucleic`, `Alignment_cpp`, `hy36encode`, `hy36decode` |
 | `pdb_cpp.alignment` | `align_seq`, `print_align_seq`, `align_chain_permutation` |
 | `pdb_cpp.analysis`  | `rmsd`, `interface_rmsd`, `native_contact`, `dockQ`       |
 | `pdb_cpp.analysis.hbonds` | `hbonds` — Baker & Hubbard H-bond detection         |
