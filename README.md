@@ -4,6 +4,8 @@
 [![PyPI - Version](https://img.shields.io/pypi/v/pdb-cpp)](https://pypi.org/project/pdb-cpp/)
 [![Downloads](https://static.pepy.tech/badge/pdb-cpp)](https://pepy.tech/project/pdb-cpp)
 [![License: GPL v2](https://img.shields.io/badge/License-GPL%20v2-blue.svg)](https://www.gnu.org/licenses/old-licenses/gpl-2.0.html)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.22710672.svg)](https://doi.org/10.5281/zenodo.22710672)
+
 
 
 # pdb_cpp
