@@ -154,6 +154,15 @@ sel = coor.select_atoms("chain A")
 sel.write("chain_A.pdb")
 ```
 
+To get PDB-formatted text without writing a file, use the PDB format helper:
+
+```python
+from pdb_cpp import Coor, format
+
+coor = Coor("structure.pdb")
+pdb_text = format.pdb.get_pdb_string(coor)
+```
+
 ---
 
 ## 2. The `Coor` and `Model` objects

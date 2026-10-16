@@ -14,6 +14,7 @@
 #include "geom.h"
 #include "seq_align.h"
 #include "format/encode.h"
+#include "format/pdb.h"
 #include "hbond.h"
 #include "sasa.h"
 
@@ -31,6 +32,15 @@ static std::string resolve_matrix_file(const std::string &matrix_file) {
 }
 
 PYBIND11_MODULE(core, m) {
+    py::module_ format_module = m.def_submodule("format", "Coordinate file format helpers");
+    py::module_ pdb_module = format_module.def_submodule("pdb", "PDB format helpers");
+    pdb_module.def(
+        "get_pdb_string",
+        &get_pdb_string,
+        py::arg("coor"),
+        "Serialize a Coor object to a PDB-formatted string"
+    );
+
     // Model exposes the atom arrays for the active frame and in-place setters.
     py::class_<Model>(m, "Model")
         .def(py::init<>())

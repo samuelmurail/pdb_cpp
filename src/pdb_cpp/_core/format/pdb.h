@@ -13,6 +13,8 @@ class Coor;
 
 /** Parse a PDB file into a Coor object. */
 Coor PDB_parse(const std::string& filename);
+/** Serialize a Coor object to a PDB-formatted string. */
+std::string get_pdb_string(const Coor& coor);
 /** Serialize a Coor object to a PDB file. */
 bool PDB_write(const Coor& coor, const std::string& filename);
 

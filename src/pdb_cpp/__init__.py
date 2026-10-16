@@ -17,11 +17,11 @@ __maintainer__ = "Samuel Murail"
 __email__ = "samuel.murail@u-paris.fr"
 __status__ = "Beta"
 
-from .core import Coor, Model
+from .core import Coor, Model, format
 
 # Importing _pyprops applies runtime patches for python-facing helpers.
 from . import _pyprops  # noqa: F401
 from . import analysis  # noqa: F401
 from . import rcsb  # noqa: F401
 
-__all__ = ["Coor", "Model", "analysis", "rcsb"]
+__all__ = ["Coor", "Model", "analysis", "format", "rcsb"]

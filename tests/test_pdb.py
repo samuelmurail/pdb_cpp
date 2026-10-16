@@ -11,7 +11,14 @@ import numpy as np
 import logging
 
 from pdb_cpp import Coor
-from .datafiles import PDB_1Y0M, PDB_2RRI, PDB_5M6N  # , PQR_1Y0M, PDB_3FTK
+from pdb_cpp import format
+from .datafiles import (
+    PDB_1Y0M,
+    PDB_2RRI,
+    PDB_5M6N,
+    PDB_SASA_DIMER,
+    PDB_SASA_SINGLE,
+)  # , PQR_1Y0M, PDB_3FTK
 
 
 def test_get_pdb(tmp_path):
@@ -85,6 +92,37 @@ def test_read_write_pdb(tmp_path, caplog):
 
     assert test.models[0].x == test2.models[0].x
     assert test.models[0].resname == test2.models[0].resname
+
+
+def test_get_pdb_string(tmp_path):
+    """Serialize a Coor to PDB text through the Python format binding."""
+    coor = Coor(PDB_1Y0M)
+
+    pdb_text = format.pdb.get_pdb_string(coor)
+    output_path = tmp_path / "serialized.pdb"
+    coor.write(str(output_path))
+
+    assert isinstance(pdb_text, str)
+    assert pdb_text.endswith("END\n")
+    assert pdb_text == output_path.read_text(encoding="utf-8")
+
+
+@pytest.mark.parametrize(
+    "pdb_path, expected_atom_count",
+    [(PDB_SASA_SINGLE, 1), (PDB_SASA_DIMER, 2)],
+    ids=["single-atom", "two-atom"],
+)
+def test_get_pdb_string_small_input_files(tmp_path, pdb_path, expected_atom_count):
+    """Serialize the smallest PDB fixtures through the Python format binding."""
+    coor = Coor(pdb_path)
+
+    pdb_text = format.pdb.get_pdb_string(coor)
+    output_path = tmp_path / "serialized.pdb"
+    coor.write(str(output_path))
+
+    assert coor.len == expected_atom_count
+    assert pdb_text.endswith("END\n")
+    assert pdb_text == output_path.read_text(encoding="utf-8")
 
 
 def test_read_write_pdb_models(tmp_path):
