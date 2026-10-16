@@ -125,6 +125,26 @@ def test_get_pdb_string_small_input_files(tmp_path, pdb_path, expected_atom_coun
     assert pdb_text == output_path.read_text(encoding="utf-8")
 
 
+def test_get_aa_seq_ignores_alternate_location_ca(tmp_path):
+    """Alternate-location CA atoms must not add residues to the sequence."""
+    pdb_path = tmp_path / "alternate_ca.pdb"
+    pdb_path.write_text(
+        "\n".join(
+            [
+                "ATOM      1  CA BGLY A   1       1.000   0.000   0.000  1.00 20.00           C",
+                "ATOM      2  CA AALA A   1       0.000   0.000   0.000  1.00 20.00           C",
+                "END",
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    coor = Coor(str(pdb_path))
+
+    assert coor.get_aa_seq() == {"A": "A"}
+
+
 def test_read_write_pdb_models(tmp_path):
     """Test read and write pdb function with several models."""
     test = Coor(PDB_2RRI)

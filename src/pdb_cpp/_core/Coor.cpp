@@ -197,7 +197,7 @@ vector<string> Coor::get_aa_sequences(bool gap_in_seq, size_t frame) const {
     }
 
     // Get the indexes of the selected atoms from the specified model
-    vector<bool> CA_indexes = models_[frame].select_atoms("name CA");
+    vector<bool> CA_indexes = models_[frame].select_atoms("name CA and not altloc B C D E F G");
     vector<array<char, 5>> resname_array = models_[frame].get_resname();
     vector<array<char, 2>> chain_array = models_[frame].get_chain();
     vector<int> resid_array = models_[frame].get_resid();
