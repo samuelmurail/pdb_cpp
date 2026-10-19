@@ -10,6 +10,7 @@
 #include <vector>
 #include <string>
 #include <array>
+#include <unordered_map>
 
 struct Token;
 
@@ -53,6 +54,9 @@ public:
     const std::vector<std::array<char, 5>> &get_resname() const { return resname_; }
     const std::vector<int> &get_resid() const { return resid_; }
     const std::vector<std::array<char, 2>> &get_chain() const { return chain_; }
+    std::vector<std::string> get_chain_str() const;
+    std::string get_chain_id(size_t index) const;
+    bool has_chain_id(size_t index) const { return extended_chain_.find(index) != extended_chain_.end(); }
     const std::vector<float> &get_occ() const { return occ_; }
     const std::vector<float> &get_beta() const { return beta_; }
     const std::vector<std::array<char, 2>> &get_alterloc() const { return alterloc_; }
@@ -61,6 +65,8 @@ public:
     const std::vector<int> &get_num() const { return num_; }
     const std::vector<bool> &get_field() const { return field_; }
     const std::vector<int> &get_uniqresid() const { return uniqresid_; }
+    const std::vector<bool> &get_has_contact() const { return has_contact_; }
+    bool has_contact_is_set() const { return !has_contact_.empty(); }
 
     /** Return the unique chains present in the model. */
     std::vector<std::array<char, 2>> get_uniq_chain() const;
@@ -81,6 +87,12 @@ public:
     void set_occ(size_t index, float value) { if (index < occ_.size()) occ_[index] = value; }
     void set_resid(size_t index, int value) { if (index < resid_.size()) resid_[index] = value; }
     void set_uniqresid(size_t index, int value) { if (index < uniqresid_.size()) uniqresid_[index] = value; }
+    void set_has_contact(size_t index, bool value) {
+        if (index >= size()) return;
+        if (has_contact_.size() < size()) has_contact_.resize(size(), false);
+        has_contact_[index] = value;
+    }
+    void set_has_contact(const std::vector<bool> &values);
 
     /** String field setters convert std::string values into fixed-size arrays. */
     void set_name(size_t index, const std::string &value) {
@@ -99,10 +111,9 @@ public:
         for (size_t i = 0; i < std::min(value.size(), (size_t)4); ++i) elem_[index][i] = value[i];
     }
     void set_chain(size_t index, const std::string &value) {
-        if (index >= chain_.size()) return;
-        chain_[index] = {};
-        if (!value.empty()) chain_[index][0] = value[0];
+        set_chain_id(index, value);
     }
+    void set_chain_id(size_t index, const std::string &value);
     void set_alterloc(size_t index, const std::string &value) {
         if (index >= alterloc_.size()) return;
         alterloc_[index] = {};
@@ -121,6 +132,8 @@ private:
     std::vector<std::array<char, 2>> chain_, alterloc_, insertres_;
     std::vector<int> num_, resid_, uniqresid_;
     std::vector<bool> field_;
+    std::unordered_map<size_t, std::string> extended_chain_;
+    std::vector<bool> has_contact_;
 };
 
 #endif // MODEL_H

@@ -193,3 +193,57 @@ def test_read_mmcif_protein_dna_model_fold2026():
 
     assert coor.select_atoms("protein").len == 996
     assert coor.select_atoms("nucleic").len == 699
+
+
+def test_multichar_chain_ids_roundtrip_and_selection(tmp_path):
+    cif_path = tmp_path / "multi_chain.cif"
+    cif_path.write_text(
+        "data_multi\n#\n"
+        "loop_\n"
+        "_atom_site.group_PDB\n_atom_site.id\n_atom_site.type_symbol\n"
+        "_atom_site.label_atom_id\n_atom_site.label_alt_id\n_atom_site.label_comp_id\n"
+        "_atom_site.label_asym_id\n_atom_site.label_entity_id\n_atom_site.label_seq_id\n"
+        "_atom_site.pdbx_PDB_ins_code\n_atom_site.Cartn_x\n_atom_site.Cartn_y\n"
+        "_atom_site.Cartn_z\n_atom_site.occupancy\n_atom_site.B_iso_or_equiv\n"
+        "_atom_site.pdbx_formal_charge\n_atom_site.auth_seq_id\n_atom_site.auth_comp_id\n"
+        "_atom_site.auth_asym_id\n_atom_site.auth_atom_id\n_atom_site.pdbx_PDB_model_num\n"
+        "ATOM 1 C CA . ALA AA 1 1 ? 0 0 0 1 20 ? 1 ALA AA CA 1\n"
+        "ATOM 2 C CA . GLY AB 1 1 ? 1 0 0 1 20 ? 1 GLY AB CA 1\n#\n",
+        encoding="utf-8",
+    )
+    coor = Coor(str(cif_path))
+    assert coor.chain_str == ["AA", "AB"]
+    assert coor.select_atoms("chain AA").len == 1
+    assert coor.select_atoms("chain AB").len == 1
+
+    roundtrip_path = tmp_path / "roundtrip.cif"
+    coor.write(str(roundtrip_path))
+    roundtrip = Coor(str(roundtrip_path))
+    assert roundtrip.chain_str == ["AA", "AB"]
+    assert roundtrip.select_atoms("chain AA").chain_str == ["AA"]
+    assert roundtrip.select_atoms("chain AB").chain_str == ["AB"]
+
+    with pytest.raises(RuntimeError, match="one-character chain IDs"):
+        coor.write(str(tmp_path / "unsupported.pdb"))
+
+
+def test_mmcif_contact_annotations_roundtrip_after_selection(tmp_path):
+    coor = Coor(MMCIF_1Y0M)
+    values = [index % 2 == 0 for index in range(coor.len)]
+    coor.has_contact = values
+
+    selected = coor.select_atoms("num 1 2 3 4")
+    assert selected.has_contact == values[:4]
+    out_path = tmp_path / "annotated.cif"
+    selected.write(str(out_path))
+
+    restored = Coor(str(out_path))
+    assert restored.has_contact == values[:4]
+    assert restored.get_uniq_chain_str() == selected.get_uniq_chain_str()
+
+
+def test_mmcif_without_annotations_does_not_emit_annotation_category(tmp_path):
+    coor = Coor(MMCIF_1Y0M)
+    out_path = tmp_path / "ordinary.cif"
+    coor.write(str(out_path))
+    assert "_pdbx_pdb_cpp_atom_annotation." not in out_path.read_text(encoding="utf-8")

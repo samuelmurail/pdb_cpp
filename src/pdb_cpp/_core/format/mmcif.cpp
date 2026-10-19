@@ -277,13 +277,38 @@ Coor MMCIF_parse(const string &filename) {
 
     vector<string> lines;
     string line;
+    bool has_contact_category = false;
     while (getline(file, line)) {
+        if (starts_with(line, "_pdbx_pdb_cpp_atom_annotation.")) {
+            has_contact_category = true;
+        }
         lines.push_back(line + "\n");
     }
 
     LoopTable atom_site = parse_loop_for_prefix(lines, "_atom_site.");
     if (atom_site.col_names.empty()) {
         return coor;
+    }
+
+    unordered_map<string, bool> contact_by_atom;
+    if (has_contact_category) {
+        LoopTable annotations = parse_loop_for_prefix(lines, "_pdbx_pdb_cpp_atom_annotation.");
+        unordered_map<string, size_t> annotation_index;
+        for (size_t i = 0; i < annotations.col_names.size(); ++i) {
+            annotation_index[annotations.col_names[i]] = i;
+        }
+        auto annotation_value = [&](const vector<string> &row, const string &key) -> string {
+            auto it = annotation_index.find(key);
+            return it == annotation_index.end() || it->second >= row.size() ? "" : row[it->second];
+        };
+        for (const auto &row : annotations.rows) {
+            string atom_id = sanitize_value(annotation_value(row, "atom_site_id"));
+            string model_id = sanitize_value(annotation_value(row, "pdbx_PDB_model_num"));
+            string value = sanitize_value(annotation_value(row, "has_contact"));
+            if (!atom_id.empty() && !model_id.empty()) {
+                contact_by_atom[model_id + ":" + atom_id] = value == "1" || value == "yes" || value == "true";
+            }
+        }
     }
 
     unordered_map<string, size_t> col_index;
@@ -306,6 +331,17 @@ Coor MMCIF_parse(const string &filename) {
     int old_resid = -99999999;
     string old_chain;
     int old_model = -1;
+    auto attach_contact_annotations = [&](Model &target, int model_number) {
+        if (!has_contact_category) return;
+        vector<bool> values;
+        values.reserve(target.size());
+        const string model_id = to_string(model_number);
+        for (int atom_id : target.get_num()) {
+            auto contact = contact_by_atom.find(model_id + ":" + to_string(atom_id));
+            values.push_back(contact != contact_by_atom.end() && contact->second);
+        }
+        target.set_has_contact(values);
+    };
 
     for (const auto &row : atom_site.rows) {
         string group_pdb = sanitize_value(get_value(row, "group_PDB"));
@@ -334,6 +370,7 @@ Coor MMCIF_parse(const string &filename) {
         // Split models based on pdbx_PDB_model_num.
         if (model_num != old_model) {
             if (model.size() > 0) {
+                attach_contact_annotations(model, old_model);
                 coor.add_Model(model);
                 model.clear();
             }
@@ -382,9 +419,13 @@ Coor MMCIF_parse(const string &filename) {
             field,
             uniq_resid
         );
+        if (chain_label.size() > 1) {
+            model.set_chain_id(model.size() - 1, chain_label);
+        }
     }
 
     if (model.size() > 0) {
+        attach_contact_annotations(model, old_model);
         coor.add_Model(model);
     }
 
@@ -644,7 +685,7 @@ string get_mmcif_string(const Coor &coor) {
             string group = model.get_field()[i] ? "HETATM" : "ATOM";
             string name = trim_whitespace(string(model.get_name()[i].data()));
             string resname = trim_whitespace(string(model.get_resname()[i].data()));
-            string chain = trim_whitespace(string(model.get_chain()[i].data()));
+            string chain = model.get_chain_id(i);
             string altloc = trim_whitespace(string(model.get_alterloc()[i].data()));
             string insertres = trim_whitespace(string(model.get_insertres()[i].data()));
             string elem = trim_whitespace(string(model.get_elem()[i].data()));
@@ -684,6 +725,25 @@ string get_mmcif_string(const Coor &coor) {
     }
 
     oss << "#\n";
+
+    bool annotations_set = false;
+    for (size_t model_index = 0; model_index < coor.model_size(); ++model_index) {
+        annotations_set = annotations_set || coor.get_Models(model_index).has_contact_is_set();
+    }
+    if (annotations_set) {
+        oss << "loop_\n"
+            << "_pdbx_pdb_cpp_atom_annotation.atom_site_id\n"
+            << "_pdbx_pdb_cpp_atom_annotation.pdbx_PDB_model_num\n"
+            << "_pdbx_pdb_cpp_atom_annotation.has_contact\n";
+        for (size_t model_index = 0; model_index < coor.model_size(); ++model_index) {
+            const Model &model = coor.get_Models(model_index);
+            for (size_t i = 0; i < model.size(); ++i) {
+                bool value = model.has_contact_is_set() && model.get_has_contact()[i];
+                oss << model.get_num()[i] << " " << (model_index + 1) << " " << (value ? 1 : 0) << "\n";
+            }
+        }
+        oss << "#\n";
+    }
 
     // Write _struct_conn loop for CONECT records.
     if (!coor.conect.empty() && coor.model_size() > 0) {
@@ -745,14 +805,14 @@ string get_mmcif_string(const Coor &coor) {
                 size_t idx1 = it1->second;
                 size_t idx2 = it2->second;
 
-                string chain1 = trim_whitespace(string(model0.get_chain()[idx1].data()));
+                string chain1 = model0.get_chain_id(idx1);
                 string resname1 = trim_whitespace(string(model0.get_resname()[idx1].data()));
                 string name1 = trim_whitespace(string(model0.get_name()[idx1].data()));
                 string altloc1 = trim_whitespace(string(model0.get_alterloc()[idx1].data()));
                 int resid1 = model0.get_resid()[idx1];
                 int uniqresid1 = model0.get_uniqresid()[idx1] + 1;
 
-                string chain2 = trim_whitespace(string(model0.get_chain()[idx2].data()));
+                string chain2 = model0.get_chain_id(idx2);
                 string resname2 = trim_whitespace(string(model0.get_resname()[idx2].data()));
                 string name2 = trim_whitespace(string(model0.get_name()[idx2].data()));
                 string altloc2 = trim_whitespace(string(model0.get_alterloc()[idx2].data()));

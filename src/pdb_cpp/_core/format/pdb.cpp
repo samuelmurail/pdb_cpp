@@ -226,6 +226,10 @@ string get_pdb_string(const Coor& coor) {
         const Model& model = coor.get_Models(model_index);
         oss << "MODEL      " << setw(3) << model_index + 1 << "\n";
         for (size_t i = 0; i < model.size(); ++i) {
+            const string chain_id = model.get_chain_id(i);
+            if (chain_id.size() > 1) {
+                throw runtime_error("PDB output supports only one-character chain IDs; use mmCIF output for chain '" + chain_id + "'");
+            }
             string field = model.get_field()[i] ? "HETATM" : "ATOM  ";
             string serial = hy36encode(5, model.get_num()[i]);
             string resid = hy36encode(4, model.get_resid()[i]);
@@ -235,7 +239,7 @@ string get_pdb_string(const Coor& coor) {
                 << atom_name
                 << setw(1) << model.get_alterloc()[i].data()
                 << setw(3) << model.get_resname()[i].data() << " "
-                << setw(1) << model.get_chain()[i].data()
+                << setw(1) << (chain_id.empty() ? " " : chain_id)
                 << resid
                 << setw(1) << model.get_insertres()[i].data() << "   "
                 << setw(8) << fixed << setprecision(3) << model.get_x()[i]

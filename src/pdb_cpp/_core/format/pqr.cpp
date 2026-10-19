@@ -199,6 +199,10 @@ static string get_pqr_string(const Coor& coor) {
         oss << "MODEL      " << setw(3) << model_index + 1 << "\n";
 
         for (size_t i = 0; i < model.size(); ++i) {
+            const string chain_id = model.get_chain_id(i);
+            if (chain_id.size() > 1) {
+                throw runtime_error("PQR output supports only one-character chain IDs; use mmCIF output for chain '" + chain_id + "'");
+            }
             string field = model.get_field()[i] ? "HETATM" : "ATOM  ";
             string serial = hy36encode(5, model.get_num()[i]);
             string resid  = hy36encode(4, model.get_resid()[i]);
@@ -222,7 +226,7 @@ static string get_pqr_string(const Coor& coor) {
                 << serial << " "
                 << atom_name << " "
                 << setw(3) << model.get_resname()[i].data() << " "
-                << setw(1) << model.get_chain()[i].data()
+                << setw(1) << (chain_id.empty() ? " " : chain_id)
                 << resid << "    "
                 << setw(8) << fixed << setprecision(3) << model.get_x()[i]
                 << setw(8) << fixed << setprecision(3) << model.get_y()[i]

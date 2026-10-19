@@ -96,6 +96,8 @@ public:
     const std::vector<std::array<char, 5>> &get_resname(size_t frame = 0) const { return models_[frame].get_resname(); }
     const std::vector<std::array<char, 5>> &get_elem(size_t frame = 0) const { return models_[frame].get_elem(); }
     const std::vector<std::array<char, 2>> &get_chain(size_t frame = 0) const { return models_[frame].get_chain(); }
+    std::vector<std::string> get_chain_str(size_t frame = 0) const { return models_[frame].get_chain_str(); }
+    const std::vector<bool> &get_has_contact(size_t frame = 0) const { return models_[frame].get_has_contact(); }
     const std::vector<std::array<char, 2>> &get_alterloc(size_t frame = 0) const { return models_[frame].get_alterloc(); }
     const std::vector<std::array<char, 2>> &get_insertres(size_t frame = 0) const { return models_[frame].get_insertres(); }
 
@@ -112,6 +114,8 @@ public:
     void set_resname(size_t index, const std::string &v)   { models_[active_model].set_resname(index, v); }
     void set_elem(size_t index, const std::string &v)      { models_[active_model].set_elem(index, v); }
     void set_chain(size_t index, const std::string &v)     { models_[active_model].set_chain(index, v); }
+    void set_has_contact(const std::vector<bool> &values) { models_[active_model].set_has_contact(values); }
+    void set_has_contact_at(size_t index, bool value) { models_[active_model].set_has_contact(index, value); }
     void set_alterloc(size_t index, const std::string &v)  { models_[active_model].set_alterloc(index, v); }
     void set_insertres(size_t index, const std::string &v) { models_[active_model].set_insertres(index, v); }
 

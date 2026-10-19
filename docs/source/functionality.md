@@ -12,8 +12,8 @@ for the auto-generated API reference see [pdb_cpp package](pdb_cpp.rst).
 
 | Format | Extension | Read | Write | Notes                                    |
 |--------|-----------|------|-------|------------------------------------------|
-| PDB    | `.pdb`    | yes  | yes   | Bond topology via `CONECT` lines         |
-| mmCIF  | `.cif`    | yes  | yes   | Bond topology via `_struct_conn` loop    |
+| PDB    | `.pdb`    | yes  | yes   | One-character chain IDs; bonds via `CONECT` |
+| mmCIF  | `.cif`    | yes  | yes   | Multi-character chain IDs; bonds via `_struct_conn` |
 | PQR    | `.pqr`    | yes  | yes   | Charge in `occ`, radius in `beta` slot   |
 | GRO    | `.gro`    | yes  | yes   | GROMACS format; coordinates converted nm ↔ Å |
 
@@ -146,6 +146,31 @@ coor.write("output.pqr")      # PQR format
 coor.write("output.gro")      # GRO format
 ```
 
+mmCIF chain identifiers are retained in full. Use `chain_str` or
+`get_chain_str()` to read them, and use normal selection syntax such as
+`coor.select_atoms("chain AA")`. The legacy `chain`/`get_chain()` field remains
+a fixed-size character-array API for compatibility; for an extended mmCIF
+identifier it exposes only the first character. PDB and PQR have one-character
+chain fields, so writing a structure containing a longer chain ID raises a
+clear error instead of silently merging chains. Write such structures as mmCIF.
+
+Per-atom contact annotations are optional and are not written until set.
+`has_contact` is a boolean list for the active model; assignment requires one
+value per atom. Selection preserves the aligned values:
+
+```python
+coor = Coor("assembly.cif")
+coor.has_contact = [False] * coor.len
+coor.has_contact[3] = True
+coor.select_atoms("chain AA").write("chain_AA.cif")
+```
+
+mmCIF output stores these values in the custom
+`_pdbx_pdb_cpp_atom_annotation` loop, keyed by `atom_site_id` and
+`pdbx_PDB_model_num`. Files without annotations are written as before, with no
+additional category. Other applications may ignore this pdb_cpp-specific
+category; PDB, PQR, and GRO do not serialize contact annotations.
+
 The format is determined by the file extension. Selections can also be
 written directly:
 
@@ -230,6 +255,7 @@ or directly when called on a `Model`.
 | `uniq_resid`    | `list[int]`     | Unique (0-based) residue identifiers     |
 | `chain`         | `list`          | Chain identifiers (char arrays)          |
 | `chain_str`     | `list[str]`     | Chain identifiers as strings             |
+| `has_contact`   | `list[bool]`    | Optional per-atom contact annotation      |
 | `num`           | `list[int]`     | Atom serial numbers                      |
 | `beta`          | `list[float]`   | B-factors (temperature factors)          |
 | `occ`           | `list[float]`   | Occupancies                              |

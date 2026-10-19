@@ -173,16 +173,11 @@ vector<string> Coor::get_uniq_chain_str() const {
     if (models_.empty()) {
         return chains;
     }
-    vector<array<char, 2>> raw = models_[active_model].get_uniq_chain();
-    chains.reserve(raw.size());
-    for (const auto &chain : raw) {
-        string chain_id;
-        for (char letter : chain) {
-            if (letter != '\0' && letter != ' ') {
-                chain_id.push_back(letter);
-            }
+    unordered_set<string> seen;
+    for (const string &chain : models_[active_model].get_chain_str()) {
+        if (seen.insert(chain).second) {
+            chains.push_back(chain);
         }
-        chains.push_back(chain_id);
     }
     return chains;
 }
@@ -226,7 +221,7 @@ vector<string> Coor::get_aa_sequences(bool gap_in_seq, size_t frame) const {
             continue;
         }
 
-        string chain_id = chain_to_string(chain_array[i]);
+        string chain_id = models_[frame].get_chain_id(i);
         auto it = chain_index.find(chain_id);
         if (it == chain_index.end()) {
             chain_index[chain_id] = seq_vec.size();
@@ -289,7 +284,7 @@ vector<string> Coor::get_aa_sequences_dl(bool gap_in_seq, size_t frame) const {
     size_t gap_num = 0;
 
     for (int idx : CA_indexes) {
-        string chain_id = chain_to_string(chain_array[idx]);
+        string chain_id = models_[frame].get_chain_id(static_cast<size_t>(idx));
         auto it = chain_index.find(chain_id);
         if (it == chain_index.end()) {
             chain_index[chain_id] = seq_vec.size();
@@ -382,7 +377,7 @@ unordered_map<string, string> Coor::get_aa_seq(bool gap_in_seq, size_t frame) co
     vector<string> chain_keys;
     unordered_set<string> seen;
     for (int idx : ca_index) {
-        string chain_id = chain_to_string(chain_array[idx]);
+        string chain_id = models_[frame].get_chain_id(static_cast<size_t>(idx));
         if (seen.insert(chain_id).second) {
             chain_keys.push_back(chain_id);
         }
@@ -468,7 +463,7 @@ unordered_map<string, string> Coor::get_aa_na_seq(bool gap_in_seq, size_t frame)
             continue;
         }
 
-        string chain_id = chain_to_string(chain_array[i]);
+        string chain_id = models_[frame].get_chain_id(i);
         if (seq_dict.find(chain_id) == seq_dict.end()) {
             seq_dict[chain_id] = "";
             last_resid[chain_id] = resid_array[i];

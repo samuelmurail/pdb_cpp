@@ -275,7 +275,7 @@ def xyz(self, xyz_values):
 
 @property
 def chain_str(self):
-    return _char_array_to_str_list(self.get_chain())
+    return self.get_chain_str()
 
 
 @property
@@ -316,6 +316,21 @@ Model.beta = beta
 Model.occ = occ
 Model.xyz = xyz
 Model.chain_str = chain_str
+
+
+@property
+def has_contact(self):
+    if not self.get_has_contact() and self.size() > 0:
+        self.set_has_contact([False] * self.size())
+    return _FieldProxy(self, 'get_has_contact', 'set_has_contact_at')
+
+
+@has_contact.setter
+def has_contact(self, values):
+    self.set_has_contact(values)
+
+
+Model.has_contact = has_contact
 Model.name_str = name_str
 Model.resname_str = resname_str
 Model.elem_str = elem_str
@@ -437,7 +452,7 @@ def xyz(self, xyz_values):
 
 @property
 def chain_str(self):
-    return _char_array_to_str_list(self.get_chain())
+    return self.get_chain_str()
 
 
 @property
@@ -477,6 +492,21 @@ Coor.beta = beta
 Coor.occ = occ
 Coor.xyz = xyz
 Coor.chain_str = chain_str
+
+
+@property
+def has_contact(self):
+    if not self.get_has_contact() and self.size() > 0:
+        self.set_has_contact([False] * self.size())
+    return _FieldProxy(self, 'get_has_contact', 'set_has_contact_at')
+
+
+@has_contact.setter
+def has_contact(self, values):
+    self.set_has_contact(values)
+
+
+Coor.has_contact = has_contact
 Coor.name_str = name_str
 Coor.resname_str = resname_str
 Coor.elem_str = elem_str

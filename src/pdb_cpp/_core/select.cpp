@@ -408,21 +408,32 @@ vector<bool> simple_select_atoms_model(const Model &model, const string &column,
             throw invalid_argument("Unsupported operator for '" + column + "'");
         }
     } else if (column == "chain" || column == "altloc" || column == "insertres") {
-        const vector<array<char, 2>> &model_val = (column == "chain") ? model.get_chain() : (column == "altloc") ? model.get_alterloc()
-                                                                                                                 : model.get_insertres();
+        const vector<array<char, 2>> *model_val = nullptr;
+        if (column == "altloc") model_val = &model.get_alterloc();
+        else if (column == "insertres") model_val = &model.get_insertres();
         if (op == "==") {
             for (size_t i = 0; i < n; ++i) {
-                result[i] = model_val[i][0] == values[0][0];
+                if (column == "chain") {
+                    result[i] = model.get_chain_id(i) == values[0];
+                } else {
+                    result[i] = (*model_val)[i][0] == values[0][0];
+                }
             }
         } else if (op == "!=") {
             for (size_t i = 0; i < n; ++i) {
-                result[i] = model_val[i][0] != values[0][0];
+                if (column == "chain") {
+                    result[i] = model.get_chain_id(i) != values[0];
+                } else {
+                    result[i] = (*model_val)[i][0] != values[0][0];
+                }
             }
         }
         else if (op == "isin") {
             set<string> value_set(values.begin(), values.end());
             for (size_t i = 0; i < n; ++i) {
-                string val(model_val[i].data(), strnlen(model_val[i].data(), 2));
+                string val = column == "chain"
+                    ? model.get_chain_id(i)
+                    : string((*model_val)[i].data(), strnlen((*model_val)[i].data(), 2));
                 result[i] = value_set.count(val) > 0;
             }
         } else {

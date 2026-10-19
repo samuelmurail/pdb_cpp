@@ -23,6 +23,8 @@ void Model::clear() {
     num_.clear();
     field_.clear();
     uniqresid_.clear();
+    extended_chain_.clear();
+    has_contact_.clear();
 }
 
 size_t Model::size() const {
@@ -57,6 +59,9 @@ bool Model::addAtom(
     beta_.push_back(beta);
     elem_.push_back(elem);
     uniqresid_.push_back(uniqresid);
+    if (!has_contact_.empty()) {
+        has_contact_.push_back(false);
+    }
 
     return true;
 }
@@ -175,6 +180,10 @@ Model Model::select_index(const vector<bool> &indexes) const {
                 insertres_[i],
                 field_[i],
                 uniqresid_[i]);
+            selected.set_chain_id(selected.size() - 1, get_chain_id(i));
+            if (!has_contact_.empty()) {
+                selected.set_has_contact(selected.size() - 1, has_contact_[i]);
+            }
         }
     }
     return selected;
@@ -204,6 +213,48 @@ vector<array<char, 2>> Model::get_uniq_chain() const{
 
     return uniq_chain;
 
+}
+
+vector<string> Model::get_chain_str() const {
+    vector<string> chains;
+    chains.reserve(chain_.size());
+    for (size_t i = 0; i < chain_.size(); ++i) {
+        chains.push_back(get_chain_id(i));
+    }
+    return chains;
+}
+
+string Model::get_chain_id(size_t index) const {
+    auto extended = extended_chain_.find(index);
+    if (extended != extended_chain_.end()) {
+        return extended->second;
+    }
+    if (index >= chain_.size() || chain_[index][0] == '\0' || chain_[index][0] == ' ') {
+        return "";
+    }
+    return string(1, chain_[index][0]);
+}
+
+void Model::set_chain_id(size_t index, const string &value) {
+    if (index >= chain_.size()) return;
+    chain_[index] = {};
+    if (!value.empty()) {
+        chain_[index][0] = value[0];
+    } else {
+        chain_[index][0] = ' ';
+    }
+    if (value.size() > 1) {
+        extended_chain_[index] = value;
+    } else {
+        extended_chain_.erase(index);
+    }
+}
+
+void Model::set_has_contact(const vector<bool> &values) {
+    if (values.size() != size()) {
+        throw invalid_argument("has_contact must contain one boolean per atom");
+    }
+    has_contact_ = values;
 }
 
 float Model::distance(size_t i, size_t j) const{
