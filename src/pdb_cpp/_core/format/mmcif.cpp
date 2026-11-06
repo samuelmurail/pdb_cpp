@@ -27,10 +27,69 @@ string trim_quotes(const string &value) {
     if (value.size() >= 2) {
         if ((value.front() == '"' && value.back() == '"') ||
             (value.front() == '\'' && value.back() == '\'')) {
-            return value.substr(1, value.size() - 2);
+            string unquoted = value.substr(1, value.size() - 2);
+            // Handle escaped quotes: '' -> ', "" -> "
+            if (value.front() == '\'') {
+                size_t pos = 0;
+                while ((pos = unquoted.find("''", pos)) != string::npos) {
+                    unquoted.replace(pos, 2, "'");
+                    pos += 1;
+                }
+            } else {
+                size_t pos = 0;
+                while ((pos = unquoted.find("\"\"", pos)) != string::npos) {
+                    unquoted.replace(pos, 2, "\"");
+                    pos += 1;
+                }
+            }
+            return unquoted;
         }
     }
     return value;
+}
+
+bool needs_quoting(const string &value) {
+    if (value.empty()) {
+        return true;
+    }
+    
+    char first_char = value[0];
+    if (first_char == '_' || first_char == '#' || first_char == '$' ||
+        first_char == '[' || first_char == ']' || first_char == ';') {
+        return true;
+    }
+    
+    if (starts_with(value, "data_") || starts_with(value, "loop_") ||
+        starts_with(value, "save_") || starts_with(value, "global_") ||
+        starts_with(value, "stop_")) {
+        return true;
+    }
+    
+    for (char ch : value) {
+        if (isspace(static_cast<unsigned char>(ch)) || ch == '\'' || ch == '"') {
+            return true;
+        }
+    }
+    
+    return false;
+}
+
+string quote_cif_value(const string &value) {
+    if (!needs_quoting(value)) {
+        return value;
+    }
+    
+    // Use double quotes; escape any internal double quotes by doubling them
+    string quoted = "\"";
+    for (char ch : value) {
+        if (ch == '"') {
+            quoted += "\"\"";
+        } else {
+            quoted += ch;
+        }
+    }
+    quoted += "\"";
+    return quoted;
 }
 
 vector<string> split_tokens(const string &line) {
@@ -41,26 +100,38 @@ vector<string> split_tokens(const string &line) {
 
     for (size_t i = 0; i < line.size(); ++i) {
         char ch = line[i];
-            // Stop at inline comments when not inside quotes.
-            if (!in_quote && ch == '#') {
+        
+        // Stop at inline comments when not inside quotes.
+        if (!in_quote && ch == '#') {
             break;
         }
+        
         if (in_quote) {
             if (ch == quote_char) {
-                in_quote = false;
-                tokens.push_back(token);
-                token.clear();
+                // Check if this is an escaped quote (doubled)
+                if (i + 1 < line.size() && line[i + 1] == quote_char) {
+                    // Escaped quote: add one quote to token and skip the second one
+                    token += quote_char;
+                    ++i;
+                } else {
+                    // End of quoted token
+                    in_quote = false;
+                    tokens.push_back(token);
+                    token.clear();
+                }
             } else {
                 token += ch;
             }
             continue;
         }
-        // Keep quoted tokens together, excluding the quote characters.
-        if (ch == '\'' || ch == '"') {
+        
+        // Check for quote at the start of a token (after whitespace)
+        if ((ch == '\'' || ch == '"') && token.empty()) {
             in_quote = true;
             quote_char = ch;
             continue;
         }
+        
         if (isspace(static_cast<unsigned char>(ch))) {
             if (!token.empty()) {
                 tokens.push_back(token);
@@ -68,8 +139,10 @@ vector<string> split_tokens(const string &line) {
             }
             continue;
         }
+        
         token += ch;
     }
+    
     if (!token.empty()) {
         tokens.push_back(token);
     }
@@ -702,14 +775,14 @@ string get_mmcif_string(const Coor &coor) {
 
             oss << group << " "
                 << model.get_num()[i] << " "
-                << elem << " "
-                << name << " "
-                << altloc << " "
-                << resname << " "
-                << chain << " "
+                << quote_cif_value(elem) << " "
+                << quote_cif_value(name) << " "
+                << quote_cif_value(altloc) << " "
+                << quote_cif_value(resname) << " "
+                << quote_cif_value(chain) << " "
                 << "1" << " "
                 << model.get_uniqresid()[i] + 1 << " "
-                << insertres << " "
+                << quote_cif_value(insertres) << " "
                 << fixed << setprecision(3) << model.get_x()[i] << " "
                 << fixed << setprecision(3) << model.get_y()[i] << " "
                 << fixed << setprecision(3) << model.get_z()[i] << " "
@@ -717,9 +790,9 @@ string get_mmcif_string(const Coor &coor) {
                 << fixed << setprecision(2) << model.get_beta()[i] << " "
                 << "?" << " "
                 << model.get_resid()[i] << " "
-                << resname << " "
-                << chain << " "
-                << name << " "
+                << quote_cif_value(resname) << " "
+                << quote_cif_value(chain) << " "
+                << quote_cif_value(name) << " "
                 << (model_index + 1) << "\n";
         }
     }
