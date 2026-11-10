@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools", "pybind11==2.13"]
+requires = ["setuptools>=77", "pybind11==2.13"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -39,7 +39,8 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Bio-Informatics",
 ]
 
-license = { text = "GPL-2.0-or-later" }
+license = "GPL-2.0-or-later"
+license-files = ["LICENSE"]
 
 [project.urls]
 Homepage = "https://pdb-cpp.readthedocs.io/en/latest/"

@@ -102,3 +102,11 @@ Sanitizer and Valgrind scripts are in `scripts/`:
 bash scripts/asan_core_only.sh      # AddressSanitizer
 bash scripts/valgrind_core_only.sh  # Valgrind memcheck
 ```
+
+## Deploying new version to PyPI
+
+```bash
+# Update version using  bump-my-version
+bump-my-version bump patch # or minor/major
+
+```
